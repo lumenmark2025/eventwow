@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 /**
  * POST /api/admin-create-supplier
- * Body (preferred): { business_name, public_email, slug?, base_city?, base_postcode?, phone?, website?, created_by_user_id? }
+ * Body (preferred): { business_name, public_email, slug?, base_city?, base_postcode?, website?, created_by_user_id? }
  * Also accepts legacy aliases: { name, email }
  *
  * Secured: requires Authorization: Bearer <user_jwt> and admin role in public.user_roles
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       auth: { persistSession: false },
     });
 
-    // Get the user (ensures token valid)
+    // Validate token
     const { data: userData, error: userErr } = await supabaseUser.auth.getUser();
     if (userErr || !userData?.user) {
       return res
@@ -72,12 +72,12 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "Forbidden (admin only)" });
     }
 
-    // --- Use service role for privileged operations ---
+    // --- Service role client for privileged operations ---
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
 
-    // ---- Parse body (vercel dev usually provides object, but be safe) ----
+    // ---- Parse body safely ----
     let body = req.body;
     if (typeof body === "string") {
       try {
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     }
     const b = body || {};
 
-    // ---- Normalize to your DB schema: business_name + public_email ----
+    // ---- Normalize inputs to your DB schema ----
     const business_name = String(
       b.business_name ?? b.name ?? b.businessName ?? ""
     ).trim();
@@ -100,10 +100,9 @@ export default async function handler(req, res) {
     const slug = (b.slug ?? "").toString().trim() || null;
     const base_city = (b.base_city ?? "").toString().trim() || null;
     const base_postcode = (b.base_postcode ?? "").toString().trim() || null;
-    const phone = (b.phone ?? "").toString().trim() || null;
     const website = (b.website ?? "").toString().trim() || null;
 
-    // If you store who created the supplier record
+    // If you store who created the supplier
     const created_by_user_id = b.created_by_user_id ?? null;
 
     if (!business_name || !public_email) {
@@ -113,7 +112,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 1) Create auth user for supplier (using public_email as login for now)
+    // 1) Create auth user (using public_email as login for now)
     const { data: createdUser, error: createUserErr } =
       await supabaseAdmin.auth.admin.createUser({
         email: public_email,
@@ -129,31 +128,33 @@ export default async function handler(req, res) {
 
     const authUserId = createdUser.user.id;
 
-    // 2) Create supplier row linked to auth user (using your actual column names)
+    // 2) Insert supplier row linked to auth user
+    // IMPORTANT: only include columns that exist in your suppliers table.
+    const insertPayload = {
+      business_name,
+      public_email,
+      auth_user_id: authUserId,
+    };
+
+    if (slug) insertPayload.slug = slug;
+    if (base_city) insertPayload.base_city = base_city;
+    if (base_postcode) insertPayload.base_postcode = base_postcode;
+    if (website) insertPayload.website = website;
+    if (created_by_user_id) insertPayload.created_by_user_id = created_by_user_id;
+
     const { data: supplierRow, error: supplierErr } = await supabaseAdmin
       .from("suppliers")
-      .insert([
-        {
-          business_name,
-          public_email,
-          slug,
-          base_city,
-          base_postcode,
-          phone,
-          website,
-          created_by_user_id,
-          auth_user_id: authUserId,
-        },
-      ])
+      .insert([insertPayload])
       .select("*")
       .single();
 
     if (supplierErr) {
-      // Clean up auth user if supplier insert fails
+      // Roll back auth user if supplier insert fails
       await supabaseAdmin.auth.admin.deleteUser(authUserId);
       return res.status(400).json({
         error: "Failed to create supplier row",
         details: supplierErr.message,
+        hint: "Check column names and NOT NULL constraints on public.suppliers",
       });
     }
 
