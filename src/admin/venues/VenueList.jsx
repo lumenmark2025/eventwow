@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { slugify } from "../../utils/slugify";
+import PageHeader from "../../components/layout/PageHeader";
+import Section from "../../components/layout/Section";
+import Badge from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import Input from "../../components/ui/Input";
+import Skeleton from "../../components/ui/Skeleton";
+import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
 function VenueSupplierLinks({ venueId, user }) {
   const [allSuppliers, setAllSuppliers] = useState([]);
@@ -54,7 +63,6 @@ function VenueSupplierLinks({ venueId, user }) {
     });
 
     if (error) {
-      // Common: unique constraint (already linked)
       if (String(error.message || "").toLowerCase().includes("duplicate key")) {
         setErr("That supplier is already linked to this venue.");
       } else {
@@ -95,98 +103,88 @@ function VenueSupplierLinks({ venueId, user }) {
     setBusy(false);
   }
 
-  // Filter dropdown to suppliers not already linked
   const linkedSupplierIds = new Set(links.map((l) => l.supplier_id));
   const available = allSuppliers.filter((s) => !linkedSupplierIds.has(s.id));
 
   return (
-    <div className="rounded-2xl border bg-gray-50 p-4 space-y-3">
-      <div className="font-medium">Trusted suppliers</div>
-
+    <Section title="Trusted suppliers">
       {loading ? (
-        <div className="text-sm text-gray-600">Loading suppliers…</div>
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
       ) : (
-        <>
-          <div className="flex flex-col md:flex-row gap-2">
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 md:flex-row">
             <select
-              className="border rounded-lg px-3 py-2 bg-white"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
               value={selectedSupplierId}
               onChange={(e) => setSelectedSupplierId(e.target.value)}
             >
-              <option value="">Select supplier to add…</option>
+              <option value="">Select supplier to add...</option>
               {available.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.business_name}
                 </option>
               ))}
             </select>
-
-            <button
-              type="button"
-              onClick={addLink}
-              disabled={busy || !selectedSupplierId}
-              className="rounded-lg bg-black text-white px-4 py-2 disabled:opacity-50"
-            >
-              Add
-            </button>
+            <Button type="button" onClick={addLink} disabled={busy || !selectedSupplierId}>
+              Add supplier
+            </Button>
           </div>
 
-          {err && <div className="text-sm text-red-600">{err}</div>}
+          {err ? <p className="text-sm text-rose-600">{err}</p> : null}
 
           {links.length === 0 ? (
-            <div className="text-sm text-gray-600">No suppliers linked yet.</div>
+            <EmptyState title="No suppliers linked" description="Add trusted suppliers for this venue." />
           ) : (
             <div className="space-y-2">
               {links.map((l) => (
-                <div key={l.id} className="flex flex-col md:flex-row md:items-center gap-2 border rounded-xl bg-white p-3">
-                  <div className="flex-1">
-                    <div className="font-medium">{l.suppliers?.business_name ?? "Supplier"}</div>
-                    <div className="text-xs text-gray-500">Supplier ID: {l.supplier_id}</div>
-                  </div>
+                <Card key={l.id}>
+                  <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-900">{l.suppliers?.business_name ?? "Supplier"}</p>
+                      <p className="text-xs text-slate-500">Supplier ID: {l.supplier_id}</p>
+                    </div>
 
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!l.is_trusted}
-                      onChange={(e) => updateLink(l.id, { is_trusted: e.target.checked })}
-                      disabled={busy}
-                    />
-                    Trusted
-                  </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={!!l.is_trusted}
+                        onChange={(e) => updateLink(l.id, { is_trusted: e.target.checked })}
+                        disabled={busy}
+                      />
+                      Trusted
+                    </label>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Order</span>
-                    <input
-                      className="w-20 border rounded-lg px-2 py-1"
-                      type="number"
-                      value={l.display_order ?? ""}
-                      placeholder="—"
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        updateLink(l.id, { display_order: v === "" ? null : Number(v) });
-                      }}
-                      disabled={busy}
-                    />
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-600">Order</span>
+                      <Input
+                        className="w-20"
+                        type="number"
+                        value={l.display_order ?? ""}
+                        placeholder="-"
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateLink(l.id, { display_order: v === "" ? null : Number(v) });
+                        }}
+                        disabled={busy}
+                      />
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => removeLink(l.id)}
-                    disabled={busy}
-                    className="border rounded-lg px-3 py-2 bg-white"
-                  >
-                    Remove
-                  </button>
-                </div>
+                    <Button type="button" variant="secondary" onClick={() => removeLink(l.id)} disabled={busy}>
+                      Remove
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
-    </div>
+    </Section>
   );
 }
-
 
 function VenueEdit({ venueId, user, onBack, onSaved }) {
   const [loading, setLoading] = useState(true);
@@ -272,7 +270,7 @@ function VenueEdit({ venueId, user, onBack, onSaved }) {
 
     if (error) {
       if (String(error.message || "").toLowerCase().includes("venues_slug_key")) {
-        setErr("That slug is already in use. Try adding the town or a number (e.g. '-lancaster' or '-2').");
+        setErr("That slug is already in use. Try adding the town or a number.");
       } else setErr(error.message);
     } else {
       setOk("Saved.");
@@ -282,74 +280,93 @@ function VenueEdit({ venueId, user, onBack, onSaved }) {
     setSaving(false);
   }
 
-  if (loading) return <div className="p-6">Loading venue…</div>;
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-52" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
-      <div className="max-w-3xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <button onClick={onBack} className="text-sm underline text-gray-700">← Back to venues</button>
-            <h1 className="text-2xl font-semibold mt-2">Edit venue</h1>
-          </div>
-          <button onClick={onBack} className="border rounded-lg px-3 py-2 bg-white">Close</button>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Edit venue"
+        subtitle="Manage venue details and trusted suppliers."
+        actions={[
+          { key: "back", label: "Back", variant: "secondary", onClick: onBack },
+          { key: "save", label: saving ? "Saving..." : "Save changes", onClick: save, disabled: saving },
+        ]}
+      />
 
-        <div className="rounded-2xl border bg-white p-5 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <Card>
+        <CardHeader>
+          <CardTitle>{form.name || "Venue"}</CardTitle>
+          <CardDescription>Core profile fields for discovery and referrals.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm">Name *</label>
-              <input className="w-full border rounded-lg px-3 py-2" value={form.name} onChange={(e) => setField("name", e.target.value)} />
+              <label className="text-sm font-medium text-slate-700">Name *</label>
+              <Input value={form.name} onChange={(e) => setField("name", e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm">Slug *</label>
-              <input
-                className="w-full border rounded-lg px-3 py-2"
+              <label className="text-sm font-medium text-slate-700">Slug *</label>
+              <Input
                 value={form.slug}
                 onChange={(e) => setField("slug", e.target.value)}
                 onBlur={() => setField("slug", slugify(form.slug || form.name))}
               />
-              <p className="text-xs text-gray-500">Used in the URL. Auto-cleans on blur.</p>
+              <p className="text-xs text-slate-500">Used in URL and auto-cleaned on blur.</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm">City</label>
-              <input className="w-full border rounded-lg px-3 py-2" value={form.city} onChange={(e) => setField("city", e.target.value)} />
+              <label className="text-sm font-medium text-slate-700">City</label>
+              <Input value={form.city} onChange={(e) => setField("city", e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm">Postcode</label>
-              <input className="w-full border rounded-lg px-3 py-2" value={form.postcode} onChange={(e) => setField("postcode", e.target.value)} />
+              <label className="text-sm font-medium text-slate-700">Postcode</label>
+              <Input value={form.postcode} onChange={(e) => setField("postcode", e.target.value)} />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm">Website URL</label>
-              <input className="w-full border rounded-lg px-3 py-2" value={form.website_url} onChange={(e) => setField("website_url", e.target.value)} />
+              <label className="text-sm font-medium text-slate-700">Website URL</label>
+              <Input value={form.website_url} onChange={(e) => setField("website_url", e.target.value)} />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm">Description</label>
-              <textarea className="w-full border rounded-lg px-3 py-2 min-h-[140px]" value={form.description} onChange={(e) => setField("description", e.target.value)} />
+              <label className="text-sm font-medium text-slate-700">Description</label>
+              <textarea
+                className="min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+                value={form.description}
+                onChange={(e) => setField("description", e.target.value)}
+              />
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <input id="published" type="checkbox" checked={form.is_published} onChange={(e) => setField("is_published", e.target.checked)} />
-            <label htmlFor="published" className="text-sm">Published</label>
-          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              id="published"
+              type="checkbox"
+              checked={form.is_published}
+              onChange={(e) => setField("is_published", e.target.checked)}
+            />
+            Published
+          </label>
 
-          {err && <div className="text-sm text-red-600">{err}</div>}
-          {ok && <div className="text-sm text-green-700">{ok}</div>}
+          {err ? <p className="text-sm text-rose-600">{err}</p> : null}
+          {ok ? <p className="text-sm text-emerald-700">{ok}</p> : null}
+        </CardContent>
+      </Card>
 
-          {/* Trusted suppliers */}
+      <Card>
+        <CardContent>
           <VenueSupplierLinks venueId={venueId} user={user} />
-
-          <button onClick={save} disabled={saving} className="rounded-lg bg-black text-white px-4 py-2 disabled:opacity-50">
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -430,50 +447,79 @@ export default function VenueList({ user }) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={createVenue} className="rounded-2xl border bg-white p-5 space-y-3">
-        <div className="font-medium">Add venue</div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input className="border rounded-lg px-3 py-2" placeholder="Venue name *" value={name} onChange={(e) => setName(e.target.value)} />
-          <input className="border rounded-lg px-3 py-2" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
-          <input className="border rounded-lg px-3 py-2" placeholder="Postcode" value={postcode} onChange={(e) => setPostcode(e.target.value)} />
-        </div>
-        {err && <div className="text-sm text-red-600">{err}</div>}
-        <button disabled={saving} className="rounded-lg bg-black text-white px-4 py-2 disabled:opacity-50">
-          {saving ? "Saving…" : "Create venue"}
-        </button>
-      </form>
+      <PageHeader
+        title="Venues"
+        subtitle="Create and maintain venue records used across the marketplace."
+      />
 
-      <div className="rounded-2xl border bg-white overflow-hidden">
-        <div className="px-5 py-3 border-b font-medium">Venue list</div>
-        {loading ? (
-          <div className="p-5">Loading…</div>
-        ) : venues.length === 0 ? (
-          <div className="p-5 text-gray-600">No venues yet.</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="text-left px-5 py-2">Name</th>
-                <th className="text-left px-5 py-2">Slug</th>
-                <th className="text-left px-5 py-2">City</th>
-                <th className="text-left px-5 py-2">Postcode</th>
-                <th className="text-left px-5 py-2">Published</th>
-              </tr>
-            </thead>
-            <tbody>
-              {venues.map((v) => (
-                <tr key={v.id} className="border-t hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedVenueId(v.id)} title="Click to edit">
-                  <td className="px-5 py-2 font-medium">{v.name}</td>
-                  <td className="px-5 py-2 text-gray-600">{v.slug}</td>
-                  <td className="px-5 py-2">{v.city || "—"}</td>
-                  <td className="px-5 py-2">{v.postcode || "—"}</td>
-                  <td className="px-5 py-2">{v.is_published ? "Yes" : "No"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Add venue</CardTitle>
+          <CardDescription>Create a venue profile and publish it immediately.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={createVenue} className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <Input placeholder="Venue name *" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+              <Input placeholder="Postcode" value={postcode} onChange={(e) => setPostcode(e.target.value)} />
+            </div>
+            {err ? <p className="text-sm text-rose-600">{err}</p> : null}
+            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Create venue"}</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Section title="Venue list" right={<Badge variant="neutral">{venues.length} total</Badge>}>
+        <Card className="overflow-hidden">
+          {loading ? (
+            <CardContent className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          ) : venues.length === 0 ? (
+            <CardContent>
+              <EmptyState title="No venues yet" description="Create your first venue to start linking trusted suppliers." />
+            </CardContent>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Name</TH>
+                    <TH>Slug</TH>
+                    <TH>City</TH>
+                    <TH>Postcode</TH>
+                    <TH>Published</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {venues.map((v) => (
+                    <TR
+                      key={v.id}
+                      interactive
+                      className="cursor-pointer"
+                      onClick={() => setSelectedVenueId(v.id)}
+                      title="Click to edit"
+                    >
+                      <TD className="font-medium text-slate-900">{v.name}</TD>
+                      <TD className="text-slate-600">{v.slug}</TD>
+                      <TD>{v.city || "-"}</TD>
+                      <TD>{v.postcode || "-"}</TD>
+                      <TD>
+                        <Badge variant={v.is_published ? "success" : "neutral"}>
+                          {v.is_published ? "Published" : "Hidden"}
+                        </Badge>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </div>
+          )}
+        </Card>
+      </Section>
     </div>
   );
 }

@@ -1,69 +1,86 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import AppShell from "../../components/layout/AppShell";
+import { supabase } from "../../lib/supabase";
 
-import SupplierDashboard from "../pages/SupplierDashboard";
-import SupplierEnquiries from "../pages/SupplierEnquiries";
-import SupplierQuotes from "../pages/SupplierQuotes";
-import SupplierBookings from "../pages/SupplierBookings";
-
-function TabButton({ active, children, className = "", ...props }) {
-  const base = "px-4 py-2 rounded-lg border bg-white";
-  const activeCls = active ? " border-black" : "";
-  return (
-    <button className={`${base}${activeCls} ${className}`} {...props}>
-      {children}
-    </button>
-  );
-}
-
-export default function SupplierLayout({ user, supplier, onSignOut }) {
+export default function SupplierLayout({ user, supplier, onSignOut, children }) {
   const [tab, setTab] = useState("dashboard");
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
-  const header = useMemo(() => {
-    const name = supplier?.business_name || "Supplier";
-    const credits = supplier?.credits_balance ?? 0;
-    return { name, credits };
-  }, [supplier?.business_name, supplier?.credits_balance]);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const path = (location.pathname || "").toLowerCase();
+
+    if (path.startsWith("/supplier/enquiries")) return setTab("enquiries");
+    if (path.startsWith("/supplier/quotes")) return setTab("quotes");
+    if (path.startsWith("/supplier/messages")) return setTab("messages");
+    if (path.startsWith("/supplier/notifications")) return setTab("notifications");
+    if (path.startsWith("/supplier/bookings")) return setTab("bookings");
+    if (path.startsWith("/supplier/dashboard")) return setTab("dashboard");
+
+    if (path === "/supplier" || path === "/supplier/") setTab("dashboard");
+  }, [location.pathname]);
+
+  const nav = useMemo(
+    () => [
+      { key: "dashboard", label: "Dashboard" },
+      { key: "enquiries", label: "Requests" },
+      { key: "quotes", label: "Quotes" },
+      { key: "messages", label: "Messages" },
+      { key: "notifications", label: "Notifications" },
+      { key: "bookings", label: "Bookings" },
+    ],
+    []
+  );
+
+  const go = (nextTab) => {
+    if (nextTab === "dashboard") navigate("/supplier/dashboard");
+    if (nextTab === "enquiries") navigate("/supplier/enquiries");
+    if (nextTab === "quotes") navigate("/supplier/quotes");
+    if (nextTab === "messages") navigate("/supplier/messages");
+    if (nextTab === "notifications") navigate("/supplier/notifications");
+    if (nextTab === "bookings") navigate("/supplier/bookings");
+  };
+
+  async function refreshUnreadCount() {
+    try {
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) return;
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) return;
+
+      const resp = await fetch("/api/supplier-notifications?limit=1", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) return;
+      setNotificationUnreadCount(Number(json?.unread_count || 0));
+    } catch {
+      // ignore unread refresh errors
+    }
+  }
+
+  useEffect(() => {
+    refreshUnreadCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, user?.id]);
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Eventwow Supplier</h1>
-            <p className="text-sm text-gray-600">
-              {header.name} · signed in as {user.email} · credits: {header.credits}
-            </p>
-          </div>
-          <button onClick={onSignOut} className="border rounded-lg px-3 py-2 bg-white">
-            Sign out
-          </button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <TabButton active={tab === "dashboard"} onClick={() => setTab("dashboard")}>
-            Dashboard
-          </TabButton>
-          <TabButton active={tab === "enquiries"} onClick={() => setTab("enquiries")}>
-            Enquiries
-          </TabButton>
-          <TabButton active={tab === "quotes"} onClick={() => setTab("quotes")}>
-            Quotes
-          </TabButton>
-          <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>
-            Bookings
-          </TabButton>
-        </div>
-
-        {tab === "dashboard" ? (
-          <SupplierDashboard supplier={supplier} />
-        ) : tab === "enquiries" ? (
-          <SupplierEnquiries supplierId={supplier.id} />
-        ) : tab === "quotes" ? (
-          <SupplierQuotes supplierId={supplier.id} />
-        ) : (
-          <SupplierBookings supplierId={supplier.id} />
-        )}
-      </div>
-    </div>
+    <AppShell
+      title="Eventwow Supplier"
+      user={user}
+      supplier={supplier}
+      onSignOut={onSignOut}
+      nav={nav}
+      activeKey={tab}
+      onNavigate={go}
+      notificationUnreadCount={notificationUnreadCount}
+      onNotificationsClick={() => navigate("/supplier/notifications")}
+    >
+      {children}
+    </AppShell>
   );
 }
