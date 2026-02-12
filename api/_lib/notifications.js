@@ -319,3 +319,21 @@ export async function notifyMessageToCustomer({ admin, req, messageId, quoteId, 
 
   return { ok: true };
 }
+
+export async function notifyDepositPaid({ admin, paymentId, quoteId, supplierId }) {
+  const eventKey = `deposit_paid:${paymentId}`;
+  const lock = await reserveEvent(admin, eventKey, { paymentId, quoteId, supplierId });
+  if (!lock.ok || !lock.reserved) return lock;
+
+  await createSupplierNotification(admin, {
+    supplier_id: supplierId,
+    type: "deposit_paid",
+    title: "Deposit paid",
+    body: `A customer paid the deposit for Quote #${String(quoteId).slice(0, 8)}.`,
+    url: `/supplier/quotes?open=${quoteId}`,
+    entity_type: "quote",
+    entity_id: quoteId,
+  });
+
+  return { ok: true };
+}

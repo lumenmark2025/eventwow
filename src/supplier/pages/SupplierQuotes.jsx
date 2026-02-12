@@ -19,6 +19,12 @@ function money(n) {
   return v.toFixed(2);
 }
 
+function moneyMinor(n) {
+  const v = Number(n || 0);
+  if (!Number.isFinite(v)) return "0.00";
+  return (v / 100).toFixed(2);
+}
+
 function calcLineTotal(qty, unit) {
   const q = Number(qty);
   const u = Number(unit);
@@ -53,6 +59,10 @@ export default function SupplierQuotes({ supplierId }) {
 
   const [quote, setQuote] = useState(null);
   const [items, setItems] = useState([]);
+  const [payment, setPayment] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [depositAmountInput, setDepositAmountInput] = useState("100");
 
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
@@ -148,6 +158,8 @@ export default function SupplierQuotes({ supplierId }) {
     setQuoteOk("");
     setPublicQuoteUrl("");
     setIsDirty(false);
+    setPayment(null);
+    setDepositAmountInput("100");
 
     loadCredits();
     loadList();
@@ -178,6 +190,8 @@ export default function SupplierQuotes({ supplierId }) {
     setQuoteErr("");
     setQuoteOk("");
     setIsDirty(false);
+    setPayment(null);
+    setDepositAmountInput("100");
 
     if (!quoteId) return;
 
@@ -249,6 +263,19 @@ export default function SupplierQuotes({ supplierId }) {
     pendingOpenIdRef.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, rows]);
+
+  useEffect(() => {
+    const currentStatus = String(quote?.status || "").toLowerCase();
+    if (!quote?.id || !["accepted", "sent", "closed", "declined"].includes(currentStatus)) {
+      setPayment(null);
+      return;
+    }
+
+    const token = getQuoteTokenFromPublicUrl(publicQuoteUrl);
+    if (!token) return;
+    loadPaymentStatusForToken(token);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote?.id, quote?.status, publicQuoteUrl]);
 
   function updateItem(id, patch) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -584,6 +611,95 @@ export default function SupplierQuotes({ supplierId }) {
     }
   }
 
+  function getQuoteTokenFromPublicUrl(url) {
+    if (!url) return "";
+    try {
+      const parsed = new URL(url);
+      const segments = parsed.pathname.split("/").filter(Boolean);
+      const idx = segments.findIndex((s) => s === "quote");
+      if (idx >= 0 && segments[idx + 1]) return segments[idx + 1];
+    } catch {
+      const segments = String(url).split("/").filter(Boolean);
+      const idx = segments.findIndex((s) => s === "quote");
+      if (idx >= 0 && segments[idx + 1]) return segments[idx + 1];
+    }
+    return "";
+  }
+
+  async function loadPaymentStatusForToken(token) {
+    if (!token) {
+      setPayment(null);
+      return;
+    }
+
+    setPaymentLoading(true);
+    try {
+      const resp = await fetch(`/api/public-payment-status?token=${encodeURIComponent(token)}`);
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load payment status");
+      setPayment(json?.payment || null);
+    } catch {
+      setPayment(null);
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
+
+  async function requestDeposit() {
+    if (!quote?.id || paymentSaving) return;
+    if (String(quote?.status || "").toLowerCase() !== "accepted") return;
+
+    const pounds = Number(depositAmountInput);
+    const amountTotal = Number.isFinite(pounds) ? Math.round(pounds * 100) : NaN;
+    if (!Number.isInteger(amountTotal) || amountTotal < 1000 || amountTotal > 500000) {
+      setQuoteErr("Deposit must be between £10 and £5,000.");
+      return;
+    }
+
+    setPaymentSaving(true);
+    setQuoteErr("");
+    setQuoteOk("");
+
+    try {
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) throw sessionErr;
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error("Not authenticated");
+
+      const resp = await fetch("/api/supplier-create-deposit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          quoteId: quote.id,
+          amountTotal,
+          currency: String(quote?.currency_code || "gbp").toLowerCase(),
+        }),
+      });
+
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error([json?.error, json?.details].filter(Boolean).join(": ") || "Failed to request deposit");
+      }
+
+      if (json?.payment) {
+        setPayment(json.payment);
+      }
+      setQuoteOk("Deposit requested. Share the customer quote link for payment.");
+
+      const quoteToken = getQuoteTokenFromPublicUrl(publicQuoteUrl);
+      if (quoteToken) {
+        await loadPaymentStatusForToken(quoteToken);
+      }
+    } catch (e) {
+      setQuoteErr(e?.message || "Failed to request deposit.");
+    } finally {
+      setPaymentSaving(false);
+    }
+  }
+
   async function closeQuote() {
     if (!quote?.id || closing) return;
     const confirmed = window.confirm("Close this quote? Customers won't be able to accept it.");
@@ -817,6 +933,76 @@ export default function SupplierQuotes({ supplierId }) {
                 <a className="text-blue-700 underline break-all" href={publicQuoteUrl} target="_blank" rel="noreferrer">
                   {publicQuoteUrl}
                 </a>
+              </div>
+            ) : null}
+
+            {String(quote?.status || "").toLowerCase() === "accepted" ? (
+              <div className="rounded-xl border bg-gray-50 p-3 sm:p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-medium">Deposit</div>
+                  {paymentLoading ? (
+                    <span className="text-xs text-gray-500">Loading...</span>
+                  ) : payment ? (
+                    <span className="text-xs rounded-full border px-2.5 py-1 bg-white">
+                      {String(payment.status || "requires_payment")}
+                    </span>
+                  ) : (
+                    <span className="text-xs rounded-full border px-2.5 py-1 bg-white">Not requested</span>
+                  )}
+                </div>
+
+                {payment ? (
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <div>Amount: £{moneyMinor(payment.amount_total)}</div>
+                    <div>Paid: £{moneyMinor(payment.amount_paid)}</div>
+                    {payment.paid_at ? <div>Paid at: {fmtDateTime(payment.paid_at)}</div> : null}
+                  </div>
+                ) : null}
+
+                {!payment || ["failed", "canceled"].includes(String(payment?.status || "").toLowerCase()) ? (
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-600">Request a deposit from £10 to £5,000.</div>
+                    <div className="flex flex-wrap gap-2">
+                      {[50, 100, 200].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          className="border rounded-lg px-3 py-2 bg-white text-sm"
+                          onClick={() => setDepositAmountInput(String(preset))}
+                          disabled={paymentSaving}
+                        >
+                          £{preset}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="number"
+                        min={10}
+                        max={5000}
+                        step="1"
+                        className="w-full sm:w-44 border rounded-lg px-3 py-2"
+                        value={depositAmountInput}
+                        onChange={(e) => setDepositAmountInput(e.target.value)}
+                        disabled={paymentSaving}
+                      />
+                      <button
+                        type="button"
+                        className="border rounded-lg px-4 py-2.5 bg-white disabled:opacity-50"
+                        onClick={requestDeposit}
+                        disabled={paymentSaving}
+                      >
+                        {paymentSaving ? "Requesting..." : "Request deposit"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {payment?.checkout_url && ["requires_payment", "pending", "failed", "canceled"].includes(String(payment.status || "").toLowerCase()) ? (
+                  <div className="text-xs text-gray-600">
+                    Customer pays from the public quote page link.
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

@@ -18,3 +18,7 @@ If you are developing a production application, we recommend using TypeScript wi
 ## Auth Redirect Setup
 
 See `docs/auth.md` for required Supabase URL configuration and Vercel env vars to keep auth callbacks on the correct domain.
+
+## Stripe Deposits
+
+See `docs/payments.md` for PR12 env vars, webhook setup, and local test steps.

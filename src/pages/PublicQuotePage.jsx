@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import AppShell from "../components/layout/AppShell";
 import PageHeader from "../components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
@@ -13,6 +13,11 @@ function money(value) {
   return Number.isFinite(n) ? n.toFixed(2) : "0.00";
 }
 
+function moneyMinor(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? (n / 100).toFixed(2) : "0.00";
+}
+
 function fmtDate(value) {
   if (!value) return "-";
   try {
@@ -24,22 +29,27 @@ function fmtDate(value) {
 
 export default function PublicQuotePage() {
   const { token } = useParams();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [threadLoading, setThreadLoading] = useState(true);
   const [threadSaving, setThreadSaving] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(true);
+  const [paymentSaving, setPaymentSaving] = useState(false);
 
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
   const [threadErr, setThreadErr] = useState("");
   const [threadOk, setThreadOk] = useState("");
+  const [paymentErr, setPaymentErr] = useState("");
 
   const [note, setNote] = useState("");
   const [messageBody, setMessageBody] = useState("");
 
   const [data, setData] = useState(null);
   const [threadData, setThreadData] = useState(null);
+  const [paymentData, setPaymentData] = useState(null);
 
   async function loadQuote() {
     setLoading(true);
@@ -86,6 +96,26 @@ export default function PublicQuotePage() {
     }
   }
 
+  async function loadPayment() {
+    if (!token) return;
+    setPaymentLoading(true);
+    setPaymentErr("");
+    try {
+      const resp = await fetch(`/api/public-payment-status?token=${encodeURIComponent(token || "")}`);
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        if (resp.status === 404) throw new Error("Quote not found");
+        throw new Error(json?.details || json?.error || "Failed to load payment");
+      }
+      setPaymentData(json?.payment || null);
+    } catch (e) {
+      setPaymentData(null);
+      setPaymentErr(e?.message || "Failed to load payment");
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
+
   useEffect(() => {
     loadQuote();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,8 +126,24 @@ export default function PublicQuotePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  useEffect(() => {
+    loadPayment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
   const status = String(data?.quote?.status || "").toLowerCase();
   const canAct = useMemo(() => status === "sent", [status]);
+
+  useEffect(() => {
+    const paymentFlag = String(searchParams.get("payment") || "").toLowerCase();
+    if (paymentFlag === "success") {
+      setOk("Payment completed. We are confirming your deposit status.");
+      loadPayment();
+    } else if (paymentFlag === "cancel") {
+      setErr("Payment was canceled. You can try again.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function submitAccept() {
     if (!token || !canAct || saving) return;
@@ -201,6 +247,34 @@ export default function PublicQuotePage() {
       setThreadErr(e?.message || "Failed to send message");
     } finally {
       setThreadSaving(false);
+    }
+  }
+
+  async function startDepositPayment() {
+    if (!token || paymentSaving) return;
+    setPaymentSaving(true);
+    setPaymentErr("");
+
+    try {
+      const resp = await fetch("/api/public-start-deposit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        if (resp.status === 404) throw new Error("No deposit requested");
+        if (resp.status === 409) throw new Error(json?.details || json?.error || "Deposit already paid");
+        throw new Error(json?.details || json?.error || "Failed to start payment");
+      }
+
+      const checkoutUrl = String(json?.checkoutUrl || "").trim();
+      if (!checkoutUrl) throw new Error("No checkout URL returned");
+      window.location.assign(checkoutUrl);
+    } catch (e) {
+      setPaymentErr(e?.message || "Failed to start payment");
+    } finally {
+      setPaymentSaving(false);
     }
   }
 
@@ -317,6 +391,44 @@ export default function PublicQuotePage() {
         <div className="text-xs text-slate-500">
           Sent: {fmtDate(quote?.sent_at)} - Accepted: {fmtDate(quote?.accepted_at)} - Declined: {fmtDate(quote?.declined_at)} - Closed: {fmtDate(quote?.closed_at)}
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Deposit</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {paymentErr ? <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{paymentErr}</div> : null}
+
+            {paymentLoading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : !paymentData ? (
+              <EmptyState title="No deposit requested" description="The supplier has not requested a deposit yet." />
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Badge variant={String(paymentData.status || "").toLowerCase() === "paid" ? "success" : "brand"}>
+                    {paymentData.status}
+                  </Badge>
+                  <div className="text-sm text-slate-600">
+                    Amount: {(paymentData.currency || "gbp").toUpperCase()} {moneyMinor(paymentData.amount_total)}
+                  </div>
+                </div>
+
+                {String(paymentData.status || "").toLowerCase() === "paid" ? (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                    Deposit received{paymentData.paid_at ? ` on ${fmtDate(paymentData.paid_at)}` : ""}.
+                  </div>
+                ) : null}
+
+                {["requires_payment", "pending", "failed", "canceled"].includes(String(paymentData.status || "").toLowerCase()) ? (
+                  <Button type="button" onClick={startDepositPayment} disabled={paymentSaving}>
+                    {paymentSaving ? "Redirecting..." : "Pay deposit"}
+                  </Button>
+                ) : null}
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
