@@ -1,23 +1,4 @@
-// import admin pages
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import VenuesPage from "./pages/admin/VenuesPage";
-import SuppliersPage from "./pages/admin/SuppliersPage";
-import EnquiriesPage from "./pages/admin/EnquiriesPage";
-import AdminDashboardPage from "./pages/admin/DashboardPage";
-import CreditsLedgerPage from "./pages/admin/CreditsLedgerPage";
-import SupplierPerformancePage from "./pages/admin/SupplierPerformancePage";
-
-//import supplier pages
-import DashboardPage from "./pages/supplier/DashboardPage";
-import SupplierEnquiriesPage from "./pages/supplier/EnquiriesPage";
-import QuotesPage from "./pages/supplier/QuotesPage";
-import BookingsPage from "./pages/supplier/BookingsPage";
-import MessagesPage from "./pages/supplier/MessagesPage";
-import NotificationsPage from "./pages/supplier/NotificationsPage";
-import PublicQuotePage from "./pages/PublicQuotePage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import AuthResetPage from "./pages/AuthResetPage";
-
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 
@@ -25,6 +6,56 @@ import Login from "./components/Login";
 import AdminLayout from "./admin/layout/AdminLayout";
 import SupplierLayout from "./supplier/layout/SupplierLayout";
 import { warnIfAuthOriginLooksWrong } from "./lib/siteUrl";
+
+import AdminVenuesPage from "./pages/admin/VenuesPage";
+import AdminSuppliersPage from "./pages/admin/SuppliersPage";
+import AdminEnquiriesPage from "./pages/admin/EnquiriesPage";
+import AdminDashboardPage from "./pages/admin/DashboardPage";
+import CreditsLedgerPage from "./pages/admin/CreditsLedgerPage";
+import SupplierPerformancePage from "./pages/admin/SupplierPerformancePage";
+
+import DashboardPage from "./pages/supplier/DashboardPage";
+import SupplierEnquiriesPage from "./pages/supplier/EnquiriesPage";
+import QuotesPage from "./pages/supplier/QuotesPage";
+import BookingsPage from "./pages/supplier/BookingsPage";
+import MessagesPage from "./pages/supplier/MessagesPage";
+import NotificationsPage from "./pages/supplier/NotificationsPage";
+
+import PublicQuotePage from "./pages/PublicQuotePage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
+import AuthResetPage from "./pages/AuthResetPage";
+
+import HomePage from "./pages/marketing/HomePage";
+import BrowsePage from "./pages/marketing/BrowsePage";
+import HowItWorksPage from "./pages/marketing/HowItWorksPage";
+import PricingPage from "./pages/marketing/PricingPage";
+import ContactPage from "./pages/marketing/ContactPage";
+import SuppliersPage from "./pages/marketing/SuppliersPage";
+import VenuesPage from "./pages/marketing/VenuesPage";
+
+function AccessDenied({ error, onSignOut }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+      <div className="w-full max-w-md rounded-2xl border bg-white p-6 space-y-2">
+        <h1 className="text-xl font-semibold">Access denied</h1>
+        {error ? (
+          <p className="text-sm text-red-600">{error}</p>
+        ) : (
+          <p className="text-sm text-gray-600">
+            Your user is not recognised as an admin (public.user_roles) or a supplier (public.suppliers.auth_user_id).
+          </p>
+        )}
+        <button onClick={onSignOut} className="border rounded-lg px-3 py-2 bg-white">
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function LoadingAccess() {
+  return <div className="min-h-screen flex items-center justify-center">Checking access...</div>;
+}
 
 export default function App() {
   const location = useLocation();
@@ -54,9 +85,7 @@ export default function App() {
     async function resolveRole() {
       try {
         if (!user) {
-          if (!cancelled) {
-            setAuthState({ loading: false, role: null, supplier: null, error: null });
-          }
+          if (!cancelled) setAuthState({ loading: false, role: null, supplier: null, error: null });
           return;
         }
 
@@ -90,12 +119,7 @@ export default function App() {
       } catch (err) {
         console.error("resolveRole failed:", err);
         if (!cancelled) {
-          setAuthState({
-            loading: false,
-            role: "none",
-            supplier: null,
-            error: "Role check failed (see console).",
-          });
+          setAuthState({ loading: false, role: "none", supplier: null, error: "Role check failed (see console)." });
         }
       }
     }
@@ -111,6 +135,22 @@ export default function App() {
     await supabase.auth.signOut();
   }
 
+  function adminGuard(element) {
+    if (!user) return <Navigate to="/login" replace />;
+    if (authState.loading) return <LoadingAccess />;
+    if (authState.role === "admin") return element;
+    if (authState.role === "supplier") return <Navigate to="/supplier/dashboard" replace />;
+    return <AccessDenied error={authState.error} onSignOut={signOut} />;
+  }
+
+  function supplierGuard(element) {
+    if (!user) return <Navigate to="/login" replace />;
+    if (authState.loading) return <LoadingAccess />;
+    if (authState.role === "supplier") return element;
+    if (authState.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    return <AccessDenied error={authState.error} onSignOut={signOut} />;
+  }
+
   const isPublicQuoteRoute = /^\/quote\/[^/]+$/.test(location.pathname);
   if (isPublicQuoteRoute) {
     return (
@@ -120,169 +160,140 @@ export default function App() {
     );
   }
 
-  if (location.pathname === "/auth/callback") {
-    return (
-      <Routes>
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-      </Routes>
-    );
-  }
-
-  if (location.pathname === "/auth/reset") {
-    return (
-      <Routes>
-        <Route path="/auth/reset" element={<AuthResetPage />} />
-      </Routes>
-    );
-  }
-
-  if (!user) return <Login />;
-
-  if (authState.loading) {
-    return <div className="min-h-screen flex items-center justify-center">Checking access...</div>;
-  }
-
-  if (authState.role === "admin") {
-    return (
-      <Routes>
-        <Route
-          path="/admin/dashboard"
-          element={
-            <AdminLayout user={user} onSignOut={signOut}>
-              <AdminDashboardPage user={user} />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/credits-ledger"
-          element={
-            <AdminLayout user={user} onSignOut={signOut}>
-              <CreditsLedgerPage user={user} />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/performance"
-          element={
-            <AdminLayout user={user} onSignOut={signOut}>
-              <SupplierPerformancePage user={user} />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/venues"
-          element={
-            <AdminLayout user={user} onSignOut={signOut}>
-              <VenuesPage user={user} />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/suppliers"
-          element={
-            <AdminLayout user={user} onSignOut={signOut}>
-              <SuppliersPage user={user} />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/enquiries"
-          element={
-            <AdminLayout user={user} onSignOut={signOut}>
-              <EnquiriesPage user={user} />
-            </AdminLayout>
-          }
-        />
-
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-      </Routes>
-    );
-  }
-
-  if (authState.role === "supplier") {
-    return (
-      <Routes>
-        <Route
-          path="/supplier/dashboard"
-          element={
-            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-              <DashboardPage supplier={authState.supplier} />
-            </SupplierLayout>
-          }
-        />
-
-        <Route
-          path="/supplier/enquiries"
-          element={
-            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-              <SupplierEnquiriesPage supplier={authState.supplier} />
-            </SupplierLayout>
-          }
-        />
-
-        <Route
-          path="/supplier/quotes"
-          element={
-            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-              <QuotesPage supplier={authState.supplier} />
-            </SupplierLayout>
-          }
-        />
-
-        <Route
-          path="/supplier/messages"
-          element={
-            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-              <MessagesPage supplier={authState.supplier} />
-            </SupplierLayout>
-          }
-        />
-
-        <Route
-          path="/supplier/notifications"
-          element={
-            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-              <NotificationsPage />
-            </SupplierLayout>
-          }
-        />
-
-        <Route
-          path="/supplier/bookings"
-          element={
-            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-              <BookingsPage supplier={authState.supplier} />
-            </SupplierLayout>
-          }
-        />
-
-        <Route path="*" element={<Navigate to="/supplier/dashboard" replace />} />
-      </Routes>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <div className="w-full max-w-md rounded-2xl border bg-white p-6 space-y-2">
-        <h1 className="text-xl font-semibold">Access denied</h1>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/browse" element={<BrowsePage />} />
+      <Route path="/how-it-works" element={<HowItWorksPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/suppliers" element={<SuppliersPage />} />
+      <Route path="/venues" element={<VenuesPage />} />
 
-        {authState.error ? (
-          <p className="text-sm text-red-600">{authState.error}</p>
-        ) : (
-          <p className="text-sm text-gray-600">
-            Your user is not recognised as an admin (public.user_roles) or a supplier (public.suppliers.auth_user_id).
-          </p>
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/auth/reset" element={<AuthResetPage />} />
+
+      <Route
+        path="/login"
+        element={
+          user ? (
+            authState.loading ? (
+              <LoadingAccess />
+            ) : authState.role === "admin" ? (
+              <Navigate to="/admin/dashboard" replace />
+            ) : authState.role === "supplier" ? (
+              <Navigate to="/supplier/dashboard" replace />
+            ) : (
+              <AccessDenied error={authState.error} onSignOut={signOut} />
+            )
+          ) : (
+            <Login />
+          )
+        }
+      />
+      <Route path="/supplier/login" element={<Navigate to="/login" replace />} />
+
+      <Route
+        path="/admin/dashboard"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <AdminDashboardPage user={user} />
+          </AdminLayout>
         )}
+      />
+      <Route
+        path="/admin/credits-ledger"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <CreditsLedgerPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/performance"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <SupplierPerformancePage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/venues"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <AdminVenuesPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/suppliers"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <AdminSuppliersPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/enquiries"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <AdminEnquiriesPage user={user} />
+          </AdminLayout>
+        )}
+      />
 
-        <button onClick={signOut} className="border rounded-lg px-3 py-2 bg-white">
-          Sign out
-        </button>
-      </div>
-    </div>
+      <Route
+        path="/supplier/dashboard"
+        element={supplierGuard(
+          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+            <DashboardPage supplier={authState.supplier} />
+          </SupplierLayout>
+        )}
+      />
+      <Route
+        path="/supplier/enquiries"
+        element={supplierGuard(
+          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+            <SupplierEnquiriesPage supplier={authState.supplier} />
+          </SupplierLayout>
+        )}
+      />
+      <Route
+        path="/supplier/quotes"
+        element={supplierGuard(
+          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+            <QuotesPage supplier={authState.supplier} />
+          </SupplierLayout>
+        )}
+      />
+      <Route
+        path="/supplier/messages"
+        element={supplierGuard(
+          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+            <MessagesPage supplier={authState.supplier} />
+          </SupplierLayout>
+        )}
+      />
+      <Route
+        path="/supplier/notifications"
+        element={supplierGuard(
+          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+            <NotificationsPage />
+          </SupplierLayout>
+        )}
+      />
+      <Route
+        path="/supplier/bookings"
+        element={supplierGuard(
+          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+            <BookingsPage supplier={authState.supplier} />
+          </SupplierLayout>
+        )}
+      />
+
+      <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/supplier/*" element={<Navigate to="/supplier/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

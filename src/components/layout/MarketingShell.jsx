@@ -1,0 +1,83 @@
+import { NavLink } from "react-router-dom";
+import Button from "../ui/Button";
+
+const navItems = [
+  { to: "/browse", label: "Browse" },
+  { to: "/how-it-works", label: "How it works" },
+  { to: "/pricing", label: "Pricing" },
+  { to: "/contact", label: "Contact" },
+];
+
+function navClass(isActive) {
+  return [
+    "rounded-xl px-3 py-2 text-sm transition-colors",
+    isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100",
+  ].join(" ");
+}
+
+export default function MarketingShell({ children }) {
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+          <NavLink to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-white">EW</div>
+            <div>
+              <div className="text-base font-semibold tracking-tight">Eventwow</div>
+              <div className="text-xs text-slate-500">Event supplier marketplace</div>
+            </div>
+          </NavLink>
+
+          <nav className="hidden items-center gap-1 md:flex">
+            {navItems.map((item) => (
+              <NavLink key={item.to} to={item.to} className={({ isActive }) => navClass(isActive)}>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <Button as={NavLink} to="/login" variant="ghost" size="sm" className="hidden sm:inline-flex">
+              Supplier login
+            </Button>
+            <Button as={NavLink} to="/browse" size="sm">
+              Get quotes
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">{children}</main>
+
+      <footer className="mt-14 border-t border-slate-200 bg-white">
+        <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+          <div>
+            <div className="text-base font-semibold">Eventwow</div>
+            <p className="mt-2 text-sm text-slate-600">Book trusted event suppliers with a simple quote flow.</p>
+          </div>
+          <div className="text-sm">
+            <p className="font-medium text-slate-900">Explore</p>
+            <div className="mt-2 space-y-2">
+              <NavLink to="/browse" className="block text-slate-600 hover:text-slate-900">Browse</NavLink>
+              <NavLink to="/suppliers" className="block text-slate-600 hover:text-slate-900">Suppliers</NavLink>
+              <NavLink to="/venues" className="block text-slate-600 hover:text-slate-900">Venues</NavLink>
+            </div>
+          </div>
+          <div className="text-sm">
+            <p className="font-medium text-slate-900">Company</p>
+            <div className="mt-2 space-y-2">
+              <NavLink to="/how-it-works" className="block text-slate-600 hover:text-slate-900">How it works</NavLink>
+              <NavLink to="/pricing" className="block text-slate-600 hover:text-slate-900">Pricing</NavLink>
+              <NavLink to="/contact" className="block text-slate-600 hover:text-slate-900">Contact</NavLink>
+            </div>
+          </div>
+          <div className="text-sm text-slate-600">
+            <p className="font-medium text-slate-900">Legal</p>
+            <p className="mt-2">Copyright {new Date().getFullYear()} Eventwow. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
