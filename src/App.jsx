@@ -3,6 +3,9 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import VenuesPage from "./pages/admin/VenuesPage";
 import SuppliersPage from "./pages/admin/SuppliersPage";
 import EnquiriesPage from "./pages/admin/EnquiriesPage";
+import AdminDashboardPage from "./pages/admin/DashboardPage";
+import CreditsLedgerPage from "./pages/admin/CreditsLedgerPage";
+import SupplierPerformancePage from "./pages/admin/SupplierPerformancePage";
 
 //import supplier pages
 import DashboardPage from "./pages/supplier/DashboardPage";
@@ -12,7 +15,8 @@ import BookingsPage from "./pages/supplier/BookingsPage";
 import MessagesPage from "./pages/supplier/MessagesPage";
 import NotificationsPage from "./pages/supplier/NotificationsPage";
 import PublicQuotePage from "./pages/PublicQuotePage";
-
+import AuthCallbackPage from "./pages/AuthCallbackPage";
+import AuthResetPage from "./pages/AuthResetPage";
 
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
@@ -20,6 +24,7 @@ import { supabase } from "./lib/supabase";
 import Login from "./components/Login";
 import AdminLayout from "./admin/layout/AdminLayout";
 import SupplierLayout from "./supplier/layout/SupplierLayout";
+import { warnIfAuthOriginLooksWrong } from "./lib/siteUrl";
 
 export default function App() {
   const location = useLocation();
@@ -33,10 +38,12 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) =>
-      setSession(newSession)
-    );
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => setSession(newSession));
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    warnIfAuthOriginLooksWrong();
   }, []);
 
   const user = session?.user;
@@ -57,7 +64,6 @@ export default function App() {
           setAuthState((s) => ({ ...s, loading: true, error: null }));
         }
 
-        // 1) Admin check
         const { data: roleRow, error: roleErr } = await supabase
           .from("user_roles")
           .select("role")
@@ -69,7 +75,6 @@ export default function App() {
           return;
         }
 
-        // 2) Supplier check
         const { data: supplierRow, error: supplierErr } = await supabase
           .from("suppliers")
           .select("id,business_name,credits_balance,is_published")
@@ -115,113 +120,151 @@ export default function App() {
     );
   }
 
+  if (location.pathname === "/auth/callback") {
+    return (
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      </Routes>
+    );
+  }
+
+  if (location.pathname === "/auth/reset") {
+    return (
+      <Routes>
+        <Route path="/auth/reset" element={<AuthResetPage />} />
+      </Routes>
+    );
+  }
+
   if (!user) return <Login />;
 
   if (authState.loading) {
-    return <div className="min-h-screen flex items-center justify-center">Checking access…</div>;
+    return <div className="min-h-screen flex items-center justify-center">Checking access...</div>;
   }
 
-if (authState.role === "admin") {
-  return (
-    <Routes>
-      <Route
-        path="/admin/venues"
-        element={
-          <AdminLayout user={user} onSignOut={signOut}>
-            <VenuesPage user={user} />
-          </AdminLayout>
-        }
-      />
+  if (authState.role === "admin") {
+    return (
+      <Routes>
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminLayout user={user} onSignOut={signOut}>
+              <AdminDashboardPage user={user} />
+            </AdminLayout>
+          }
+        />
 
-      <Route
-        path="/admin/suppliers"
-        element={
-          <AdminLayout user={user} onSignOut={signOut}>
-            <SuppliersPage user={user} />
-          </AdminLayout>
-        }
-      />
+        <Route
+          path="/admin/credits-ledger"
+          element={
+            <AdminLayout user={user} onSignOut={signOut}>
+              <CreditsLedgerPage user={user} />
+            </AdminLayout>
+          }
+        />
 
-      <Route
-        path="/admin/enquiries"
-        element={
-          <AdminLayout user={user} onSignOut={signOut}>
-            <EnquiriesPage user={user} />
-          </AdminLayout>
-        }
-      />
+        <Route
+          path="/admin/performance"
+          element={
+            <AdminLayout user={user} onSignOut={signOut}>
+              <SupplierPerformancePage user={user} />
+            </AdminLayout>
+          }
+        />
 
-      {/* fallback – keep existing behaviour for now */}
-      <Route path="*" element={<Navigate to="/admin/venues" replace />} />
-    </Routes>
-  );
-}
+        <Route
+          path="/admin/venues"
+          element={
+            <AdminLayout user={user} onSignOut={signOut}>
+              <VenuesPage user={user} />
+            </AdminLayout>
+          }
+        />
 
+        <Route
+          path="/admin/suppliers"
+          element={
+            <AdminLayout user={user} onSignOut={signOut}>
+              <SuppliersPage user={user} />
+            </AdminLayout>
+          }
+        />
 
+        <Route
+          path="/admin/enquiries"
+          element={
+            <AdminLayout user={user} onSignOut={signOut}>
+              <EnquiriesPage user={user} />
+            </AdminLayout>
+          }
+        />
 
-if (authState.role === "supplier") {
-  return (
-    <Routes>
-      <Route
-        path="/supplier/dashboard"
-        element={
-          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-            <DashboardPage supplier={authState.supplier} />
-          </SupplierLayout>
-        }
-      />
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      </Routes>
+    );
+  }
 
-      <Route
-        path="/supplier/enquiries"
-        element={
-          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-            <SupplierEnquiriesPage supplier={authState.supplier} />
-          </SupplierLayout>
-        }
-      />
+  if (authState.role === "supplier") {
+    return (
+      <Routes>
+        <Route
+          path="/supplier/dashboard"
+          element={
+            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+              <DashboardPage supplier={authState.supplier} />
+            </SupplierLayout>
+          }
+        />
 
-      <Route
-        path="/supplier/quotes"
-        element={
-          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-            <QuotesPage supplier={authState.supplier} />
-          </SupplierLayout>
-        }
-      />
+        <Route
+          path="/supplier/enquiries"
+          element={
+            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+              <SupplierEnquiriesPage supplier={authState.supplier} />
+            </SupplierLayout>
+          }
+        />
 
-      <Route
-        path="/supplier/messages"
-        element={
-          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-            <MessagesPage supplier={authState.supplier} />
-          </SupplierLayout>
-        }
-      />
+        <Route
+          path="/supplier/quotes"
+          element={
+            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+              <QuotesPage supplier={authState.supplier} />
+            </SupplierLayout>
+          }
+        />
 
-      <Route
-        path="/supplier/notifications"
-        element={
-          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-            <NotificationsPage />
-          </SupplierLayout>
-        }
-      />
+        <Route
+          path="/supplier/messages"
+          element={
+            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+              <MessagesPage supplier={authState.supplier} />
+            </SupplierLayout>
+          }
+        />
 
-      <Route
-        path="/supplier/bookings"
-        element={
-          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
-            <BookingsPage supplier={authState.supplier} />
-          </SupplierLayout>
-        }
-      />
+        <Route
+          path="/supplier/notifications"
+          element={
+            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+              <NotificationsPage />
+            </SupplierLayout>
+          }
+        />
 
-      {/* fallback – keep existing behaviour for now */}
-      <Route path="*" element={<Navigate to="/supplier/dashboard" replace />} />
-    </Routes>
-  );
-}
+        <Route
+          path="/supplier/bookings"
+          element={
+            <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+              <BookingsPage supplier={authState.supplier} />
+            </SupplierLayout>
+          }
+        />
 
+        <Route path="*" element={<Navigate to="/supplier/dashboard" replace />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">

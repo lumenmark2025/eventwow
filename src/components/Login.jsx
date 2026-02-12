@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import { getAuthCallbackUrl } from "../lib/siteUrl";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -28,7 +29,7 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getAuthCallbackUrl(),
       },
     });
 
@@ -61,7 +62,7 @@ export default function Login() {
           disabled={sendingLink}
           className="w-full rounded-lg border bg-white py-2 disabled:opacity-50"
         >
-          {sendingLink ? "Sending magic link…" : "Send magic link"}
+          {sendingLink ? "Sending magic link..." : "Send magic link"}
         </button>
       </form>
     </div>
