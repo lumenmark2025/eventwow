@@ -212,6 +212,20 @@ export default async function handler(req, res) {
     }
 
     try {
+      await supabaseAdmin.from("quote_events").insert([
+        {
+          quote_id: quote.id,
+          event_type: "declined",
+          actor_type: "customer",
+          actor_user_id: null,
+          meta: { source: "public-quote-decline" },
+        },
+      ]);
+    } catch (eventErr) {
+      console.error("quote_events declined insert failed:", eventErr);
+    }
+
+    try {
       await notifyQuoteDeclined({
         admin: supabaseAdmin,
         req,

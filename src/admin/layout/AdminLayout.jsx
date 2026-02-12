@@ -5,7 +5,7 @@ import Badge from "../../components/ui/Badge";
 import { Card, CardContent } from "../../components/ui/Card";
 
 export default function AdminLayout({ user, onSignOut, children }) {
-  const [tab, setTab] = useState("venues");
+  const [tab, setTab] = useState("dashboard");
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -14,15 +14,21 @@ export default function AdminLayout({ user, onSignOut, children }) {
   useEffect(() => {
     const path = (location.pathname || "").toLowerCase();
 
+    if (path.startsWith("/admin/dashboard")) return setTab("dashboard");
+    if (path.startsWith("/admin/credits-ledger")) return setTab("credits-ledger");
+    if (path.startsWith("/admin/performance")) return setTab("performance");
     if (path.startsWith("/admin/suppliers")) return setTab("suppliers");
     if (path.startsWith("/admin/enquiries")) return setTab("enquiries");
     if (path.startsWith("/admin/venues")) return setTab("venues");
 
     // default highlight
-    if (path === "/" || path === "/admin" || path === "/admin/") setTab("venues");
+    if (path === "/" || path === "/admin" || path === "/admin/") setTab("dashboard");
   }, [location.pathname]);
 
   function go(nextTab) {
+    if (nextTab === "dashboard") navigate("/admin/dashboard");
+    if (nextTab === "credits-ledger") navigate("/admin/credits-ledger");
+    if (nextTab === "performance") navigate("/admin/performance");
     if (nextTab === "venues") navigate("/admin/venues");
     if (nextTab === "suppliers") navigate("/admin/suppliers");
     if (nextTab === "enquiries") navigate("/admin/enquiries");
@@ -34,6 +40,9 @@ export default function AdminLayout({ user, onSignOut, children }) {
       user={user}
       onSignOut={onSignOut}
       nav={[
+        { key: "dashboard", label: "Dashboard" },
+        { key: "credits-ledger", label: "Credits Ledger" },
+        { key: "performance", label: "Performance" },
         { key: "venues", label: "Venues" },
         { key: "suppliers", label: "Suppliers" },
         { key: "enquiries", label: "Enquiries" },

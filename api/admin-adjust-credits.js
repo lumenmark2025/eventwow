@@ -130,22 +130,28 @@ export default async function handler(req, res) {
 
     const current = Number(supplier.credits_balance ?? 0);
     const next = Math.max(0, current + delta);
+    const appliedDelta = next - current;
 
-    const { data: updated, error: updErr } = await supabaseAdmin
-      .from("suppliers")
-      .update({ credits_balance: next })
-      .eq("id", supplier_id)
-      .select("id, credits_balance")
-      .maybeSingle();
+    const { data: ledgerResult, error: updErr } = await supabaseAdmin.rpc("apply_credit_delta", {
+      p_supplier_id: supplier_id,
+      p_delta: appliedDelta,
+      p_reason: "admin_adjust",
+      p_note: reason,
+      p_related_type: "admin",
+      p_related_id: null,
+      p_created_by_user: createdByUserId,
+    });
 
     if (updErr) {
       return res.status(500).json({ ok: false, error: "Failed to update credits", details: updErr.message });
     }
 
+    const updated = Array.isArray(ledgerResult) ? ledgerResult[0] : null;
+
     const { error: txnErr } = await supabaseAdmin.from("credit_transactions").insert([
       {
         supplier_id,
-        change: delta,
+        change: appliedDelta,
         reason,
         created_by_user_id: createdByUserId,
         created_by_name: createdByName,
@@ -158,7 +164,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      supplier_id: updated?.id ?? supplier_id,
+      supplier_id: updated?.supplier_id ?? supplier_id,
       credits_balance: updated?.credits_balance ?? next,
     });
   } catch (err) {

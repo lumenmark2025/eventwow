@@ -212,6 +212,20 @@ export default async function handler(req, res) {
     }
 
     try {
+      await supabaseAdmin.from("quote_events").insert([
+        {
+          quote_id: quote.id,
+          event_type: "accepted",
+          actor_type: "customer",
+          actor_user_id: null,
+          meta: { source: "public-quote-accept" },
+        },
+      ]);
+    } catch (eventErr) {
+      console.error("quote_events accepted insert failed:", eventErr);
+    }
+
+    try {
       await notifyQuoteAccepted({
         admin: supabaseAdmin,
         req,

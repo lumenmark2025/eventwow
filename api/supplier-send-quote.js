@@ -170,13 +170,17 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data: creditRows, error: creditErr } = await supabaseAdmin
-      .from("suppliers")
-      .update({ credits_balance: currentCredits - 1 })
-      .eq("id", supplier.id)
-      .gte("credits_balance", 1)
-      .select("credits_balance")
-      .maybeSingle();
+    const { data: creditResult, error: creditErr } = await supabaseAdmin.rpc("apply_credit_delta", {
+      p_supplier_id: supplier.id,
+      p_delta: -1,
+      p_reason: "quote_send",
+      p_note: "Quote sent",
+      p_related_type: "quote",
+      p_related_id: quote_id,
+      p_created_by_user: userId,
+    });
+
+    const creditRows = Array.isArray(creditResult) ? creditResult[0] : null;
 
     if (creditErr || !creditRows) {
       await supabaseAdmin
@@ -194,6 +198,13 @@ export default async function handler(req, res) {
         .eq("sent_at", nowIso);
 
       if (creditErr) {
+        if (String(creditErr.message || "").toUpperCase().includes("INSUFFICIENT_CREDITS")) {
+          return res.status(409).json({
+            ok: false,
+            error: "Cannot send quote",
+            details: "Supplier has insufficient credits",
+          });
+        }
         return res.status(500).json({
           ok: false,
           error: "Failed to update credits balance",
@@ -215,6 +226,16 @@ export default async function handler(req, res) {
         reason: "Quote sent",
         related_quote_id: quote_id,
         created_by_user_id: userId,
+      },
+    ]);
+
+    await supabaseAdmin.from("quote_events").insert([
+      {
+        quote_id,
+        event_type: "sent",
+        actor_type: "supplier",
+        actor_user_id: userId,
+        meta: { source: "supplier-send-quote" },
       },
     ]);
 

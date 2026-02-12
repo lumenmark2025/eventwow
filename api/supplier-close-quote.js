@@ -174,6 +174,20 @@ export default async function handler(req, res) {
       });
     }
 
+    try {
+      await supabaseAdmin.from("quote_events").insert([
+        {
+          quote_id: quote.id,
+          event_type: "closed",
+          actor_type: "supplier",
+          actor_user_id: userId,
+          meta: note ? { note, source: "supplier-close-quote" } : { source: "supplier-close-quote" },
+        },
+      ]);
+    } catch (eventErr) {
+      console.error("quote_events closed insert failed:", eventErr);
+    }
+
     return res.status(200).json({ ok: true, quote: updated });
   } catch (err) {
     console.error("supplier-close-quote crashed:", err);
