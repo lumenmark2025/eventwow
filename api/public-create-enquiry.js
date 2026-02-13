@@ -321,7 +321,7 @@ export default async function handler(req, res) {
       suppliersResp.data || [],
       imagesBySupplier,
       categoryLabel,
-      locationLabel,
+      supplierId ? null : locationLabel,
       supplierId ? 1 : 10
     );
 
