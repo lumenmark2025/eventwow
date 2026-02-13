@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { getAuthCallbackUrl } from "../lib/siteUrl";
 
@@ -50,6 +51,11 @@ export default function Login() {
         <div className="space-y-2">
           <label className="text-sm">Password</label>
           <input type="password" className="w-full border rounded-lg px-3 py-2" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </div>
+        <div className="text-right">
+          <Link to="/reset-password" className="text-xs text-teal-700 underline underline-offset-2">
+            Forgot password?
+          </Link>
         </div>
         {err && <div className="text-sm text-red-600">{err}</div>}
         {ok && <div className="text-sm text-green-700">{ok}</div>}

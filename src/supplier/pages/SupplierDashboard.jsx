@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
 import Section from "../../components/layout/Section";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import Skeleton from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import Badge from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -21,6 +23,7 @@ function StatCard({ label, value, hint }) {
 
 export default function SupplierDashboard({ supplier }) {
   const supplierId = supplier?.id;
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -35,6 +38,40 @@ export default function SupplierDashboard({ supplier }) {
 
   const [creditsBalance, setCreditsBalance] = useState(0);
   const [creditHistory, setCreditHistory] = useState([]);
+  const [bundleBusy, setBundleBusy] = useState("");
+  const [bundleMsg, setBundleMsg] = useState("");
+
+  async function startBundleCheckout(bundle) {
+    if (bundleBusy) return;
+    setBundleBusy(bundle);
+    setErr("");
+    setBundleMsg("");
+    try {
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) throw sessionErr;
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error("Not authenticated");
+
+      const resp = await fetch("/api/supplier-create-credit-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ bundle }),
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error([json?.error, json?.details].filter(Boolean).join(": ") || "Failed to start checkout");
+
+      const checkoutUrl = String(json?.checkoutUrl || "").trim();
+      if (!checkoutUrl) throw new Error("No checkout URL returned");
+      window.location.assign(checkoutUrl);
+    } catch (ex) {
+      setErr(ex?.message || "Failed to start checkout");
+    } finally {
+      setBundleBusy("");
+    }
+  }
 
   useEffect(() => {
     if (!supplierId) return;
@@ -108,6 +145,22 @@ export default function SupplierDashboard({ supplier }) {
     })();
   }, [supplierId, supplier]);
 
+  useEffect(() => {
+    const status = String(searchParams.get("credits") || "").toLowerCase();
+    if (!status) return;
+    if (status === "success") {
+      setBundleMsg("Payment completed. Credits are being applied.");
+    }
+    if (status === "cancel") {
+      setBundleMsg("Credit purchase canceled.");
+    }
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("credits");
+      return next;
+    }, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -146,6 +199,19 @@ export default function SupplierDashboard({ supplier }) {
             <CardTitle className="text-4xl">{creditsBalance}</CardTitle>
           </CardHeader>
           <CardContent>
+            {bundleMsg ? <div className="mb-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-700">{bundleMsg}</div> : null}
+            <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3">
+              <div className="mb-2 text-sm font-medium text-slate-900">Buy credit bundles</div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" onClick={() => startBundleCheckout("credits_25")} disabled={!!bundleBusy}>
+                  {bundleBusy === "credits_25" ? "Opening..." : "25 credits - GBP 12.50"}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => startBundleCheckout("credits_50")} disabled={!!bundleBusy}>
+                  {bundleBusy === "credits_50" ? "Opening..." : "50 credits - GBP 25.00"}
+                </Button>
+              </div>
+            </div>
+
             <div className="mb-2 text-sm font-medium">Recent credit history</div>
             {creditHistory.length === 0 ? (
               <EmptyState title="No credit activity" description="Your credit transactions will appear here." />

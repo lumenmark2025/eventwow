@@ -53,6 +53,43 @@ async function findPayment(admin, stripeObject) {
   return null;
 }
 
+async function findCreditOrder(admin, stripeObject) {
+  const orderId = stripeObject?.metadata?.orderId;
+  if (orderId) {
+    const byId = await admin.from("credit_bundle_orders").select("*").eq("id", orderId).maybeSingle();
+    if (!byId.error && byId.data) return byId.data;
+  }
+
+  if (stripeObject?.object === "checkout.session") {
+    const bySession = await admin
+      .from("credit_bundle_orders")
+      .select("*")
+      .eq("stripe_checkout_session_id", stripeObject.id)
+      .maybeSingle();
+    if (!bySession.error && bySession.data) return bySession.data;
+  }
+
+  if (stripeObject?.object === "payment_intent") {
+    const byPi = await admin
+      .from("credit_bundle_orders")
+      .select("*")
+      .eq("stripe_payment_intent_id", stripeObject.id)
+      .maybeSingle();
+    if (!byPi.error && byPi.data) return byPi.data;
+  }
+
+  if (stripeObject?.object === "charge" && stripeObject.payment_intent) {
+    const byChargePi = await admin
+      .from("credit_bundle_orders")
+      .select("*")
+      .eq("stripe_payment_intent_id", stripeObject.payment_intent)
+      .maybeSingle();
+    if (!byChargePi.error && byChargePi.data) return byChargePi.data;
+  }
+
+  return null;
+}
+
 async function saveEvent(admin, paymentId, eventType, stripeEventId, meta) {
   const inserted = await admin.from("payment_events").insert([
     {
@@ -66,6 +103,69 @@ async function saveEvent(admin, paymentId, eventType, stripeEventId, meta) {
   if (!inserted.error) return { ok: true, duplicate: false };
   if (inserted.error.code === "23505") return { ok: true, duplicate: true };
   return { ok: false, error: inserted.error };
+}
+
+async function saveCreditBundleEvent(admin, orderId, eventType, stripeEventId, meta) {
+  const inserted = await admin.from("credit_bundle_events").insert([
+    {
+      order_id: orderId,
+      event_type: eventType,
+      source: "stripe_webhook",
+      stripe_event_id: stripeEventId,
+      meta,
+    },
+  ]);
+  if (!inserted.error) return { ok: true, duplicate: false };
+  if (inserted.error.code === "23505") return { ok: true, duplicate: true };
+  return { ok: false, error: inserted.error };
+}
+
+async function applyCreditsForOrder(admin, order, stripeObject, nowIso) {
+  const transitioned = await admin
+    .from("credit_bundle_orders")
+    .update({
+      status: "paid",
+      paid_at: nowIso,
+      stripe_checkout_session_id:
+        stripeObject?.object === "checkout.session" ? stripeObject?.id || order.stripe_checkout_session_id : order.stripe_checkout_session_id,
+      stripe_payment_intent_id:
+        stripeObject?.object === "payment_intent"
+          ? stripeObject?.id || order.stripe_payment_intent_id
+          : typeof stripeObject?.payment_intent === "string"
+          ? stripeObject.payment_intent
+          : order.stripe_payment_intent_id,
+      updated_at: nowIso,
+    })
+    .eq("id", order.id)
+    .neq("status", "paid")
+    .select("*")
+    .maybeSingle();
+
+  if (transitioned.error) return { ok: false, error: transitioned.error };
+  if (!transitioned.data) return { ok: true, alreadyPaid: true };
+
+  const rpc = await admin.rpc("apply_credit_delta", {
+    p_supplier_id: transitioned.data.supplier_id,
+    p_delta: Number(transitioned.data.credits || 0),
+    p_reason: "credit_bundle_purchase",
+    p_note: `${transitioned.data.bundle_code} via Stripe`,
+    p_related_type: "credit_bundle",
+    p_related_id: transitioned.data.id,
+    p_created_by_user: transitioned.data.created_by_user || null,
+  });
+  if (rpc.error) return { ok: false, error: rpc.error };
+
+  await admin.from("credit_transactions").insert([
+    {
+      supplier_id: transitioned.data.supplier_id,
+      change: Number(transitioned.data.credits || 0),
+      reason: `Credit bundle purchase (${transitioned.data.bundle_code})`,
+      created_by_user_id: transitioned.data.created_by_user || null,
+      related_quote_id: null,
+    },
+  ]);
+
+  return { ok: true, credited: true };
 }
 
 export default async function handler(req, res) {
@@ -104,8 +204,86 @@ export default async function handler(req, res) {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const stripeObject = event.data?.object || null;
-    const payment = await findPayment(admin, stripeObject);
+    const paymentKind = String(stripeObject?.metadata?.paymentKind || "").toLowerCase();
+    const isCreditBundle = paymentKind === "credit_bundle";
 
+    if (isCreditBundle) {
+      const order = await findCreditOrder(admin, stripeObject);
+      if (!order) {
+        return res.status(200).json({ ok: true, ignored: true, reason: "credit_order_not_found" });
+      }
+
+      const saveCreditEvent = await saveCreditBundleEvent(admin, order.id, mapped, event.id, {
+        stripeType: event.type,
+        stripeObjectId: stripeObject?.id || null,
+      });
+      if (!saveCreditEvent.ok) {
+        return res.status(500).json({
+          ok: false,
+          error: "Failed to persist credit bundle event",
+          details: saveCreditEvent.error?.message,
+        });
+      }
+      if (saveCreditEvent.duplicate) {
+        return res.status(200).json({ ok: true, duplicate: true });
+      }
+
+      const nowIso = new Date().toISOString();
+
+      if (event.type === "checkout.session.completed") {
+        const isPaid = stripeObject?.payment_status === "paid";
+        if (isPaid) {
+          const applied = await applyCreditsForOrder(admin, order, stripeObject, nowIso);
+          if (!applied.ok) {
+            return res.status(500).json({ ok: false, error: "Failed to apply credits", details: applied.error?.message });
+          }
+        } else {
+          await admin
+            .from("credit_bundle_orders")
+            .update({
+              status: "pending",
+              stripe_checkout_session_id: stripeObject?.id || order.stripe_checkout_session_id,
+              stripe_payment_intent_id:
+                typeof stripeObject?.payment_intent === "string" ? stripeObject.payment_intent : order.stripe_payment_intent_id,
+              updated_at: nowIso,
+            })
+            .eq("id", order.id);
+        }
+      }
+
+      if (event.type === "payment_intent.succeeded") {
+        const applied = await applyCreditsForOrder(admin, order, stripeObject, nowIso);
+        if (!applied.ok) {
+          return res.status(500).json({ ok: false, error: "Failed to apply credits", details: applied.error?.message });
+        }
+      }
+
+      if (event.type === "payment_intent.payment_failed") {
+        await admin
+          .from("credit_bundle_orders")
+          .update({
+            status: "failed",
+            stripe_payment_intent_id: stripeObject?.id || order.stripe_payment_intent_id,
+            updated_at: nowIso,
+          })
+          .eq("id", order.id)
+          .neq("status", "paid");
+      }
+
+      if (event.type === "charge.refunded" || event.type === "refund.updated" || event.type === "charge.refund.updated") {
+        await admin
+          .from("credit_bundle_orders")
+          .update({
+            status: "canceled",
+            updated_at: nowIso,
+          })
+          .eq("id", order.id);
+      }
+
+      return res.status(200).json({ ok: true });
+    }
+
+    const payment = await findPayment(admin, stripeObject);
     if (!payment) {
       return res.status(200).json({ ok: true, ignored: true, reason: "payment_not_found" });
     }

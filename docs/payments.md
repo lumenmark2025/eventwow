@@ -1,4 +1,4 @@
-# PR12 Stripe Deposit Payments
+# Stripe Payments
 
 ## Environment Variables
 
@@ -8,6 +8,9 @@ Set these in Vercel and local env:
 - `STRIPE_WEBHOOK_SECRET`
 - `PUBLIC_APP_URL` (for example `https://yourdomain.com`)
 - `SUPABASE_SERVICE_ROLE_KEY` (already used by server endpoints)
+- `STRIPE_PRICE_ID_CREDITS_25` (optional; if omitted, inline amount is used)
+- `STRIPE_PRICE_ID_CREDITS_50` (optional; if omitted, inline amount is used)
+- `VITE_ENABLE_DEPOSIT_PAYMENTS` (optional, default off; set `true` to show deposit UI)
 
 ## Supabase Migration
 
@@ -15,12 +18,16 @@ Run:
 
 - `supabase/migrations/20260212_payments_deposits.sql`
 
-## Endpoints Added
+## Credit bundle endpoints
+
+- `POST /api/supplier-create-credit-checkout`
+- `POST /api/stripe-webhook`
+
+## Deposit endpoints (feature-flagged UI)
 
 - `POST /api/supplier-create-deposit`
 - `GET /api/public-payment-status?token=...`
 - `POST /api/public-start-deposit`
-- `POST /api/stripe-webhook`
 
 ## Local Stripe Webhook Testing
 

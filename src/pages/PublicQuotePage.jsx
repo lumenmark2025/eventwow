@@ -8,6 +8,8 @@ import EmptyState from "../components/ui/EmptyState";
 import Skeleton from "../components/ui/Skeleton";
 import Badge from "../components/ui/Badge";
 
+const ENABLE_DEPOSIT_PAYMENTS = String(import.meta.env.VITE_ENABLE_DEPOSIT_PAYMENTS || "").toLowerCase() === "true";
+
 function money(value) {
   const n = Number(value || 0);
   return Number.isFinite(n) ? n.toFixed(2) : "0.00";
@@ -127,6 +129,11 @@ export default function PublicQuotePage() {
   }, [token]);
 
   useEffect(() => {
+    if (!ENABLE_DEPOSIT_PAYMENTS) {
+      setPaymentLoading(false);
+      setPaymentData(null);
+      return;
+    }
     loadPayment();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -306,6 +313,7 @@ export default function PublicQuotePage() {
       <div className="space-y-6">
         <PageHeader title="Your Quote" subtitle={`From ${data?.supplier?.name || "Supplier"}`} />
 
+        {ENABLE_DEPOSIT_PAYMENTS ? (
         <Card>
           <CardContent className="py-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -320,6 +328,7 @@ export default function PublicQuotePage() {
             </div>
           </CardContent>
         </Card>
+        ) : null}
 
         {ok ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{ok}</div> : null}
         {err ? <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div> : null}

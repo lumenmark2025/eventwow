@@ -4,6 +4,8 @@ import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
 import Skeleton from "../../components/ui/Skeleton";
 
+const ENABLE_DEPOSIT_PAYMENTS = String(import.meta.env.VITE_ENABLE_DEPOSIT_PAYMENTS || "").toLowerCase() === "true";
+
 function fmtDateTime(d) {
   if (!d) return "—";
   try {
@@ -265,6 +267,7 @@ export default function SupplierQuotes({ supplierId }) {
   }, [loading, rows]);
 
   useEffect(() => {
+    if (!ENABLE_DEPOSIT_PAYMENTS) return;
     const currentStatus = String(quote?.status || "").toLowerCase();
     if (!quote?.id || !["accepted", "sent", "closed", "declined"].includes(currentStatus)) {
       setPayment(null);
@@ -936,7 +939,7 @@ export default function SupplierQuotes({ supplierId }) {
               </div>
             ) : null}
 
-            {String(quote?.status || "").toLowerCase() === "accepted" ? (
+            {ENABLE_DEPOSIT_PAYMENTS && String(quote?.status || "").toLowerCase() === "accepted" ? (
               <div className="rounded-xl border bg-gray-50 p-3 sm:p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="font-medium">Deposit</div>

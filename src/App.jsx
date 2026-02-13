@@ -24,6 +24,8 @@ import NotificationsPage from "./pages/supplier/NotificationsPage";
 import PublicQuotePage from "./pages/PublicQuotePage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import AuthResetPage from "./pages/AuthResetPage";
+import ResetPassword from "./pages/ResetPassword";
+import UpdatePassword from "./pages/UpdatePassword";
 
 import HomePage from "./pages/marketing/HomePage";
 import BrowsePage from "./pages/marketing/BrowsePage";
@@ -172,6 +174,8 @@ export default function App() {
 
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/reset" element={<AuthResetPage />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
 
       <Route
         path="/login"
