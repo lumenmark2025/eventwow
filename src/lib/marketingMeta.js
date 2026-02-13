@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 const DEFAULT_TITLE = "Eventwow | Book trusted event suppliers fast";
 const DEFAULT_DESCRIPTION = "Send one request, receive quotes, and book the right supplier with confidence.";
+const DEFAULT_CANONICAL_BASE = "https://eventwow.co.uk";
 
 function normalizeBaseUrl(value) {
   if (!value || typeof value !== "string") return "";
@@ -16,10 +17,7 @@ export function getCanonicalBaseUrl() {
   if (fromPlainPublic) return fromPlainPublic;
   if (fromPublic) return fromPublic;
   if (fromSite) return fromSite;
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return normalizeBaseUrl(window.location.origin);
-  }
-  return "";
+  return DEFAULT_CANONICAL_BASE;
 }
 
 function upsertMeta(attr, key, content) {

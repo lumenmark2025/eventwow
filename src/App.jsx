@@ -20,6 +20,7 @@ import QuotesPage from "./pages/supplier/QuotesPage";
 import BookingsPage from "./pages/supplier/BookingsPage";
 import MessagesPage from "./pages/supplier/MessagesPage";
 import NotificationsPage from "./pages/supplier/NotificationsPage";
+import ListingPage from "./pages/supplier/ListingPage";
 
 import PublicQuotePage from "./pages/PublicQuotePage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
@@ -33,6 +34,7 @@ import HowItWorksPage from "./pages/marketing/HowItWorksPage";
 import PricingPage from "./pages/marketing/PricingPage";
 import ContactPage from "./pages/marketing/ContactPage";
 import SuppliersPage from "./pages/marketing/SuppliersPage";
+import SupplierProfilePage from "./pages/marketing/SupplierProfilePage";
 import VenuesPage from "./pages/marketing/VenuesPage";
 
 function AccessDenied({ error, onSignOut }) {
@@ -170,6 +172,7 @@ export default function App() {
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
+      <Route path="/suppliers/:slug" element={<SupplierProfilePage />} />
       <Route path="/venues" element={<VenuesPage />} />
 
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
@@ -275,6 +278,14 @@ export default function App() {
         element={supplierGuard(
           <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
             <MessagesPage supplier={authState.supplier} />
+          </SupplierLayout>
+        )}
+      />
+      <Route
+        path="/supplier/listing"
+        element={supplierGuard(
+          <SupplierLayout user={user} supplier={authState.supplier} onSignOut={signOut}>
+            <ListingPage supplier={authState.supplier} />
           </SupplierLayout>
         )}
       />

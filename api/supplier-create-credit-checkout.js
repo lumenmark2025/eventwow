@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { createCreditBundleCheckoutSession } from "./_lib/stripe.js";
+import { createCreditBundleCheckoutSession, getCheckoutSession } from "./_lib/stripe.js";
 import { buildAbsoluteUrl } from "./_lib/notifications.js";
 
 const BUNDLES = {
@@ -92,13 +92,39 @@ export default async function handler(req, res) {
     if (existingErr) {
       return res.status(500).json({ ok: false, error: "Order lookup failed", details: existingErr.message });
     }
-    if (existing?.checkout_url) {
-      return res.status(200).json({
-        ok: true,
-        orderId: existing.id,
-        checkoutUrl: existing.checkout_url,
-        status: existing.status,
-      });
+
+    if (existing?.checkout_url && existing?.stripe_checkout_session_id) {
+      try {
+        const stripeSession = await getCheckoutSession(existing.stripe_checkout_session_id);
+        const sessionStatus = String(stripeSession?.status || "").toLowerCase();
+        const paymentStatus = String(stripeSession?.payment_status || "").toLowerCase();
+
+        if (paymentStatus === "paid") {
+          return res.status(409).json({ ok: false, error: "Bundle payment already completed" });
+        }
+
+        if (sessionStatus === "open") {
+          return res.status(200).json({
+            ok: true,
+            orderId: existing.id,
+            checkoutUrl: existing.checkout_url,
+            status: existing.status,
+          });
+        }
+
+        await admin
+          .from("credit_bundle_orders")
+          .update({
+            status: "canceled",
+            checkout_url: null,
+            stripe_checkout_session_id: null,
+            stripe_payment_intent_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } catch {
+        // If Stripe lookup fails, proceed to create a fresh order/session.
+      }
     }
 
     const nowIso = new Date().toISOString();
@@ -182,4 +208,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
   }
 }
-

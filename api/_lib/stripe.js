@@ -107,6 +107,11 @@ export async function createCreditBundleCheckoutSession({
   });
 }
 
+export async function getCheckoutSession(sessionId) {
+  const stripe = initStripe();
+  return stripe.checkout.sessions.retrieve(String(sessionId));
+}
+
 export function verifyStripeWebhook(rawBody, signature) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) throw new Error("Missing STRIPE_WEBHOOK_SECRET");
