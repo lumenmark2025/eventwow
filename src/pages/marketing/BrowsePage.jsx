@@ -22,7 +22,7 @@ export default function BrowsePage() {
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Input placeholder="Search suppliers, cuisine, style..." className="sm:max-w-md" />
           <Button variant="secondary">Filters</Button>
-          <Button as={Link} to="/contact">Post a request</Button>
+          <Button as={Link} to="/request">Post a request</Button>
         </div>
       </section>
 
@@ -40,4 +40,3 @@ export default function BrowsePage() {
     </MarketingShell>
   );
 }
-

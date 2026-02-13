@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "./_lib/supplierListing.js";
+import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
 
 export default async function handler(req, res) {
   try {
@@ -55,6 +56,11 @@ export default async function handler(req, res) {
         error: "Failed to load supplier profile images",
         details: imagesResp.error.message,
       });
+    }
+
+    const gate = computeSupplierGateFromData({ supplier, images: imagesResp.data || [] });
+    if (!gate.canPublish) {
+      return res.status(404).json({ ok: false, error: "Supplier not found" });
     }
 
     return res.status(200).json({

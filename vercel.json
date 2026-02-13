@@ -5,6 +5,8 @@
     { "source": "/how-it-works", "destination": "/index.html" },
     { "source": "/pricing", "destination": "/index.html" },
     { "source": "/contact", "destination": "/index.html" },
+    { "source": "/request", "destination": "/index.html" },
+    { "source": "/request/:token", "destination": "/index.html" },
     { "source": "/suppliers", "destination": "/index.html" },
     { "source": "/suppliers/:slug", "destination": "/index.html" },
     { "source": "/venues", "destination": "/index.html" },

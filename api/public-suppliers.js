@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "./_lib/supplierListing.js";
+import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
 
 function normalizeSort(value) {
   const v = String(value || "").trim().toLowerCase();
@@ -85,6 +86,7 @@ export default async function handler(req, res) {
     const baseRows = supplierRows
       .filter((s) => String(s.slug || "").trim().length > 0 && String(s.business_name || "").trim().length > 0)
       .map((s) => ({ ...s, _images: imagesBySupplier.get(s.id) || [] }))
+      .filter((s) => computeSupplierGateFromData({ supplier: s, images: s._images }).canPublish)
       .map((s) => toCardRow(s, SUPABASE_URL));
 
     let rows = baseRows;

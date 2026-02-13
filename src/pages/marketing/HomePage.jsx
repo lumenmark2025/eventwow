@@ -34,7 +34,7 @@ export default function HomePage() {
           <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">Book trusted event suppliers - fast.</h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-600">Send one request, receive quotes, choose the best fit.</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Button as={Link} to="/browse" size="lg">Get quotes</Button>
+            <Button as={Link} to="/request" size="lg">Get quotes</Button>
             <Button as={Link} to="/login" size="lg" variant="secondary">Become a supplier</Button>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function HomePage() {
         <h2 className="text-3xl font-semibold tracking-tight">Popular categories</h2>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {categories.map((cat) => (
-            <Link key={cat} to={`/browse?category=${encodeURIComponent(cat)}`} className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium shadow-sm transition hover:-translate-y-0.5 hover:shadow">
+            <Link key={cat} to={`/request?category=${encodeURIComponent(cat)}`} className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium shadow-sm transition hover:-translate-y-0.5 hover:shadow">
               {cat}
             </Link>
           ))}
@@ -94,4 +94,3 @@ export default function HomePage() {
     </MarketingShell>
   );
 }
-

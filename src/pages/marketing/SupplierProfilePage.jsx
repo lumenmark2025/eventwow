@@ -55,6 +55,11 @@ export default function SupplierProfilePage() {
   }, [slug]);
 
   const heroImageUrl = toPublicImageUrl(supplier?.heroImageUrl);
+  const requestPath = (() => {
+    const firstCategory = supplier?.categories?.[0]?.name;
+    if (!firstCategory) return "/request";
+    return `/request?category=${encodeURIComponent(firstCategory)}`;
+  })();
 
   return (
     <MarketingShell>
@@ -178,7 +183,7 @@ export default function SupplierProfilePage() {
                   <p className="text-sm text-slate-600">
                     Tell us your event details and receive a tailored quote from this supplier.
                   </p>
-                  <Button as={Link} to="/browse" className="w-full">
+                  <Button as={Link} to={requestPath} className="w-full">
                     Request a quote
                   </Button>
                   <Button as={Link} to="/suppliers" variant="secondary" className="w-full">

@@ -2,6 +2,7 @@ import {
   buildEditableListingDto,
   SUPPLIER_CATEGORY_OPTIONS,
 } from "./_lib/supplierListing.js";
+import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
 import {
   createAdminClient,
   getAuthUserId,
@@ -194,14 +195,20 @@ export default async function handler(req, res) {
       });
     }
 
+    const images = freshImagesResp.data || [];
+    const gate = computeSupplierGateFromData({ supplier: supplierLookup.data, images });
+    const dto = buildEditableListingDto(
+      supplierLookup.data,
+      images,
+      SUPPLIER_CATEGORY_OPTIONS,
+      SUPABASE_URL
+    );
+
     return res.status(200).json({
       ok: true,
-      ...buildEditableListingDto(
-        supplierLookup.data,
-        freshImagesResp.data || [],
-        SUPPLIER_CATEGORY_OPTIONS,
-        SUPABASE_URL
-      ),
+      ...dto,
+      supplier: { ...dto.supplier, canPublish: gate.canPublish },
+      gate,
     });
   } catch (err) {
     console.error("supplier-upload-image crashed:", err);

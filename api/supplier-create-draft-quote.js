@@ -135,6 +135,12 @@ export default async function handler(req, res) {
     }
 
     if (existing && existing.id) {
+      await supabaseAdmin
+        .from("enquiry_suppliers")
+        .update({ quote_id: existing.id })
+        .eq("enquiry_id", enquiry_id)
+        .eq("supplier_id", supplier.id);
+
       return res.status(200).json({
         ok: true,
         existed: true,
@@ -163,6 +169,12 @@ export default async function handler(req, res) {
     if (crErr) {
       return res.status(400).json({ error: "Failed to create quote", details: crErr.message });
     }
+
+    await supabaseAdmin
+      .from("enquiry_suppliers")
+      .update({ quote_id: created.id })
+      .eq("enquiry_id", enquiry_id)
+      .eq("supplier_id", supplier.id);
 
     return res.status(200).json({
       ok: true,

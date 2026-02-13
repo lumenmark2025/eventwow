@@ -36,6 +36,8 @@ import ContactPage from "./pages/marketing/ContactPage";
 import SuppliersPage from "./pages/marketing/SuppliersPage";
 import SupplierProfilePage from "./pages/marketing/SupplierProfilePage";
 import VenuesPage from "./pages/marketing/VenuesPage";
+import RequestPage from "./pages/marketing/RequestPage";
+import RequestStatusPage from "./pages/marketing/RequestStatusPage";
 
 function AccessDenied({ error, onSignOut }) {
   return (
@@ -180,6 +182,8 @@ export default function App() {
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/request" element={<RequestPage />} />
+      <Route path="/request/:token" element={<RequestStatusPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
       <Route path="/suppliers/:slug" element={<SupplierProfilePage />} />
       <Route path="/venues" element={<VenuesPage />} />

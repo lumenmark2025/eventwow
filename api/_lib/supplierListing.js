@@ -97,12 +97,6 @@ export function buildEditableListingDto(supplier, images, categoryOptions = SUPP
       locationLabel: supplier.location_label || null,
       listedPublicly: !!supplier.listed_publicly,
       categories: Array.isArray(supplier.listing_categories) ? supplier.listing_categories : [],
-      canPublish: Boolean(
-        String(supplier.business_name || "").trim() &&
-          String(supplier.short_description || "").trim() &&
-          Array.isArray(supplier.listing_categories) &&
-          supplier.listing_categories.length > 0
-      ),
       updatedAt: supplier.updated_at || supplier.created_at || null,
     },
     media: {

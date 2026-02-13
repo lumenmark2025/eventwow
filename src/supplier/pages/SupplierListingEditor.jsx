@@ -97,20 +97,35 @@ export default function SupplierListingEditor({ supplierId }) {
 
   const canPublish = useMemo(() => {
     if (!draft) return false;
+    const heroCount = media?.hero ? 1 : 0;
+    const galleryCount = Array.isArray(media?.gallery) ? media.gallery.length : 0;
+    const servicesCount = Array.isArray(draft.services) ? draft.services.filter((x) => String(x || "").trim().length > 0).length : 0;
     return (
-      String(draft.shortDescription || "").trim().length > 0 &&
+      String(draft.shortDescription || "").trim().length >= 30 &&
+      String(draft.about || "").trim().length >= 120 &&
       Array.isArray(draft.categories) &&
-      draft.categories.length > 0
+      draft.categories.length > 0 &&
+      String(draft.locationLabel || "").trim().length >= 3 &&
+      heroCount >= 1 &&
+      galleryCount >= 2 &&
+      servicesCount >= 3
     );
-  }, [draft]);
+  }, [draft, media]);
 
   const publishMissing = useMemo(() => {
     if (!draft) return [];
     const missing = [];
-    if (String(draft.shortDescription || "").trim().length === 0) missing.push("short description");
+    if (String(draft.shortDescription || "").trim().length < 30) missing.push("short description (>=30 chars)");
+    if (String(draft.about || "").trim().length < 120) missing.push("about section (>=120 chars)");
     if (!Array.isArray(draft.categories) || draft.categories.length === 0) missing.push("at least one category");
+    if (String(draft.locationLabel || "").trim().length < 3) missing.push("location label (>=3 chars)");
+    if (!media?.hero) missing.push("hero image");
+    if (!Array.isArray(media?.gallery) || media.gallery.length < 2) missing.push("at least 2 gallery images");
+    if (!Array.isArray(draft.services) || draft.services.filter((x) => String(x || "").trim().length > 0).length < 3) {
+      missing.push("at least 3 services");
+    }
     return missing;
-  }, [draft]);
+  }, [draft, media]);
 
   async function loadProfile() {
     if (!supplierId) return;
@@ -239,7 +254,16 @@ export default function SupplierListingEditor({ supplierId }) {
         }),
       });
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to save listing");
+      if (!resp.ok) {
+        if (json?.supplier || json?.media) {
+          setProfile(json?.supplier || null);
+          setMedia(json?.media || { hero: null, gallery: [] });
+          setCategoryOptions(Array.isArray(json?.categoryOptions) ? json.categoryOptions : []);
+          setDraft(normalizeDraft(json?.supplier || {}));
+        }
+        const gateReason = Array.isArray(json?.gate?.reasons) ? json.gate.reasons.join(" ") : "";
+        throw new Error(gateReason || json?.details || json?.error || "Failed to save listing");
+      }
 
       setProfile(json?.supplier || null);
       setMedia(json?.media || { hero: null, gallery: [] });

@@ -3,6 +3,7 @@ import {
   SUPPLIER_CATEGORY_OPTIONS,
   validateListingPayload,
 } from "./_lib/supplierListing.js";
+import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
 import {
   createAdminClient,
   getAuthUserId,
@@ -77,12 +78,7 @@ export default async function handler(req, res) {
     }
 
     const next = validated.value;
-    const canPublish = Boolean(
-      String(supplierLookup.data.business_name || "").trim() &&
-        String(next.shortDescription || "").trim() &&
-        Array.isArray(next.categories) &&
-        next.categories.length > 0
-    );
+    const requestedPublish = !!next.listedPublicly;
 
     const { data: updatedSupplier, error: updateErr } = await admin
       .from("suppliers")
@@ -92,7 +88,7 @@ export default async function handler(req, res) {
         services: next.services,
         location_label: next.locationLabel,
         listing_categories: next.categories,
-        listed_publicly: next.listedPublicly && canPublish,
+        listed_publicly: false,
         updated_at: new Date().toISOString(),
       })
       .eq("id", supplierLookup.data.id)
@@ -118,14 +114,62 @@ export default async function handler(req, res) {
       });
     }
 
+    const images = imagesResp.data || [];
+    const gate = computeSupplierGateFromData({ supplier: updatedSupplier, images });
+
+    let finalSupplier = updatedSupplier;
+    if (requestedPublish && gate.canPublish) {
+      const publishResp = await admin
+        .from("suppliers")
+        .update({
+          listed_publicly: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", supplierLookup.data.id)
+        .select(
+          "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at"
+        )
+        .single();
+
+      if (publishResp.error) {
+        return res.status(500).json({
+          ok: false,
+          error: "Failed to publish listing",
+          details: publishResp.error.message,
+        });
+      }
+      finalSupplier = publishResp.data;
+    }
+
+    const dto = buildEditableListingDto(
+      finalSupplier,
+      images,
+      SUPPLIER_CATEGORY_OPTIONS,
+      SUPABASE_URL
+    );
+
+    if (requestedPublish && !gate.canPublish) {
+      return res.status(409).json({
+        ok: false,
+        error: "Cannot publish listing",
+        details: "Micro content gate failed.",
+        gate,
+        ...dto,
+        supplier: {
+          ...dto.supplier,
+          canPublish: false,
+        },
+      });
+    }
+
     return res.status(200).json({
       ok: true,
-      ...buildEditableListingDto(
-        updatedSupplier,
-        imagesResp.data || [],
-        SUPPLIER_CATEGORY_OPTIONS,
-        SUPABASE_URL
-      ),
+      ...dto,
+      supplier: {
+        ...dto.supplier,
+        canPublish: gate.canPublish,
+      },
+      gate,
     });
   } catch (err) {
     console.error("supplier-public-profile-save crashed:", err);
