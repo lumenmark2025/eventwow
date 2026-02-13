@@ -20,16 +20,35 @@ function toBase64(file) {
 async function authFetch(path, options = {}) {
   const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
   if (sessionErr) throw sessionErr;
-  const accessToken = sessionData?.session?.access_token;
-  if (!accessToken) throw new Error("Not authenticated");
 
-  return fetch(path, {
+  let accessToken = sessionData?.session?.access_token || "";
+  if (!accessToken) {
+    const refreshResp = await supabase.auth.refreshSession();
+    accessToken = refreshResp?.data?.session?.access_token || "";
+    if (refreshResp?.error) {
+      throw new Error("Session expired. Please sign in again.");
+    }
+  }
+
+  if (!accessToken) {
+    await supabase.auth.signOut();
+    throw new Error("Session expired. Please sign in again.");
+  }
+
+  const resp = await fetch(path, {
     ...options,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       ...(options.headers || {}),
     },
   });
+
+  if (resp.status === 401) {
+    await supabase.auth.signOut();
+    throw new Error("Session expired. Please sign in again.");
+  }
+
+  return resp;
 }
 
 function arraysEqual(a, b) {
@@ -79,12 +98,19 @@ export default function SupplierListingEditor({ supplierId }) {
   const canPublish = useMemo(() => {
     if (!draft) return false;
     return (
-      String(profile?.name || "").trim().length > 0 &&
       String(draft.shortDescription || "").trim().length > 0 &&
       Array.isArray(draft.categories) &&
       draft.categories.length > 0
     );
-  }, [draft, profile?.name]);
+  }, [draft]);
+
+  const publishMissing = useMemo(() => {
+    if (!draft) return [];
+    const missing = [];
+    if (String(draft.shortDescription || "").trim().length === 0) missing.push("short description");
+    if (!Array.isArray(draft.categories) || draft.categories.length === 0) missing.push("at least one category");
+    return missing;
+  }, [draft]);
 
   async function loadProfile() {
     if (!supplierId) return;
@@ -101,7 +127,11 @@ export default function SupplierListingEditor({ supplierId }) {
       setCategoryOptions(Array.isArray(json?.categoryOptions) ? json.categoryOptions : []);
       setDraft(normalizeDraft(json?.supplier || {}));
     } catch (e) {
-      setErr(e?.message || "Failed to load listing");
+      const message = e?.message || "Failed to load listing";
+      setErr(message);
+      if (message.toLowerCase().includes("session expired")) {
+        window.location.assign("/login");
+      }
     } finally {
       setLoading(false);
     }
@@ -126,6 +156,18 @@ export default function SupplierListingEditor({ supplierId }) {
     setDraft((prev) => ({ ...(prev || {}), [key]: value }));
     setErr("");
     setOk("");
+  }
+
+  function onToggleListedPublicly(checked) {
+    if (checked && !canPublish) {
+      const detail =
+        publishMissing.length > 0
+          ? `Add ${publishMissing.join(" and ")} before publishing.`
+          : "Complete required listing fields before publishing.";
+      setErr(detail);
+      return;
+    }
+    updateDraft("listedPublicly", checked);
   }
 
   function toggleCategory(name) {
@@ -351,11 +393,15 @@ export default function SupplierListingEditor({ supplierId }) {
                   type="checkbox"
                   className="h-4 w-4 rounded border-slate-300"
                   checked={draft.listedPublicly}
-                  disabled={!canPublish}
-                  onChange={(e) => updateDraft("listedPublicly", e.target.checked)}
+                  onChange={(e) => onToggleListedPublicly(e.target.checked)}
                 />
                 Show this supplier in the public directory
               </label>
+              {!canPublish ? (
+                <p className="text-xs text-amber-700">
+                  Required before publish: {publishMissing.join(" and ")}.
+                </p>
+              ) : null}
               <div className="text-xs text-slate-500">
                 Slug: <span className="font-medium text-slate-700">{profile.slug || "Not set"}</span> (read-only)
               </div>

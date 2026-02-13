@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 
@@ -63,6 +63,7 @@ function LoadingAccess() {
 
 export default function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [authState, setAuthState] = useState({
     loading: true,
@@ -136,7 +137,15 @@ export default function App() {
   }, [user?.id]);
 
   async function signOut() {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch (err) {
+      console.error("signOut failed:", err);
+    } finally {
+      setSession(null);
+      setAuthState({ loading: false, role: null, supplier: null, error: null });
+      navigate("/", { replace: true });
+    }
   }
 
   function adminGuard(element) {
