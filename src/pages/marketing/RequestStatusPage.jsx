@@ -62,6 +62,11 @@ export default function RequestStatusPage() {
         <EmptyState title="Request not found" description={error || "Please submit a new request."} />
       ) : (
         <div className="space-y-5">
+          {data?.invites?.[0]?.supplier?.name ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              Request sent to {data.invites[0].supplier.name}.
+            </div>
+          ) : null}
           <Card className="rounded-3xl">
             <CardHeader>
               <CardTitle className="text-2xl tracking-tight">Your request is live</CardTitle>

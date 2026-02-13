@@ -9,6 +9,7 @@
     { "source": "/request/:token", "destination": "/index.html" },
     { "source": "/suppliers", "destination": "/index.html" },
     { "source": "/suppliers/:slug", "destination": "/index.html" },
+    { "source": "/suppliers/:slug/request-quote", "destination": "/index.html" },
     { "source": "/venues", "destination": "/index.html" },
     { "source": "/login", "destination": "/index.html" },
     { "source": "/supplier/login", "destination": "/index.html" },

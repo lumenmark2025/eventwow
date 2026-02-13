@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const enquiryResp = await admin
       .from("enquiries")
-      .select("id,public_token,status,event_date,event_time,location_label,postcode,guest_count,category_label,message,created_at")
+      .select("id,public_token,status,event_date,event_time,location_label,venue_name,postcode,guest_count,category_label,message,serving_time_window,indoor_outdoor,dietary_summary,access_notes,created_at")
       .eq("public_token", token)
       .maybeSingle();
 
@@ -165,11 +165,16 @@ export default async function handler(req, res) {
         status: enquiryResp.data.status,
         eventDate: enquiryResp.data.event_date,
         eventTime: enquiryResp.data.event_time,
-        locationLabel: enquiryResp.data.location_label,
+        locationLabel: enquiryResp.data.location_label || enquiryResp.data.venue_name,
+        venueName: enquiryResp.data.venue_name || enquiryResp.data.location_label,
         postcode: enquiryResp.data.postcode,
         guestCount: enquiryResp.data.guest_count,
         categoryLabel: enquiryResp.data.category_label,
         message: enquiryResp.data.message,
+        servingTimeWindow: enquiryResp.data.serving_time_window,
+        indoorOutdoor: enquiryResp.data.indoor_outdoor,
+        dietarySummary: enquiryResp.data.dietary_summary,
+        accessNotes: enquiryResp.data.access_notes,
         createdAt: enquiryResp.data.created_at,
       },
       invitedCount: inviteRows.length,

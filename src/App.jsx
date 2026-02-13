@@ -38,6 +38,7 @@ import SupplierProfilePage from "./pages/marketing/SupplierProfilePage";
 import VenuesPage from "./pages/marketing/VenuesPage";
 import RequestPage from "./pages/marketing/RequestPage";
 import RequestStatusPage from "./pages/marketing/RequestStatusPage";
+import SupplierRequestQuotePage from "./pages/marketing/SupplierRequestQuotePage";
 
 function AccessDenied({ error, onSignOut }) {
   return (
@@ -186,6 +187,7 @@ export default function App() {
       <Route path="/request/:token" element={<RequestStatusPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
       <Route path="/suppliers/:slug" element={<SupplierProfilePage />} />
+      <Route path="/suppliers/:slug/request-quote" element={<SupplierRequestQuotePage />} />
       <Route path="/venues" element={<VenuesPage />} />
 
       <Route path="/auth/callback" element={<AuthCallbackPage />} />

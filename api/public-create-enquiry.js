@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
 import { createSupplierNotification, reserveEvent } from "./_lib/notifications.js";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_MAX = 5;
 const rateMap = new Map();
@@ -104,12 +106,20 @@ export default async function handler(req, res) {
     const customerName = sanitizeText(body.customerName, 120);
     const customerEmail = sanitizeText(body.customerEmail, 160)?.toLowerCase();
     const customerPhone = sanitizeText(body.customerPhone, 50);
+    const supplierId = sanitizeText(body.supplierId, 64);
     const eventDate = sanitizeText(body.eventDate, 20);
+    const dateUnknown = !!body.dateUnknown;
     const eventTime = sanitizeText(body.eventTime, 40);
-    const locationLabel = sanitizeText(body.locationLabel, 160);
+    const locationLabel = sanitizeText(body.locationLabel || body.venueName, 160);
+    const venueName = sanitizeText(body.venueName || body.locationLabel, 160);
+    const venueId = sanitizeText(body.venueId, 64);
     const postcode = sanitizeText(body.postcode, 24);
     const guestCount = Number(body.guestCount || 0);
     const categoryLabel = sanitizeText(body.categoryId || body.categoryLabel, 80);
+    const servingTimeWindow = sanitizeText(body.servingTimeWindow, 120);
+    const indoorOutdoor = sanitizeText(body.indoorOutdoor, 40);
+    const dietarySummary = sanitizeText(body.dietarySummary, 400);
+    const accessNotes = sanitizeText(body.accessNotes, 400);
     const message = sanitizeText(body.message, 2000);
 
     if (!customerName || !customerEmail || !locationLabel) {
@@ -117,6 +127,36 @@ export default async function handler(req, res) {
         ok: false,
         error: "Bad request",
         details: "customerName, customerEmail, and locationLabel are required",
+      });
+    }
+    if (supplierId && !customerPhone) {
+      return res.status(400).json({
+        ok: false,
+        error: "Bad request",
+        details: "customerPhone is required",
+      });
+    }
+    if (supplierId && !dateUnknown && !eventDate) {
+      return res.status(400).json({
+        ok: false,
+        error: "Bad request",
+        details: "eventDate is required unless dateUnknown is true",
+      });
+    }
+    if (supplierId && (!Number.isFinite(guestCount) || guestCount < 1)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Bad request",
+        details: "guestCount is required and must be at least 1",
+      });
+    }
+
+    const structuredCount = [servingTimeWindow, indoorOutdoor, dietarySummary, accessNotes].filter(Boolean).length;
+    if (supplierId && (String(message || "").trim().length < 40) && structuredCount < 2) {
+      return res.status(400).json({
+        ok: false,
+        error: "Bad request",
+        details: "Provide notes of at least 40 characters or complete at least 2 structured detail fields",
       });
     }
 
@@ -176,17 +216,32 @@ export default async function handler(req, res) {
     }
 
     const publicToken = crypto.randomUUID();
+
+    let resolvedVenueName = venueName || locationLabel;
+    let resolvedVenueId = null;
+    if (venueId && UUID_RE.test(venueId)) {
+      const venueResp = await admin
+        .from("venues")
+        .select("id,name,postcode")
+        .eq("id", venueId)
+        .maybeSingle();
+      if (!venueResp.error && venueResp.data?.id) {
+        resolvedVenueId = venueResp.data.id;
+        resolvedVenueName = venueResp.data.name || resolvedVenueName;
+      }
+    }
+
     const enquiryInsertResp = await admin
       .from("enquiries")
       .insert([
         {
           customer_id: customerId,
           status: "new",
-          event_date: eventDate || null,
+          event_date: dateUnknown ? null : eventDate || null,
           event_postcode: postcode || null,
           guest_count: Number.isFinite(guestCount) && guestCount > 0 ? guestCount : null,
           notes: message,
-          match_source: "website",
+          match_source: "concierge",
           created_by_user_id: null,
           updated_by_user_id: null,
           public_token: publicToken,
@@ -194,9 +249,15 @@ export default async function handler(req, res) {
           customer_email: customerEmail,
           customer_phone: customerPhone,
           event_time: eventTime,
-          location_label: locationLabel,
+          location_label: resolvedVenueName || locationLabel,
+          venue_name: resolvedVenueName || null,
+          venue_id: resolvedVenueId,
           postcode: postcode,
           category_label: categoryLabel,
+          serving_time_window: servingTimeWindow,
+          indoor_outdoor: indoorOutdoor,
+          dietary_summary: dietarySummary,
+          access_notes: accessNotes,
           message,
         },
       ])
@@ -213,15 +274,17 @@ export default async function handler(req, res) {
 
     const enquiryId = enquiryInsertResp.data.id;
 
-    const suppliersResp = await admin
+    const suppliersBaseQuery = admin
       .from("suppliers")
       .select(
         "id,business_name,listing_categories,location_label,base_city,base_postcode,short_description,about,services,listed_publicly,is_verified,created_at"
       )
-      .eq("listed_publicly", true)
-      .order("is_verified", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(250);
+      .eq("listed_publicly", true);
+
+    const suppliersResp =
+      supplierId && UUID_RE.test(supplierId)
+        ? await suppliersBaseQuery.eq("id", supplierId).limit(1)
+        : await suppliersBaseQuery.order("is_verified", { ascending: false }).order("created_at", { ascending: false }).limit(250);
 
     if (suppliersResp.error) {
       return res.status(500).json({
@@ -259,8 +322,43 @@ export default async function handler(req, res) {
       imagesBySupplier,
       categoryLabel,
       locationLabel,
-      10
+      supplierId ? 1 : 10
     );
+
+    if (supplierId && eligibleSuppliers.length !== 1) {
+      return res.status(409).json({
+        ok: false,
+        error: "Cannot create enquiry",
+        details: "Supplier is not eligible to receive direct requests",
+      });
+    }
+
+    if (supplierId && eligibleSuppliers.length === 1) {
+      const supplierCategories = Array.isArray(eligibleSuppliers[0].listing_categories)
+        ? eligibleSuppliers[0].listing_categories.map((x) => String(x || "").trim()).filter(Boolean)
+        : [];
+
+      if (supplierCategories.length > 1 && !categoryLabel) {
+        return res.status(400).json({
+          ok: false,
+          error: "Bad request",
+          details: "categoryId is required for this supplier",
+        });
+      }
+
+      if (categoryLabel) {
+        const match = supplierCategories.some(
+          (c) => c.toLowerCase() === String(categoryLabel || "").toLowerCase()
+        );
+        if (!match) {
+          return res.status(400).json({
+            ok: false,
+            error: "Bad request",
+            details: "categoryId is not active for this supplier",
+          });
+        }
+      }
+    }
 
     let invites = [];
     if (eligibleSuppliers.length > 0) {
@@ -268,7 +366,7 @@ export default async function handler(req, res) {
         enquiry_id: enquiryId,
         supplier_id: supplier.id,
         supplier_status: "invited",
-        match_source: "website",
+        match_source: "concierge",
         created_by_user_id: null,
       }));
 

@@ -55,11 +55,7 @@ export default function SupplierProfilePage() {
   }, [slug]);
 
   const heroImageUrl = toPublicImageUrl(supplier?.heroImageUrl);
-  const requestPath = (() => {
-    const firstCategory = supplier?.categories?.[0]?.name;
-    if (!firstCategory) return "/request";
-    return `/request?category=${encodeURIComponent(firstCategory)}`;
-  })();
+  const requestPath = `/suppliers/${encodeURIComponent(String(slug || supplier?.slug || ""))}/request-quote`;
 
   return (
     <MarketingShell>
