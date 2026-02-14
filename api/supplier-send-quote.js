@@ -245,6 +245,11 @@ export default async function handler(req, res) {
       .eq("enquiry_id", quote.enquiry_id)
       .eq("supplier_id", supplier.id);
 
+    await supabaseAdmin
+      .from("suppliers")
+      .update({ last_active_at: nowIso })
+      .eq("id", supplier.id);
+
     try {
       await notifyQuoteSent({
         admin: supabaseAdmin,

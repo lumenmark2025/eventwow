@@ -20,6 +20,7 @@ export default function AdminLayout({ user, onSignOut, children }) {
     if (path.startsWith("/admin/suppliers")) return setTab("suppliers");
     if (path.startsWith("/admin/enquiries")) return setTab("enquiries");
     if (path.startsWith("/admin/venues")) return setTab("venues");
+    if (path.startsWith("/admin/reviews")) return setTab("reviews");
 
     // default highlight
     if (path === "/" || path === "/admin" || path === "/admin/") setTab("dashboard");
@@ -30,6 +31,7 @@ export default function AdminLayout({ user, onSignOut, children }) {
     if (nextTab === "credits-ledger") navigate("/admin/credits-ledger");
     if (nextTab === "performance") navigate("/admin/performance");
     if (nextTab === "venues") navigate("/admin/venues");
+    if (nextTab === "reviews") navigate("/admin/reviews");
     if (nextTab === "suppliers") navigate("/admin/suppliers");
     if (nextTab === "enquiries") navigate("/admin/enquiries");
   }
@@ -44,6 +46,7 @@ export default function AdminLayout({ user, onSignOut, children }) {
         { key: "credits-ledger", label: "Credits Ledger" },
         { key: "performance", label: "Performance" },
         { key: "venues", label: "Venues" },
+        { key: "reviews", label: "Reviews" },
         { key: "suppliers", label: "Suppliers" },
         { key: "enquiries", label: "Enquiries" },
       ]}

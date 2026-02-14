@@ -1,13 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "./_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
+import { buildPerformanceSignals } from "./_lib/performanceSignals.js";
 
 function normalizeSort(value) {
   const v = String(value || "").trim().toLowerCase();
   return v === "newest" ? "newest" : "recommended";
 }
 
-function toCardRow(supplier, supabaseUrl) {
+function toCardRow(supplier, supabaseUrl, performance) {
   const profile = buildPublicSupplierDto(supplier, supplier._images || [], supabaseUrl);
   return {
     id: profile.id,
@@ -18,6 +19,9 @@ function toCardRow(supplier, supabaseUrl) {
     categoryBadges: (profile.categories || []).map((c) => c.name),
     heroImageUrl: profile.heroImageUrl,
     createdAt: profile.lastUpdatedAt || supplier.created_at || null,
+    performance,
+    reviewRating: Number.isFinite(Number(supplier._reviewAverage)) ? Number(supplier._reviewAverage) : null,
+    reviewCount: Number.isFinite(Number(supplier._reviewCount)) ? Number(supplier._reviewCount) : 0,
     recommendedScore: supplier.is_verified ? 2 : 1,
   };
 }
@@ -83,11 +87,59 @@ export default async function handler(req, res) {
       imagesBySupplier.get(img.supplier_id).push(img);
     }
 
+    const perfResp =
+      supplierIds.length > 0
+        ? await admin
+            .from("supplier_performance_30d")
+            .select(
+              "supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at"
+            )
+            .in("supplier_id", supplierIds)
+        : { data: [], error: null };
+
+    if (perfResp.error) {
+      const code = String(perfResp.error.code || "");
+      const message = String(perfResp.error.message || "");
+      const missingView = code === "42P01" || message.toLowerCase().includes("supplier_performance_30d");
+      if (!missingView) {
+        return res.status(500).json({
+          ok: false,
+          error: "Failed to load supplier performance",
+          details: perfResp.error.message,
+        });
+      }
+    }
+
+    const perfBySupplier = new Map(
+      ((perfResp.data || [])).map((row) => [row.supplier_id, buildPerformanceSignals(row)])
+    );
+
+    const reviewStatsResp =
+      supplierIds.length > 0
+        ? await admin.from("supplier_review_stats").select("supplier_id,average_rating,review_count").in("supplier_id", supplierIds)
+        : { data: [], error: null };
+    if (reviewStatsResp.error) {
+      return res.status(500).json({
+        ok: false,
+        error: "Failed to load supplier review stats",
+        details: reviewStatsResp.error.message,
+      });
+    }
+    const reviewBySupplier = new Map((reviewStatsResp.data || []).map((row) => [row.supplier_id, row]));
+
     const baseRows = supplierRows
       .filter((s) => String(s.slug || "").trim().length > 0 && String(s.business_name || "").trim().length > 0)
-      .map((s) => ({ ...s, _images: imagesBySupplier.get(s.id) || [] }))
+      .map((s) => {
+        const stats = reviewBySupplier.get(s.id);
+        return {
+          ...s,
+          _images: imagesBySupplier.get(s.id) || [],
+          _reviewAverage: stats?.average_rating ?? null,
+          _reviewCount: stats?.review_count ?? 0,
+        };
+      })
       .filter((s) => computeSupplierGateFromData({ supplier: s, images: s._images }).canPublish)
-      .map((s) => toCardRow(s, SUPABASE_URL));
+      .map((s) => toCardRow(s, SUPABASE_URL, perfBySupplier.get(s.id) || buildPerformanceSignals(null)));
 
     let rows = baseRows;
     if (q) {

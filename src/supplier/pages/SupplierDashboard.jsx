@@ -40,6 +40,9 @@ export default function SupplierDashboard({ supplier }) {
   const [creditHistory, setCreditHistory] = useState([]);
   const [bundleBusy, setBundleBusy] = useState("");
   const [bundleMsg, setBundleMsg] = useState("");
+  const [performance, setPerformance] = useState(null);
+  const [ranking, setRanking] = useState(null);
+  const [rankingTips, setRankingTips] = useState([]);
 
   async function startBundleCheckout(bundle) {
     if (bundleBusy) return;
@@ -129,6 +132,27 @@ export default function SupplierDashboard({ supplier }) {
           .gte("event_date", today)
           .in("status", ["tentative", "confirmed"]);
         if (bErr) throw bErr;
+
+        const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+        if (sessionErr) throw sessionErr;
+        const accessToken = sessionData?.session?.access_token;
+        if (accessToken) {
+          const perfResp = await fetch("/api/supplier-performance", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const perfJson = await perfResp.json().catch(() => ({}));
+          if (perfResp.ok) {
+            setPerformance(perfJson?.performance || null);
+          }
+          const rankingResp = await fetch("/api/supplier/ranking", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const rankingJson = await rankingResp.json().catch(() => ({}));
+          if (rankingResp.ok) {
+            setRanking(rankingJson?.ranking || null);
+            setRankingTips(Array.isArray(rankingJson?.tips) ? rankingJson.tips : []);
+          }
+        }
 
         setStats({
           invitedCount: linkCount || 0,
@@ -243,6 +267,67 @@ export default function SupplierDashboard({ supplier }) {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your marketplace performance</CardTitle>
+          <CardDescription>Your private ranking components and practical improvement tips.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-3 text-sm">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="text-xs uppercase tracking-wide text-slate-500">Smoothed acceptance</div>
+            <div className="mt-1 text-lg font-semibold text-slate-900">
+              {Number.isFinite(Number(ranking?.smoothed_acceptance))
+                ? `${Math.round(Number(ranking.smoothed_acceptance) * 100)}%`
+                : "-"}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="text-xs uppercase tracking-wide text-slate-500">Typical reply</div>
+            <div className="mt-1 text-lg font-semibold text-slate-900">
+              {Number.isFinite(Number(performance?.typicalResponseHours))
+                ? `~${Number(performance.typicalResponseHours).toFixed(Number(performance.typicalResponseHours) < 10 ? 1 : 0)}h`
+                : "-"}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="text-xs uppercase tracking-wide text-slate-500">Base quality</div>
+            <div className="mt-1 text-lg font-semibold text-slate-900">
+              {Number.isFinite(Number(ranking?.base_quality))
+                ? `${Math.round(Number(ranking.base_quality) * 100)} / 100`
+                : "-"}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="text-xs uppercase tracking-wide text-slate-500">Activity</div>
+            <div className="mt-1 text-sm font-medium text-slate-900">{ranking?.activity_label || "No recent activity data"}</div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="text-xs uppercase tracking-wide text-slate-500">Volume confidence</div>
+            <div className="mt-1 text-sm font-medium text-slate-900">{ranking?.volume_label || "Low"}</div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="text-xs uppercase tracking-wide text-slate-500">Response score</div>
+            <div className="mt-1 text-sm font-medium text-slate-900">
+              {Number.isFinite(Number(ranking?.response_score))
+                ? `${Math.round(Number(ranking.response_score) * 100)} / 100`
+                : "-"}
+            </div>
+          </div>
+          <div className="md:col-span-3 rounded-lg border border-slate-200 bg-white px-3 py-3">
+            <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Tips</div>
+            {(rankingTips || []).length > 0 ? (
+              <ul className="list-disc space-y-1 pl-5 text-slate-700">
+                {rankingTips.map((tip) => (
+                  <li key={tip}>{tip}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-600">No urgent actions. Keep responding quickly and stay active.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

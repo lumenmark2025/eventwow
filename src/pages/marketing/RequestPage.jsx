@@ -68,7 +68,7 @@ export default function RequestPage() {
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to submit enquiry");
       if (!json?.publicToken) throw new Error("No enquiry token returned");
-      navigate(`/request/${encodeURIComponent(json.publicToken)}`);
+      navigate(`/enquiry/${encodeURIComponent(json.publicToken)}`);
     } catch (error) {
       setErr(error?.message || "Failed to submit enquiry");
     } finally {

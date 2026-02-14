@@ -13,6 +13,7 @@ import AdminEnquiriesPage from "./pages/admin/EnquiriesPage";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
 import CreditsLedgerPage from "./pages/admin/CreditsLedgerPage";
 import SupplierPerformancePage from "./pages/admin/SupplierPerformancePage";
+import ReviewsPage from "./pages/admin/ReviewsPage";
 
 import DashboardPage from "./pages/supplier/DashboardPage";
 import SupplierEnquiriesPage from "./pages/supplier/EnquiriesPage";
@@ -36,9 +37,12 @@ import ContactPage from "./pages/marketing/ContactPage";
 import SuppliersPage from "./pages/marketing/SuppliersPage";
 import SupplierProfilePage from "./pages/marketing/SupplierProfilePage";
 import VenuesPage from "./pages/marketing/VenuesPage";
+import VenueProfilePage from "./pages/marketing/VenueProfilePage";
 import RequestPage from "./pages/marketing/RequestPage";
-import RequestStatusPage from "./pages/marketing/RequestStatusPage";
 import SupplierRequestQuotePage from "./pages/marketing/SupplierRequestQuotePage";
+import EnquiryQuotesPage from "./pages/marketing/EnquiryQuotesPage";
+import CategoryLocationLandingPage from "./pages/marketing/CategoryLocationLandingPage";
+import SupplierSeoLandingPage from "./pages/marketing/SupplierSeoLandingPage";
 
 function AccessDenied({ error, onSignOut }) {
   return (
@@ -171,9 +175,9 @@ export default function App() {
   if (isPublicQuoteRoute) {
     return (
       <Routes>
-        <Route path="/quote/:token" element={<PublicQuotePage />} />
-      </Routes>
-    );
+      <Route path="/quote/:token" element={<PublicQuotePage />} />
+    </Routes>
+  );
   }
 
   return (
@@ -184,11 +188,17 @@ export default function App() {
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/request" element={<RequestPage />} />
-      <Route path="/request/:token" element={<RequestStatusPage />} />
+      <Route path="/request/:token" element={<EnquiryQuotesPage />} />
+      <Route path="/enquiry/:token" element={<EnquiryQuotesPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
       <Route path="/suppliers/:slug" element={<SupplierProfilePage />} />
       <Route path="/suppliers/:slug/request-quote" element={<SupplierRequestQuotePage />} />
+      <Route path="/category/:categorySlug/:locationSlug" element={<CategoryLocationLandingPage />} />
+      <Route path="/category/:categorySlug" element={<CategoryLocationLandingPage />} />
+      <Route path="/location/:locationSlug" element={<CategoryLocationLandingPage />} />
+      <Route path="/:slug" element={<SupplierSeoLandingPage />} />
       <Route path="/venues" element={<VenuesPage />} />
+      <Route path="/venues/:slug" element={<VenueProfilePage />} />
 
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/reset" element={<AuthResetPage />} />
@@ -244,6 +254,22 @@ export default function App() {
         element={adminGuard(
           <AdminLayout user={user} onSignOut={signOut}>
             <AdminVenuesPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/venues/:id"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <AdminVenuesPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/reviews"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <ReviewsPage user={user} />
           </AdminLayout>
         )}
       />

@@ -90,10 +90,11 @@ export default async function handler(req, res) {
         listing_categories: next.categories,
         listed_publicly: false,
         updated_at: new Date().toISOString(),
+        last_active_at: new Date().toISOString(),
       })
       .eq("id", supplierLookup.data.id)
       .select(
-        "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at"
+        "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at,last_active_at"
       )
       .single();
 
@@ -124,10 +125,11 @@ export default async function handler(req, res) {
         .update({
           listed_publicly: true,
           updated_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString(),
         })
         .eq("id", supplierLookup.data.id)
         .select(
-          "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at"
+          "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at,last_active_at"
         )
         .single();
 

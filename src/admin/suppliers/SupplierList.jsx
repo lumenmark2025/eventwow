@@ -89,6 +89,12 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
   const [creditSubmitting, setCreditSubmitting] = useState(false);
   const [creditMsg, setCreditMsg] = useState("");
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingError, setRankingError] = useState("");
+  const [ranking, setRanking] = useState(null);
+  const [rankingContexts, setRankingContexts] = useState({ categories: [], locations: [] });
+  const [categorySlug, setCategorySlug] = useState("");
+  const [locationSlug, setLocationSlug] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -127,6 +133,62 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
       setLoading(false);
     })();
   }, [supplierId]);
+
+  async function fetchAuthedJson(url, options = {}) {
+    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+    if (sessionErr) throw sessionErr;
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) throw new Error("Not authenticated");
+    const headers = {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${accessToken}`,
+    };
+    const resp = await fetch(url, { ...options, headers });
+    const json = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(json?.details || json?.error || "Request failed");
+    return json;
+  }
+
+  async function loadRankingContexts() {
+    try {
+      const json = await fetchAuthedJson("/api/admin/ranking-contexts");
+      setRankingContexts({
+        categories: Array.isArray(json?.categories) ? json.categories : [],
+        locations: Array.isArray(json?.locations) ? json.locations : [],
+      });
+      if (!categorySlug && Array.isArray(json?.categories) && json.categories[0]?.slug) setCategorySlug(json.categories[0].slug);
+      if (!locationSlug && Array.isArray(json?.locations) && json.locations[0]?.slug) setLocationSlug(json.locations[0].slug);
+    } catch {
+      // leave ranking context optional; ranking can still run without context
+    }
+  }
+
+  async function loadRanking(nextCategorySlug = categorySlug, nextLocationSlug = locationSlug) {
+    setRankingLoading(true);
+    setRankingError("");
+    try {
+      const params = new URLSearchParams();
+      if (nextCategorySlug) params.set("category_slug", nextCategorySlug);
+      if (nextLocationSlug) params.set("location_slug", nextLocationSlug);
+      const json = await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}/ranking?${params.toString()}`);
+      setRanking(json || null);
+    } catch (e) {
+      setRanking(null);
+      setRankingError(e?.message || "Failed to load ranking");
+    } finally {
+      setRankingLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!supplierId) return;
+    loadRankingContexts();
+  }, [supplierId]);
+
+  useEffect(() => {
+    if (!supplierId) return;
+    loadRanking(categorySlug, locationSlug);
+  }, [supplierId, categorySlug, locationSlug]);
 
   function setField(key, value) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -410,6 +472,84 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
         </CardHeader>
         <CardContent>
           <SupplierVenueLinksReadOnly supplierId={supplierId} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Ranking</CardTitle>
+          <CardDescription>Contextual ranking breakdown and explanation.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Category context</label>
+              <select
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                value={categorySlug}
+                onChange={(e) => setCategorySlug(e.target.value)}
+              >
+                <option value="">None</option>
+                {(rankingContexts.categories || []).map((c) => (
+                  <option key={c.slug} value={c.slug}>{c.label || c.slug}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Location context</label>
+              <select
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                value={locationSlug}
+                onChange={(e) => setLocationSlug(e.target.value)}
+              >
+                <option value="">None</option>
+                {(rankingContexts.locations || []).map((l) => (
+                  <option key={l.slug} value={l.slug}>{l.label || l.slug}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {rankingError ? <p className="text-sm text-rose-600">{rankingError}</p> : null}
+          {rankingLoading ? <Skeleton className="h-36 w-full" /> : null}
+
+          {!rankingLoading && ranking ? (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Base quality</div>
+                  <div className="space-y-1">
+                    <div>Smoothed acceptance: <span className="font-medium">{(Number(ranking?.components?.smoothed_acceptance || 0) * 100).toFixed(1)}%</span></div>
+                    <div>Response score: <span className="font-medium">{(Number(ranking?.components?.response_score || 0) * 100).toFixed(1)}</span></div>
+                    <div>Activity score: <span className="font-medium">{(Number(ranking?.components?.activity_score || 0) * 100).toFixed(1)}</span></div>
+                    <div>Volume confidence: <span className="font-medium">{(Number(ranking?.components?.volume_score || 0) * 100).toFixed(1)}</span></div>
+                    <div>Base quality: <span className="font-semibold">{(Number(ranking?.components?.base_quality || 0) * 100).toFixed(1)}</span></div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Context + final</div>
+                  <div className="space-y-1">
+                    <div>Category match: <span className="font-medium">{(Number(ranking?.match?.category_match || 0) * 100).toFixed(1)}</span></div>
+                    <div>Location match: <span className="font-medium">{(Number(ranking?.match?.location_match || 0) * 100).toFixed(1)}</span></div>
+                    <div>Match: <span className="font-medium">{(Number(ranking?.match?.match || 0) * 100).toFixed(1)}</span></div>
+                    <div>Verified bonus: <span className="font-medium">{Number(ranking?.final?.verified_bonus || 0).toFixed(2)}</span></div>
+                    <div>Plan multiplier: <span className="font-medium">{Number(ranking?.final?.plan_multiplier || 1).toFixed(2)}x</span></div>
+                    <div>Rank score: <span className="font-semibold">{Number(ranking?.final?.rank_score || 0).toFixed(2)}</span></div>
+                  </div>
+                </div>
+              </div>
+              {Array.isArray(ranking?.explanations) && ranking.explanations.length > 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Explanation</div>
+                  <ul className="list-disc space-y-1 pl-5 text-slate-700">
+                    {ranking.explanations.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

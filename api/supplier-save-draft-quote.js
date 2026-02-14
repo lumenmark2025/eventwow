@@ -267,6 +267,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Failed to update quote", details: updateErr.message });
     }
 
+    await supabaseAdmin
+      .from("suppliers")
+      .update({ last_active_at: nowIso })
+      .eq("id", supplier.id);
+
     return res.status(200).json({
       ok: true,
       quote: updatedQuote,

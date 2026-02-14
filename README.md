@@ -22,3 +22,8 @@ See `docs/auth.md` for required Supabase URL configuration and Vercel env vars t
 ## Stripe Deposits
 
 See `docs/payments.md` for PR12 env vars, webhook setup, and local test steps.
+
+## Local Dev Routing Note
+
+- Use `npm run dev` (Vite) for frontend development.
+- Do not add broad rewrites that capture arbitrary two-segment paths (e.g. `/:a/:b`) to `index.html`, because this can rewrite Vite internal requests like `/@vite/client` and `/src/main.jsx`, causing HTML-to-JS parse errors in dev.

@@ -220,7 +220,7 @@ export default function SupplierRequestQuotePage() {
         throw new Error(gateReasons || json?.details || json?.error || "Failed to submit request");
       }
       if (!json?.publicToken) throw new Error("Missing enquiry token");
-      navigate(`/request/${encodeURIComponent(json.publicToken)}`);
+      navigate(`/enquiry/${encodeURIComponent(json.publicToken)}`);
     } catch (err) {
       setError(err?.message || "Failed to submit request");
     } finally {

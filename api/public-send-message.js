@@ -67,7 +67,10 @@ export default async function handler(req, res) {
 
     const body = parseBody(req);
     const token = String(body?.token || "").trim();
-    const messageBody = typeof body?.body === "string" ? body.body.trim() : "";
+    const messageBodyRaw =
+      typeof body?.body === "string" ? body.body : typeof body?.messageText === "string" ? body.messageText : "";
+    const messageBody = String(messageBodyRaw || "").trim();
+    const requestedThreadId = typeof body?.threadId === "string" ? body.threadId.trim() : "";
     const clientMessageId = typeof body?.clientMessageId === "string" ? body.clientMessageId.trim() : "";
 
     if (!token || !UUID_RE.test(token)) {
@@ -88,6 +91,9 @@ export default async function handler(req, res) {
     const ensured = await ensureThreadForQuote(admin, loaded.quote, loaded.quote.supplier_id);
     if (ensured.error || !ensured.thread) {
       return res.status(500).json({ ok: false, error: "Failed to load thread", details: ensured.error?.message || "Unknown error" });
+    }
+    if (requestedThreadId && requestedThreadId !== ensured.thread.id) {
+      return res.status(409).json({ ok: false, error: "Thread mismatch", details: "Thread does not match this quote token" });
     }
 
     let customerId = null;

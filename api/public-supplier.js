@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "./_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
+import { buildPerformanceSignals } from "./_lib/performanceSignals.js";
 
 export default async function handler(req, res) {
   try {
@@ -63,9 +64,70 @@ export default async function handler(req, res) {
       return res.status(404).json({ ok: false, error: "Supplier not found" });
     }
 
+    const perfResp = await admin
+      .from("supplier_performance_30d")
+      .select(
+        "supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at"
+      )
+      .eq("supplier_id", supplier.id)
+      .maybeSingle();
+
+    if (perfResp.error) {
+      const code = String(perfResp.error.code || "");
+      const message = String(perfResp.error.message || "");
+      const missingView = code === "42P01" || message.toLowerCase().includes("supplier_performance_30d");
+      if (!missingView) {
+        return res.status(500).json({
+          ok: false,
+          error: "Failed to load supplier performance",
+          details: perfResp.error.message,
+        });
+      }
+    }
+
+    const [reviewStatsResp, reviewsResp] = await Promise.all([
+      admin.from("supplier_review_stats").select("average_rating,review_count").eq("supplier_id", supplier.id).maybeSingle(),
+      admin
+        .from("supplier_reviews")
+        .select("rating,review_text,reviewer_name,created_at")
+        .eq("supplier_id", supplier.id)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+    if (reviewStatsResp.error) {
+      return res.status(500).json({
+        ok: false,
+        error: "Failed to load supplier review stats",
+        details: reviewStatsResp.error.message,
+      });
+    }
+    if (reviewsResp.error) {
+      return res.status(500).json({
+        ok: false,
+        error: "Failed to load supplier reviews",
+        details: reviewsResp.error.message,
+      });
+    }
+
     return res.status(200).json({
       ok: true,
-      supplier: buildPublicSupplierDto(supplier, imagesResp.data || [], SUPABASE_URL),
+      supplier: {
+        ...buildPublicSupplierDto(supplier, imagesResp.data || [], SUPABASE_URL),
+        performance: buildPerformanceSignals((perfResp && perfResp.data) || null),
+        reviewRating: Number.isFinite(Number(reviewStatsResp.data?.average_rating))
+          ? Number(reviewStatsResp.data.average_rating)
+          : null,
+        reviewCount: Number.isFinite(Number(reviewStatsResp.data?.review_count))
+          ? Number(reviewStatsResp.data.review_count)
+          : 0,
+        reviews: (reviewsResp.data || []).map((row) => ({
+          rating: Number(row.rating || 0),
+          reviewText: row.review_text || "",
+          reviewerName: row.reviewer_name || "Anonymous",
+          createdAt: row.created_at || null,
+        })),
+      },
     });
   } catch (err) {
     console.error("public-supplier crashed:", err);
