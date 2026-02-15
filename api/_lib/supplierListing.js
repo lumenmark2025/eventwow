@@ -11,6 +11,33 @@ export const SUPPLIER_CATEGORY_OPTIONS = [
   "Cakes",
 ];
 
+// DB-driven category options (preferred). If the table doesn't exist yet (migration not run),
+// fall back to the legacy hardcoded list above so local/dev remains usable.
+export async function loadSupplierCategoryOptions(admin) {
+  try {
+    const resp = await admin
+      .from("supplier_category_options")
+      .select("slug,label")
+      .order("label", { ascending: true });
+
+    if (resp.error) {
+      const code = String(resp.error.code || "");
+      const msg = String(resp.error.message || "").toLowerCase();
+      const missing = code === "42P01" || msg.includes("supplier_category_options");
+      if (missing) return [...SUPPLIER_CATEGORY_OPTIONS];
+      throw resp.error;
+    }
+
+    const labels = (resp.data || [])
+      .map((r) => String(r?.label || "").trim())
+      .filter(Boolean);
+    if (labels.length > 0) return labels;
+    return [...SUPPLIER_CATEGORY_OPTIONS];
+  } catch {
+    return [...SUPPLIER_CATEGORY_OPTIONS];
+  }
+}
+
 function normalizeText(value, maxLen = 4000) {
   const text = String(value || "").trim();
   if (!text) return null;
@@ -33,13 +60,14 @@ function normalizeServices(values) {
   return out;
 }
 
-function normalizeCategories(values) {
+function normalizeCategories(values, allowedSet = null) {
   if (!Array.isArray(values)) return [];
   const unique = new Set();
   const out = [];
   for (const raw of values) {
     const value = normalizeText(raw, 40);
     if (!value) continue;
+    if (allowedSet && !allowedSet.has(value.toLowerCase())) continue;
     const key = value.toLowerCase();
     if (unique.has(key)) continue;
     unique.add(key);
@@ -49,12 +77,17 @@ function normalizeCategories(values) {
   return out;
 }
 
-export function validateListingPayload(body) {
+export function validateListingPayload(body, options = {}) {
+  const allowedCategories = Array.isArray(options?.allowedCategories) ? options.allowedCategories : null;
+  const allowedSet = allowedCategories
+    ? new Set(allowedCategories.map((x) => String(x || "").trim().toLowerCase()).filter(Boolean))
+    : null;
+
   const shortDescription = normalizeText(body?.shortDescription, 160);
   const about = normalizeText(body?.about, 4000);
   const locationLabel = normalizeText(body?.locationLabel, 120);
   const services = normalizeServices(body?.services);
-  const categories = normalizeCategories(body?.categories);
+  const categories = normalizeCategories(body?.categories, allowedSet);
   const listedPublicly = !!body?.listedPublicly;
 
   if (String(body?.shortDescription || "").trim().length > 160) {
@@ -65,6 +98,15 @@ export function validateListingPayload(body) {
   }
   if (Array.isArray(body?.services) && body.services.length > 12) {
     return { ok: false, error: "services must have 12 items or fewer" };
+  }
+  if (allowedSet && Array.isArray(body?.categories)) {
+    const invalid = body.categories
+      .map((x) => String(x || "").trim())
+      .filter(Boolean)
+      .filter((x) => !allowedSet.has(x.toLowerCase()));
+    if (invalid.length > 0) {
+      return { ok: false, error: `categories contain invalid values: ${invalid.slice(0, 3).join(", ")}` };
+    }
   }
 
   return {

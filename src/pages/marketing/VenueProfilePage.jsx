@@ -169,7 +169,9 @@ export default function VenueProfilePage() {
                   <p className="text-sm text-slate-600">
                     Need catering, photography, music, or decor for this venue? Send one request and compare quotes.
                   </p>
-                  <Button as={Link} to="/request" className="w-full">Request quotes</Button>
+                  <Button as={Link} to={`/request?venue=${encodeURIComponent(String(venue.slug || ""))}`} className="w-full">
+                    Request quotes
+                  </Button>
                   <Button as={Link} to="/venues" variant="secondary" className="w-full">Back to venues</Button>
                 </CardContent>
               </Card>

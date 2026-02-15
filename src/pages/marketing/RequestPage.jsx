@@ -54,6 +54,8 @@ export default function RequestPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [serverHints, setServerHints] = useState([]);
+  const [presetVenue, setPresetVenue] = useState(null);
+  const [presetVenueLoading, setPresetVenueLoading] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -67,6 +69,7 @@ export default function RequestPage() {
     venue_known: false,
     venue_name: "",
     venue_postcode: "",
+    venue_id: "",
     indoor_outdoor: "",
     power_available: null,
     dietary_requirements: "",
@@ -82,6 +85,47 @@ export default function RequestPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    let mounted = true;
+    const venueSlug = slugify(searchParams.get("venue") || "");
+    if (!venueSlug) {
+      setPresetVenue(null);
+      return;
+    }
+
+    (async () => {
+      setPresetVenueLoading(true);
+      setErr("");
+      try {
+        const resp = await fetch(`/api/public-venue?slug=${encodeURIComponent(venueSlug)}`);
+        const json = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load venue");
+        const v = json?.venue || null;
+        if (!v?.id) throw new Error("Venue not found");
+        if (!mounted) return;
+        setPresetVenue(v);
+        setForm((prev) => ({
+          ...prev,
+          venue_known: true,
+          venue_id: v.id,
+          venue_name: v.name || prev.venue_name,
+          venue_postcode: prev.venue_postcode, // leave blank; venues don't always have a postcode field
+        }));
+      } catch (error) {
+        if (mounted) {
+          setPresetVenue(null);
+          setErr(error?.message || "Failed to load venue");
+        }
+      } finally {
+        if (mounted) setPresetVenueLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [searchParams]);
+
   useMarketingMeta({
     title: "Request quotes",
     description: "Send one request and get matched with trusted suppliers.",
@@ -95,6 +139,16 @@ export default function RequestPage() {
   const inlineHints = useMemo(() => messageHints(form), [form]);
   const messageLength = String(form.message || "").trim().length;
   const showPower = form.enquiry_category_slug === "pizza-catering";
+  const presetGuestHint =
+    presetVenue && !form.guest_count && (presetVenue.guestMin || presetVenue.guestMax)
+      ? `This venue is typically suitable for ${
+          presetVenue.guestMin && presetVenue.guestMax
+            ? `${presetVenue.guestMin}-${presetVenue.guestMax}`
+            : presetVenue.guestMin
+              ? `${presetVenue.guestMin}+`
+              : `up to ${presetVenue.guestMax}`
+        } guests.`
+      : "";
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -231,14 +285,32 @@ export default function RequestPage() {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                  <input type="checkbox" checked={form.venue_known} onChange={(e) => setField("venue_known", e.target.checked)} />
-                  Venue already confirmed
-                </label>
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <Input placeholder="Venue name" value={form.venue_name} onChange={(e) => setField("venue_name", e.target.value)} />
-                  <Input placeholder="Venue postcode" value={form.venue_postcode} onChange={(e) => setField("venue_postcode", e.target.value)} />
-                </div>
+                {presetVenue ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-slate-800">
+                      Venue selected: {presetVenue.name || "Venue"}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {presetVenue.locationLabel ? presetVenue.locationLabel : "Venue was selected from a venue page."}
+                    </p>
+                    {presetVenueLoading ? (
+                      <p className="text-xs text-slate-500">Loading venue details...</p>
+                    ) : presetGuestHint ? (
+                      <p className="text-xs text-slate-600">{presetGuestHint}</p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <>
+                    <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                      <input type="checkbox" checked={form.venue_known} onChange={(e) => setField("venue_known", e.target.checked)} />
+                      Venue already confirmed
+                    </label>
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <Input placeholder="Venue name" value={form.venue_name} onChange={(e) => setField("venue_name", e.target.value)} />
+                      <Input placeholder="Venue postcode" value={form.venue_postcode} onChange={(e) => setField("venue_postcode", e.target.value)} />
+                    </div>
+                  </>
+                )}
               </div>
 
               {showPower ? (

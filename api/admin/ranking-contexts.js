@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { requireAdmin } from "./_lib/adminAuth.js";
-import { toSlug } from "./_lib/ranking.js";
+import { requireAdmin } from "../_lib/adminAuth.js";
+import { toSlug } from "../_lib/ranking.js";
 
 function titleFromSlug(slug) {
   return String(slug || "")

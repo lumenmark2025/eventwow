@@ -16,7 +16,7 @@ const testimonials = [
 export default function HomePage() {
   useMarketingMeta({
     title: "Book trusted event suppliers fast",
-    description: "Send one request, receive quotes, choose the best fit. Eventwow helps customers and suppliers move faster.",
+    description: "Find It. Book It. Wow Them. Eventwow helps customers and suppliers move faster.",
     path: "/",
   });
 
@@ -32,7 +32,7 @@ export default function HomePage() {
             <Badge variant="success">Fast quotes</Badge>
           </div>
           <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-6xl">Book trusted event suppliers faster.</h1>
-          <p className="mt-4 max-w-2xl text-lg text-slate-600">Send one request, receive quotes, choose the best fit.</p>
+          <p className="mt-4 max-w-2xl text-lg text-slate-600">Find It. Book It. Wow Them.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button as={Link} to="/request" size="lg">Post an enquiry</Button>
             <Button as={Link} to="/venues" size="lg" variant="secondary">Browse venues</Button>

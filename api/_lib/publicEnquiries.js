@@ -592,16 +592,23 @@ export async function handleCreatePublicEnquiry(req, res) {
 
     let resolvedVenueName = input.venueName || null;
     let resolvedVenueId = null;
+    let resolvedVenueLocationLabel = null;
     if (input.venueId && UUID_RE.test(input.venueId)) {
       const venueResp = await admin
         .from("venues")
-        .select("id,name,postcode")
+        .select("id,name,location_label,is_published")
         .eq("id", input.venueId)
+        .eq("is_published", true)
         .maybeSingle();
-      if (!venueResp.error && venueResp.data?.id) {
-        resolvedVenueId = venueResp.data.id;
-        resolvedVenueName = venueResp.data.name || resolvedVenueName;
+      if (venueResp.error) {
+        return res.status(500).json({ ok: false, error: "Failed to validate venue", details: venueResp.error.message });
       }
+      if (!venueResp.data?.id) {
+        return res.status(400).json({ ok: false, error: "Bad request", details: "venue_id is invalid or unpublished" });
+      }
+      resolvedVenueId = venueResp.data.id;
+      resolvedVenueName = venueResp.data.name || resolvedVenueName;
+      resolvedVenueLocationLabel = venueResp.data.location_label || null;
     }
 
     const enquiryInsertResp = await admin
@@ -617,7 +624,7 @@ export async function handleCreatePublicEnquiry(req, res) {
           start_time: input.startTime || null,
           guest_count: input.guestCount,
           budget_range: input.budgetRange || null,
-          venue_known: !!input.venueKnown,
+          venue_known: !!input.venueKnown || !!resolvedVenueId,
           venue_name: resolvedVenueName,
           venue_postcode: input.venuePostcode || null,
           indoor_outdoor: input.indoorOutdoor || null,
@@ -639,7 +646,7 @@ export async function handleCreatePublicEnquiry(req, res) {
           customer_email: input.email,
           customer_phone: input.phone,
           event_time: input.startTime || null,
-          location_label: resolvedVenueName || input.venuePostcode || null,
+          location_label: resolvedVenueLocationLabel || resolvedVenueName || input.venuePostcode || null,
           venue_id: resolvedVenueId,
           postcode: input.venuePostcode || null,
           event_postcode: input.venuePostcode || null,

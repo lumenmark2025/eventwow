@@ -1,6 +1,6 @@
 import {
   buildEditableListingDto,
-  SUPPLIER_CATEGORY_OPTIONS,
+  loadSupplierCategoryOptions,
   validateListingPayload,
 } from "./_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
@@ -59,12 +59,13 @@ export default async function handler(req, res) {
     }
 
     const body = parseBody(req);
-    const validated = validateListingPayload(body);
+    const admin = createAdminClient(SUPABASE_URL, SERVICE_KEY);
+    const categoryOptions = await loadSupplierCategoryOptions(admin);
+    const validated = validateListingPayload(body, { allowedCategories: categoryOptions });
     if (!validated.ok) {
       return res.status(400).json({ ok: false, error: "Bad request", details: validated.error });
     }
 
-    const admin = createAdminClient(SUPABASE_URL, SERVICE_KEY);
     const supplierLookup = await loadSupplierByAuthUser(admin, auth.userId);
     if (supplierLookup.error) {
       return res.status(500).json({
@@ -146,7 +147,7 @@ export default async function handler(req, res) {
     const dto = buildEditableListingDto(
       finalSupplier,
       images,
-      SUPPLIER_CATEGORY_OPTIONS,
+      categoryOptions,
       SUPABASE_URL
     );
 

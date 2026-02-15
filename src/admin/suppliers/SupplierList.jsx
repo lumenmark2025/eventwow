@@ -59,6 +59,15 @@ function SupplierVenueLinksReadOnly({ supplierId }) {
   );
 }
 
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function SupplierEdit({ supplierId, user, onBack, onSaved }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,6 +104,18 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
   const [rankingContexts, setRankingContexts] = useState({ categories: [], locations: [] });
   const [categorySlug, setCategorySlug] = useState("");
   const [locationSlug, setLocationSlug] = useState("");
+
+  const [listingLoading, setListingLoading] = useState(false);
+  const [listingSaving, setListingSaving] = useState(false);
+  const [listingErr, setListingErr] = useState("");
+  const [listingOk, setListingOk] = useState("");
+  const [listing, setListing] = useState(null);
+  const [media, setMedia] = useState({ hero: null, gallery: [] });
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [gate, setGate] = useState(null);
+  const [newService, setNewService] = useState("");
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -149,6 +170,28 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
     return json;
   }
 
+  async function loadListing() {
+    if (!supplierId) return;
+    setListingLoading(true);
+    setListingErr("");
+    setListingOk("");
+    try {
+      const json = await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}/listing`);
+      setListing(json?.supplier || null);
+      setMedia(json?.media || { hero: null, gallery: [] });
+      setCategoryOptions(Array.isArray(json?.categoryOptions) ? json.categoryOptions : []);
+      setGate(json?.gate || null);
+    } catch (e) {
+      setListing(null);
+      setMedia({ hero: null, gallery: [] });
+      setCategoryOptions([]);
+      setGate(null);
+      setListingErr(e?.message || "Failed to load listing");
+    } finally {
+      setListingLoading(false);
+    }
+  }
+
   async function loadRankingContexts() {
     try {
       const json = await fetchAuthedJson("/api/admin/ranking-contexts");
@@ -189,6 +232,12 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
     if (!supplierId) return;
     loadRanking(categorySlug, locationSlug);
   }, [supplierId, categorySlug, locationSlug]);
+
+  useEffect(() => {
+    if (!supplierId) return;
+    loadListing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supplierId]);
 
   function setField(key, value) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -289,15 +338,151 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
       updated_by_user_id: user?.id || null,
     };
 
-    const { error } = await supabase.from("suppliers").update(payload).eq("id", supplierId);
-
-    if (error) setErr(error.message);
-    else {
+    try {
+      await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       setOk("Saved.");
       onSaved?.();
+    } catch (e) {
+      setErr(e?.message || "Failed to save supplier");
     }
 
     setSaving(false);
+  }
+
+  function updateListingField(key, value) {
+    setListing((prev) => ({ ...(prev || {}), [key]: value }));
+    setListingErr("");
+    setListingOk("");
+  }
+
+  function toggleCategory(name) {
+    setListing((prev) => {
+      const existing = Array.isArray(prev?.categories) ? prev.categories : [];
+      const next = existing.includes(name) ? existing.filter((x) => x !== name) : [...existing, name];
+      return { ...(prev || {}), categories: next };
+    });
+    setListingErr("");
+    setListingOk("");
+  }
+
+  function addService() {
+    const value = String(newService || "").trim();
+    if (!value) return;
+    if (value.length > 80) {
+      setListingErr("Service items must be 80 characters or less.");
+      return;
+    }
+    setListing((prev) => {
+      const current = Array.isArray(prev?.services) ? prev.services : [];
+      if (current.length >= 12) return prev;
+      if (current.some((x) => String(x || "").toLowerCase() === value.toLowerCase())) return prev;
+      return { ...(prev || {}), services: [...current, value] };
+    });
+    setNewService("");
+    setListingErr("");
+    setListingOk("");
+  }
+
+  function removeService(index) {
+    setListing((prev) => {
+      const current = Array.isArray(prev?.services) ? prev.services : [];
+      return { ...(prev || {}), services: current.filter((_, idx) => idx !== index) };
+    });
+    setListingErr("");
+    setListingOk("");
+  }
+
+  async function saveListing() {
+    if (!listing || listingSaving) return;
+    setListingSaving(true);
+    setListingErr("");
+    setListingOk("");
+    try {
+      const payload = {
+        shortDescription: listing.shortDescription || "",
+        about: listing.about || "",
+        services: Array.isArray(listing.services) ? listing.services : [],
+        locationLabel: listing.locationLabel || "",
+        categories: Array.isArray(listing.categories) ? listing.categories : [],
+        listedPublicly: !!listing.listedPublicly,
+      };
+      const resp = await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}/listing`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setListing(resp?.supplier || null);
+      setMedia(resp?.media || { hero: null, gallery: [] });
+      setCategoryOptions(Array.isArray(resp?.categoryOptions) ? resp.categoryOptions : []);
+      setGate(resp?.gate || null);
+      setListingOk("Listing saved.");
+    } catch (e) {
+      setListingErr(e?.message || "Failed to save listing");
+    } finally {
+      setListingSaving(false);
+    }
+  }
+
+  async function uploadListingImage(file, type) {
+    if (!file) return;
+    if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
+      setListingErr("Only JPG, PNG, or WEBP images are allowed.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setListingErr("Image must be 5MB or smaller.");
+      return;
+    }
+
+    const setBusy = type === "hero" ? setUploadingHero : setUploadingGallery;
+    setBusy(true);
+    setListingErr("");
+    setListingOk("");
+    try {
+      const dataBase64 = await toBase64(file);
+      const resp = await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}/images`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          mimeType: file.type,
+          fileName: file.name,
+          dataBase64,
+        }),
+      });
+      setListing(resp?.supplier || listing);
+      setMedia(resp?.media || { hero: null, gallery: [] });
+      setCategoryOptions(Array.isArray(resp?.categoryOptions) ? resp.categoryOptions : categoryOptions);
+      setGate(resp?.gate || gate);
+      setListingOk(type === "hero" ? "Hero image updated." : "Gallery image uploaded.");
+    } catch (e) {
+      setListingErr(e?.message || "Failed to upload image");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteListingImage(imageId) {
+    if (!imageId) return;
+    setListingErr("");
+    setListingOk("");
+    try {
+      const resp = await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}/images`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId }),
+      });
+      setListing(resp?.supplier || listing);
+      setMedia(resp?.media || { hero: null, gallery: [] });
+      setGate(resp?.gate || gate);
+      setListingOk("Image removed.");
+    } catch (e) {
+      setListingErr(e?.message || "Failed to delete image");
+    }
   }
 
   if (loading) {
@@ -467,6 +652,201 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Public listing (admin)</CardTitle>
+          <CardDescription>Images, services and categories shown on the public supplier page.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {listingErr ? <p className="text-sm text-rose-600">{listingErr}</p> : null}
+          {listingOk ? <p className="text-sm text-emerald-700">{listingOk}</p> : null}
+          {listingLoading ? <Skeleton className="h-48 w-full" /> : null}
+
+          {!listingLoading && listing ? (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="space-y-4 lg:col-span-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={listing.listedPublicly ? "success" : "neutral"}>
+                      {listing.listedPublicly ? "Listed publicly" : "Hidden from directory"}
+                    </Badge>
+                    {gate && gate.canPublish ? <Badge variant="brand">Publish-ready</Badge> : <Badge variant="warning">Missing requirements</Badge>}
+                  </div>
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={!!listing.listedPublicly}
+                      onChange={(e) => updateListingField("listedPublicly", e.target.checked)}
+                    />
+                    Show this supplier in the public directory
+                  </label>
+                  {gate && !gate.canPublish && Array.isArray(gate.reasons) && gate.reasons.length > 0 ? (
+                    <p className="text-xs text-amber-700">Required before publish: {gate.reasons.join(" ")}</p>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Short description</label>
+                    <Input
+                      value={listing.shortDescription || ""}
+                      onChange={(e) => updateListingField("shortDescription", e.target.value)}
+                      maxLength={160}
+                      placeholder="One-line summary customers see in cards"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">{String(listing.shortDescription || "").length}/160</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">About</label>
+                    <textarea
+                      className="min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+                      value={listing.about || ""}
+                      onChange={(e) => updateListingField("about", e.target.value)}
+                      maxLength={4000}
+                      placeholder="Describe your offer, style, experience and what customers can expect"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">{String(listing.about || "").length}/4000</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Location / service area</label>
+                    <Input
+                      value={listing.locationLabel || ""}
+                      onChange={(e) => updateListingField("locationLabel", e.target.value)}
+                      maxLength={120}
+                      placeholder="e.g. Manchester and North West"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                  <div className="text-sm font-semibold text-slate-900">Services</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(listing.services || []).map((service, idx) => (
+                      <span
+                        key={`${service}-${idx}`}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
+                      >
+                        {service}
+                        <button
+                          type="button"
+                          className="text-slate-500 hover:text-slate-900"
+                          onClick={() => removeService(idx)}
+                          aria-label={`Remove ${service}`}
+                        >
+                          x
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      value={newService}
+                      onChange={(e) => setNewService(e.target.value)}
+                      maxLength={80}
+                      placeholder="Add a service bullet"
+                    />
+                    <Button type="button" variant="secondary" onClick={addService} disabled={(listing.services || []).length >= 12}>
+                      Add
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500">{(listing.services || []).length}/12 services</p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                  <div className="text-sm font-semibold text-slate-900">Categories</div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {(categoryOptions || []).map((name) => {
+                      const checked = (listing.categories || []).includes(name);
+                      return (
+                        <label
+                          key={name}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleCategory(name)}
+                          />
+                          {name}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" onClick={saveListing} disabled={listingSaving}>
+                    {listingSaving ? "Saving..." : "Save listing"}
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={loadListing} disabled={listingLoading || listingSaving}>
+                    Refresh listing
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                  <div className="text-sm font-semibold text-slate-900">Hero image</div>
+                  {media.hero?.url ? (
+                    <img src={media.hero.url} alt="Hero" className="h-40 w-full rounded-xl object-cover" />
+                  ) : (
+                    <div className="h-40 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
+                  )}
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => uploadListingImage(e.target.files?.[0], "hero")}
+                    />
+                    <span className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                      {uploadingHero ? "Uploading..." : "Upload hero image"}
+                    </span>
+                  </label>
+                  {media.hero?.id ? (
+                    <Button type="button" variant="ghost" className="w-full" onClick={() => deleteListingImage(media.hero.id)}>
+                      Delete hero image
+                    </Button>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                  <div className="text-sm font-semibold text-slate-900">Gallery</div>
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => uploadListingImage(e.target.files?.[0], "gallery")}
+                    />
+                    <span className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                      {uploadingGallery ? "Uploading..." : "Add gallery image"}
+                    </span>
+                  </label>
+
+                  {(media.gallery || []).length === 0 ? (
+                    <p className="text-sm text-slate-500">No gallery images yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {media.gallery.map((img) => (
+                        <div key={img.id} className="rounded-xl border border-slate-200 p-2">
+                          <img src={img.url} alt={img.caption || "Gallery"} className="h-24 w-full rounded-lg object-cover" />
+                          <div className="mt-2 flex items-center justify-end gap-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={() => deleteListingImage(img.id)}>
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Trusted by venues</CardTitle>
           <CardDescription>Read-only trust links from venue mappings.</CardDescription>
         </CardHeader>
@@ -610,6 +990,10 @@ export default function SupplierList({ user }) {
   const [search, setSearch] = useState("");
 
   const [selectedSupplierId, setSelectedSupplierId] = useState(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createErr, setCreateErr] = useState("");
+  const [createForm, setCreateForm] = useState({ business_name: "", public_email: "", base_city: "", base_postcode: "" });
 
   useEffect(() => {
     (async () => {
@@ -658,6 +1042,47 @@ export default function SupplierList({ user }) {
     })();
   }
 
+  async function fetchAuthedJson(url, options = {}) {
+    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+    if (sessionErr) throw sessionErr;
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) throw new Error("Not authenticated");
+    const headers = { ...(options.headers || {}), Authorization: `Bearer ${accessToken}` };
+    const resp = await fetch(url, { ...options, headers });
+    const json = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(json?.details || json?.error || "Request failed");
+    return json;
+  }
+
+  async function createSupplier() {
+    if (createBusy) return;
+    setCreateBusy(true);
+    setCreateErr("");
+    try {
+      const payload = {
+        business_name: String(createForm.business_name || "").trim(),
+        public_email: String(createForm.public_email || "").trim(),
+        base_city: String(createForm.base_city || "").trim() || null,
+        base_postcode: String(createForm.base_postcode || "").trim() || null,
+      };
+      if (!payload.business_name || !payload.public_email) throw new Error("Business name and email are required.");
+      const json = await fetchAuthedJson("/api/admin-create-supplier", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const newId = json?.supplier?.id || null;
+      await refresh();
+      setCreateOpen(false);
+      setCreateForm({ business_name: "", public_email: "", base_city: "", base_postcode: "" });
+      if (newId) setSelectedSupplierId(newId);
+    } catch (e) {
+      setCreateErr(e?.message || "Failed to create supplier");
+    } finally {
+      setCreateBusy(false);
+    }
+  }
+
   if (selectedSupplierId) {
     return (
       <SupplierEdit
@@ -690,7 +1115,10 @@ export default function SupplierList({ user }) {
               placeholder="Search suppliers by name, slug, city, or postcode"
               className="sm:max-w-md"
             />
-            <Button type="button" variant="secondary" onClick={refresh}>Refresh</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" onClick={() => setCreateOpen(true)}>Create supplier</Button>
+              <Button type="button" variant="secondary" onClick={refresh}>Refresh</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -753,6 +1181,44 @@ export default function SupplierList({ user }) {
           </div>
         )}
       </Card>
+
+      <Modal
+        open={createOpen}
+        title="Create supplier"
+        onClose={() => setCreateOpen(false)}
+        footer={
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)} disabled={createBusy}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={createSupplier} disabled={createBusy}>
+              {createBusy ? "Creating..." : "Create"}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          {createErr ? <p className="text-sm text-rose-600">{createErr}</p> : null}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Business name *</label>
+              <Input value={createForm.business_name} onChange={(e) => setCreateForm((p) => ({ ...p, business_name: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Login email *</label>
+              <Input type="email" value={createForm.public_email} onChange={(e) => setCreateForm((p) => ({ ...p, public_email: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Base city</label>
+              <Input value={createForm.base_city} onChange={(e) => setCreateForm((p) => ({ ...p, base_city: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Base postcode</label>
+              <Input value={createForm.base_postcode} onChange={(e) => setCreateForm((p) => ({ ...p, base_postcode: e.target.value }))} />
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

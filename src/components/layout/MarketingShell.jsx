@@ -69,7 +69,7 @@ export default function MarketingShell({ children }) {
                 decoding="async"
               />
             </NavLink>
-            <p className="mt-3 text-sm text-slate-600">Book trusted event suppliers with a simple quote flow.</p>
+            <p className="mt-3 text-sm text-slate-600">Find It. Book It. Wow Them.</p>
           </div>
           <div className="text-sm">
             <p className="font-medium text-slate-900">Explore</p>

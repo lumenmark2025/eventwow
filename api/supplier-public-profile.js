@@ -1,6 +1,6 @@
 import {
   buildEditableListingDto,
-  SUPPLIER_CATEGORY_OPTIONS,
+  loadSupplierCategoryOptions,
 } from "./_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
 import {
@@ -78,10 +78,11 @@ export default async function handler(req, res) {
 
     const images = imagesResp.data || [];
     const gate = computeSupplierGateFromData({ supplier: supplierLookup.data, images });
+    const categoryOptions = await loadSupplierCategoryOptions(admin);
     const dto = buildEditableListingDto(
       supplierLookup.data,
       images,
-      SUPPLIER_CATEGORY_OPTIONS,
+      categoryOptions,
       SUPABASE_URL
     );
 
