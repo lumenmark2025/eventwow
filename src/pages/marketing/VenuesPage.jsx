@@ -73,11 +73,9 @@ export default function VenuesPage() {
   }
 
   function guestRange(venue) {
-    const min = Number(venue?.guestMin);
     const max = Number(venue?.guestMax);
-    if (Number.isFinite(min) && Number.isFinite(max)) return `${min}-${max} guests`;
-    if (Number.isFinite(min)) return `${min}+ guests`;
-    if (Number.isFinite(max)) return `Up to ${max} guests`;
+    // Listing cards should only show a maximum guest count (and only if present in the profile).
+    if (Number.isFinite(max) && max > 0) return `Up to ${max} guests`;
     return null;
   }
 
@@ -150,7 +148,7 @@ export default function VenuesPage() {
                       <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">{venue.name}</h3>
                       {venue.locationLabel ? <p className="mt-1 text-xs text-slate-500">{venue.locationLabel}</p> : null}
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex min-h-[26px] flex-wrap gap-1.5">
                       {guest ? <Badge variant="neutral">{guest}</Badge> : null}
                     </div>
                     <p className="line-clamp-2 text-sm text-slate-600">{venue.shortDescription || "Venue profile on Eventwow."}</p>
