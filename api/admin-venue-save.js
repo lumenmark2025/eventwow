@@ -9,6 +9,22 @@ function parseIntOrNull(v) {
   return Math.round(n);
 }
 
+function normalizeTextArray(value, maxItems, maxLen) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of value) {
+    const v = String(item || "").trim();
+    if (!v) continue;
+    const key = v.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(v.slice(0, maxLen));
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
@@ -44,6 +60,14 @@ export default async function handler(req, res) {
     const listedPublicly = !!body?.listedPublicly;
     const guestMin = parseIntOrNull(body?.guestMin);
     const guestMax = parseIntOrNull(body?.guestMax);
+    const aiTags = normalizeTextArray(body?.aiTags, 10, 50);
+    const aiSuggestedSearchTerms = normalizeTextArray(body?.aiSuggestedSearchTerms, 6, 80);
+    const aiDraftMeta =
+      body?.aiDraftMeta && typeof body.aiDraftMeta === "object" && !Array.isArray(body.aiDraftMeta)
+        ? body.aiDraftMeta
+        : {};
+    const aiGeneratedDate = body?.aiGeneratedAt ? new Date(body.aiGeneratedAt) : null;
+    const aiGeneratedAt = aiGeneratedDate && Number.isFinite(aiGeneratedDate.getTime()) ? aiGeneratedDate.toISOString() : null;
 
     if (!name) return res.status(400).json({ ok: false, error: "Bad request", details: "name is required" });
     if (shortDescription && shortDescription.length > 300) {
@@ -80,6 +104,10 @@ export default async function handler(req, res) {
       website_url: websiteUrl,
       listed_publicly: listedPublicly,
       is_published: listedPublicly,
+      ai_tags: aiTags,
+      ai_suggested_search_terms: aiSuggestedSearchTerms,
+      ai_draft_meta: aiDraftMeta,
+      ai_generated_at: aiGeneratedAt,
       updated_at: nowIso,
       updated_by_user: auth.userId,
     };

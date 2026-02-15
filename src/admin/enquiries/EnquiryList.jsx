@@ -10,6 +10,22 @@ import Skeleton from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
 import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
+async function fetchAdminJson(path, options = {}) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error("Not authenticated");
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+
+  const resp = await fetch(path, { ...options, headers });
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(json?.details || json?.error || "Request failed");
+  return json;
+}
+
 function statusVariant(status) {
   if (status === "accepted") return "success";
   if (status === "declined") return "danger";
@@ -674,24 +690,15 @@ function EnquiryDetail({ enquiryId, user, onBack }) {
     setErr("");
     if (enquiry === null) setLoading(true);
 
-    const [{ data: e, error: eErr }, { data: i, error: iErr }] = await Promise.all([
-      supabase
-        .from("enquiries")
-        .select("id,event_date,event_postcode,guest_count,status,match_source,notes,created_at,customers(full_name,email,phone),venues(name)")
-        .eq("id", enquiryId)
-        .maybeSingle(),
-      supabase
-        .from("enquiry_suppliers")
-        .select("id,supplier_id,supplier_status,invited_at,viewed_at,responded_at,declined_reason,suppliers(business_name)")
-        .eq("enquiry_id", enquiryId)
-        .order("invited_at", { ascending: true }),
-    ]);
-
-    if (eErr) setErr(eErr.message);
-    if (iErr) setErr(iErr.message);
-
-    setEnquiry(e || null);
-    setInvites(i || []);
+    try {
+      const json = await fetchAdminJson(`/api/admin/enquiries/${encodeURIComponent(enquiryId)}`);
+      setEnquiry(json?.enquiry || null);
+      setInvites(Array.isArray(json?.invites) ? json.invites : []);
+    } catch (ex) {
+      setErr(ex?.message || "Failed to load enquiry");
+      setEnquiry(null);
+      setInvites([]);
+    }
     setLoading(false);
   }
 
@@ -722,9 +729,29 @@ function EnquiryDetail({ enquiryId, user, onBack }) {
         <CardContent className="grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-2">
           <p><span className="text-slate-500">Date:</span> {enquiry.event_date}</p>
           <p><span className="text-slate-500">Postcode:</span> {enquiry.event_postcode}</p>
+          <p><span className="text-slate-500">Event type:</span> {enquiry.event_type || "-"}</p>
+          <p><span className="text-slate-500">Category:</span> {enquiry.enquiry_category_slug || "-"}</p>
+          <p><span className="text-slate-500">Start time:</span> {enquiry.start_time || "-"}</p>
           <p><span className="text-slate-500">Guests:</span> {enquiry.guest_count ?? "-"}</p>
+          <p><span className="text-slate-500">Budget range:</span> {enquiry.budget_range || "-"}</p>
           <p><span className="text-slate-500">Venue:</span> {enquiry.venues?.name ?? "-"}</p>
-          {enquiry.notes ? <p className="md:col-span-2 whitespace-pre-wrap"><span className="text-slate-500">Notes:</span> {enquiry.notes}</p> : null}
+          <p><span className="text-slate-500">Venue known:</span> {enquiry.venue_known ? "Yes" : "No"}</p>
+          <p><span className="text-slate-500">Venue name:</span> {enquiry.venue_name || "-"}</p>
+          <p><span className="text-slate-500">Venue postcode:</span> {enquiry.venue_postcode || "-"}</p>
+          <p><span className="text-slate-500">Indoor/outdoor:</span> {enquiry.indoor_outdoor || "-"}</p>
+          <p><span className="text-slate-500">Power available:</span> {enquiry.power_available === null ? "-" : enquiry.power_available ? "Yes" : "No"}</p>
+          <p><span className="text-slate-500">Contact preference:</span> {enquiry.contact_preference || "-"}</p>
+          <p><span className="text-slate-500">Urgency:</span> {enquiry.urgency || "-"}</p>
+          <p><span className="text-slate-500">Source page:</span> {enquiry.source_page || "-"}</p>
+          <p><span className="text-slate-500">Message quality score:</span> {Number(enquiry.message_quality_score || 0)}</p>
+          <p className="md:col-span-2"><span className="text-slate-500">Quality flags:</span> {Array.isArray(enquiry.message_quality_flags) && enquiry.message_quality_flags.length > 0 ? enquiry.message_quality_flags.join(", ") : "-"}</p>
+          {enquiry.dietary_requirements ? <p className="md:col-span-2 whitespace-pre-wrap"><span className="text-slate-500">Dietary requirements:</span> {enquiry.dietary_requirements}</p> : null}
+          {enquiry.message ? <p className="md:col-span-2 whitespace-pre-wrap"><span className="text-slate-500">Message:</span> {enquiry.message}</p> : null}
+          {enquiry.structured_answers ? (
+            <p className="md:col-span-2 whitespace-pre-wrap">
+              <span className="text-slate-500">Structured answers:</span> {JSON.stringify(enquiry.structured_answers, null, 2)}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 

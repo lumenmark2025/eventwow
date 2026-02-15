@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "./_lib/adminAuth.js";
 import { parseBody } from "./_lib/venues.js";
+import { VENUE_IMAGES_BUCKET } from "./_lib/storageBuckets.js";
 
 export default async function handler(req, res) {
   try {
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
     if (imageResp.error) return res.status(500).json({ ok: false, error: "Failed to load image", details: imageResp.error.message });
     if (!imageResp.data) return res.status(404).json({ ok: false, error: "Image not found" });
 
-    await admin.storage.from("venue-gallery").remove([imageResp.data.path]);
+    await admin.storage.from(VENUE_IMAGES_BUCKET).remove([imageResp.data.path]);
     const deleteResp = await admin.from("venue_images").delete().eq("id", imageId);
     if (deleteResp.error) return res.status(500).json({ ok: false, error: "Failed to delete image", details: deleteResp.error.message });
 
@@ -47,4 +48,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
   }
 }
-

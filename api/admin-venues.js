@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
     const venueResp = await admin
       .from("venues")
-      .select("id,name,slug,location_label,address,city,postcode,guest_min,guest_max,short_description,description,about,website_url,facilities,is_published,listed_publicly,created_at,updated_at")
+      .select("id,name,slug,location_label,address,city,postcode,guest_min,guest_max,short_description,description,about,website_url,facilities,is_published,listed_publicly,ai_tags,ai_suggested_search_terms,ai_draft_meta,ai_generated_at,created_at,updated_at")
       .eq("id", venueId)
       .maybeSingle();
     if (venueResp.error) return res.status(500).json({ ok: false, error: "Failed to load venue", details: venueResp.error.message });
@@ -80,6 +80,13 @@ export default async function handler(req, res) {
         city: venueResp.data.city || null,
         postcode: venueResp.data.postcode || null,
         listedPublicly: !!(venueResp.data.is_published ?? venueResp.data.listed_publicly),
+        aiTags: Array.isArray(venueResp.data.ai_tags) ? venueResp.data.ai_tags : [],
+        aiSuggestedSearchTerms: Array.isArray(venueResp.data.ai_suggested_search_terms) ? venueResp.data.ai_suggested_search_terms : [],
+        aiDraftMeta:
+          venueResp.data.ai_draft_meta && typeof venueResp.data.ai_draft_meta === "object" && !Array.isArray(venueResp.data.ai_draft_meta)
+            ? venueResp.data.ai_draft_meta
+            : {},
+        aiGeneratedAt: venueResp.data.ai_generated_at || null,
       },
       linkedSupplierIds: (linksResp.data || []).map((row) => row.supplier_id),
       suppliers: (suppliersResp.data || []).map((s) => ({

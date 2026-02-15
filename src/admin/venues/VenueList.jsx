@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
 import Section from "../../components/layout/Section";
@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
+import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
@@ -46,7 +47,25 @@ function isVenuePublished(venue) {
   return !!venue?.listed_publicly;
 }
 
-function VenueEditor({ venueId, onBack }) {
+function csvToList(value, maxItems = 20, maxLen = 80) {
+  const seen = new Set();
+  const out = [];
+  const parts = String(value || "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+  for (const item of parts) {
+    const clipped = item.slice(0, maxLen);
+    const key = clipped.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(clipped);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
+function VenueEditor({ venueId, onBack, autoOpenAi }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState("");
@@ -55,6 +74,19 @@ function VenueEditor({ venueId, onBack }) {
   const [dirty, setDirty] = useState(false);
   const [allSuppliers, setAllSuppliers] = useState([]);
   const [linkedSupplierIds, setLinkedSupplierIds] = useState([]);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiDraftSaving, setAiDraftSaving] = useState("");
+  const [aiInput, setAiInput] = useState({
+    venue_name: "",
+    town_or_city: "",
+    county_or_region: "",
+    venue_type: "other",
+    website_url: "",
+    notes: "",
+  });
+  const [aiDraft, setAiDraft] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -71,6 +103,10 @@ function VenueEditor({ venueId, onBack }) {
     listedPublicly: false,
     heroImageUrl: "",
     gallery: [],
+    aiTags: [],
+    aiSuggestedSearchTerms: [],
+    aiDraftMeta: {},
+    aiGeneratedAt: null,
   });
 
   const filteredSuppliers = useMemo(
@@ -105,6 +141,10 @@ function VenueEditor({ venueId, onBack }) {
           listedPublicly: !!venue.listedPublicly,
           heroImageUrl: venue.heroImageUrl || "",
           gallery: Array.isArray(venue.gallery) ? venue.gallery : [],
+          aiTags: Array.isArray(venue.aiTags) ? venue.aiTags : [],
+          aiSuggestedSearchTerms: Array.isArray(venue.aiSuggestedSearchTerms) ? venue.aiSuggestedSearchTerms : [],
+          aiDraftMeta: venue.aiDraftMeta && typeof venue.aiDraftMeta === "object" ? venue.aiDraftMeta : {},
+          aiGeneratedAt: venue.aiGeneratedAt || null,
         });
         setLinkedSupplierIds(Array.isArray(json?.linkedSupplierIds) ? json.linkedSupplierIds : []);
         setAllSuppliers(Array.isArray(json?.suppliers) ? json.suppliers : []);
@@ -121,6 +161,22 @@ function VenueEditor({ venueId, onBack }) {
   }, [venueId]);
 
   useEffect(() => {
+    if (!loading && autoOpenAi) {
+      setAiOpen(true);
+    }
+  }, [loading, autoOpenAi]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await apiFetch("/api/admin/storage/ensure-buckets", { method: "POST" });
+      } catch {
+        // non-blocking: upload endpoint validates bucket again
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
     function beforeUnload(e) {
       if (!dirty) return;
       e.preventDefault();
@@ -135,25 +191,31 @@ function VenueEditor({ venueId, onBack }) {
     setDirty(true);
   }
 
-  async function saveVenue() {
+  async function saveVenue(options = {}) {
+    const formPatch = options.formPatch || {};
+    const nextForm = { ...form, ...formPatch };
     setSaving(true);
     setError("");
     setSuccess("");
     try {
       const payload = {
         venueId,
-        name: form.name,
-        slug: form.slug,
-        locationLabel: form.locationLabel,
-        address: form.address,
-        city: form.city,
-        postcode: form.postcode,
-        guestMin: form.guestMin === "" ? null : Number(form.guestMin),
-        guestMax: form.guestMax === "" ? null : Number(form.guestMax),
-        shortDescription: form.shortDescription,
-        about: form.about,
-        websiteUrl: form.websiteUrl,
-        listedPublicly: form.listedPublicly,
+        name: nextForm.name,
+        slug: nextForm.slug,
+        locationLabel: nextForm.locationLabel,
+        address: nextForm.address,
+        city: nextForm.city,
+        postcode: nextForm.postcode,
+        guestMin: nextForm.guestMin === "" ? null : Number(nextForm.guestMin),
+        guestMax: nextForm.guestMax === "" ? null : Number(nextForm.guestMax),
+        shortDescription: nextForm.shortDescription,
+        about: nextForm.about,
+        websiteUrl: nextForm.websiteUrl,
+        listedPublicly: !!nextForm.listedPublicly,
+        aiTags: Array.isArray(nextForm.aiTags) ? nextForm.aiTags : [],
+        aiSuggestedSearchTerms: Array.isArray(nextForm.aiSuggestedSearchTerms) ? nextForm.aiSuggestedSearchTerms : [],
+        aiDraftMeta: nextForm.aiDraftMeta && typeof nextForm.aiDraftMeta === "object" ? nextForm.aiDraftMeta : {},
+        aiGeneratedAt: nextForm.aiGeneratedAt || null,
       };
       const resp = await apiFetch("/api/admin-venue-save", {
         method: "POST",
@@ -163,11 +225,111 @@ function VenueEditor({ venueId, onBack }) {
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to save venue");
       setSuccess("Venue saved.");
+      setForm(nextForm);
       setDirty(false);
+      return true;
     } catch (err) {
       setError(err?.message || "Failed to save venue");
+      return false;
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openAiModal() {
+    setAiError("");
+    setAiDraft(null);
+    setAiInput({
+      venue_name: form.name || "",
+      town_or_city: form.city || "",
+      county_or_region: "",
+      venue_type: "other",
+      website_url: form.websiteUrl || "",
+      notes: "",
+    });
+    setAiOpen(true);
+  }
+
+  async function generateAiDraft() {
+    setAiGenerating(true);
+    setAiError("");
+    setSuccess("");
+    try {
+      const resp = await apiFetch("/api/admin/venues/ai-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(aiInput),
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to generate draft");
+      setAiDraft({
+        name_suggestion: json?.name_suggestion || aiInput.venue_name || "",
+        slug_suggestion: json?.slug_suggestion || "",
+        location_label: json?.location_label || "",
+        short_description: json?.short_description || "",
+        about: json?.about || "",
+        guest_min: json?.guest_min ?? "",
+        guest_max: json?.guest_max ?? "",
+        capacity_confidence: json?.capacity_confidence || "low",
+        tags: Array.isArray(json?.tags) ? json.tags : [],
+        hero_image_search_terms: Array.isArray(json?.hero_image_search_terms) ? json.hero_image_search_terms : [],
+        suggested_supplier_categories: Array.isArray(json?.suggested_supplier_categories) ? json.suggested_supplier_categories : [],
+        disclaimers: Array.isArray(json?.disclaimers) ? json.disclaimers : [],
+      });
+    } catch (err) {
+      setAiError(err?.message || "Failed to generate draft");
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
+  function buildFormPatchFromAiDraft() {
+    if (!aiDraft) return null;
+    const nowIso = new Date().toISOString();
+    return {
+      name: aiDraft.name_suggestion || form.name,
+      slug: aiDraft.slug_suggestion || form.slug,
+      locationLabel: aiDraft.location_label || form.locationLabel,
+      shortDescription: aiDraft.short_description || form.shortDescription,
+      about: aiDraft.about || form.about,
+      guestMin: aiDraft.guest_min ?? form.guestMin,
+      guestMax: aiDraft.guest_max ?? form.guestMax,
+      city: aiInput.town_or_city || form.city,
+      websiteUrl: aiInput.website_url || form.websiteUrl,
+      aiTags: Array.isArray(aiDraft.tags) ? aiDraft.tags : [],
+      aiSuggestedSearchTerms: Array.isArray(aiDraft.hero_image_search_terms) ? aiDraft.hero_image_search_terms : [],
+      aiDraftMeta: {
+        source: "ai_venue_builder",
+        modelInput: { ...aiInput, website_url: aiInput.website_url || null },
+        modelOutput: aiDraft,
+        capacity_confidence: aiDraft.capacity_confidence || "low",
+        suggested_supplier_categories: Array.isArray(aiDraft.suggested_supplier_categories) ? aiDraft.suggested_supplier_categories : [],
+        disclaimers: Array.isArray(aiDraft.disclaimers) ? aiDraft.disclaimers : [],
+      },
+      aiGeneratedAt: nowIso,
+    };
+  }
+
+  function applyAiToForm() {
+    const patch = buildFormPatchFromAiDraft();
+    if (!patch) return;
+    setForm((prev) => ({ ...prev, ...patch }));
+    setDirty(true);
+    setSuccess("AI draft applied to form.");
+  }
+
+  async function saveAiDraft(publish) {
+    const patch = buildFormPatchFromAiDraft();
+    if (!patch) return;
+    setAiDraftSaving(publish ? "publish" : "draft");
+    setAiError("");
+    try {
+      const ok = await saveVenue({ formPatch: { ...patch, listedPublicly: publish } });
+      if (ok) setAiOpen(false);
+    } catch {
+      // saveVenue handles error surface
+    } finally {
+      setAiDraftSaving("");
     }
   }
 
@@ -182,15 +344,15 @@ function VenueEditor({ venueId, onBack }) {
     setSuccess("");
     try {
       const dataBase64 = await toBase64(file);
-      const resp = await apiFetch("/api/admin-venue-upload-image", {
+      const resp = await apiFetch(`/api/admin/venues/${encodeURIComponent(venueId)}/images`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          venueId,
           type,
-          mimeType: file.type || "image/jpeg",
+          caption: "",
+          mimeType: file.type || "",
+          fileName: file.name || "",
           dataBase64,
-          caption: null,
         }),
       });
       const json = await resp.json().catch(() => ({}));
@@ -216,10 +378,8 @@ function VenueEditor({ venueId, onBack }) {
     setBusy(`delete:${imageId}`);
     setError("");
     try {
-      const resp = await apiFetch("/api/admin-venue-delete-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId }),
+      const resp = await apiFetch(`/api/admin/venues/${encodeURIComponent(venueId)}/images?imageId=${encodeURIComponent(imageId)}`, {
+        method: "DELETE",
       });
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to delete image");
@@ -299,6 +459,7 @@ function VenueEditor({ venueId, onBack }) {
         subtitle="Manage venue copy, guest range, imagery, and linked suppliers."
         actions={[
           { key: "back", label: "Back", variant: "secondary", onClick: onBack },
+          { key: "ai-draft", label: "AI Draft Venue", variant: "secondary", onClick: openAiModal },
           { key: "save", label: saving ? "Saving..." : "Save changes", onClick: saveVenue, disabled: saving },
         ]}
       />
@@ -323,6 +484,19 @@ function VenueEditor({ venueId, onBack }) {
             <Input value={form.guestMin} onChange={(e) => setField("guestMin", e.target.value)} type="number" placeholder="Guest min" />
             <Input value={form.guestMax} onChange={(e) => setField("guestMax", e.target.value)} type="number" placeholder="Guest max" />
           </div>
+          <Input
+            value={(form.aiTags || []).join(", ")}
+            onChange={(e) => setField("aiTags", csvToList(e.target.value, 10, 40))}
+            placeholder="AI tags (comma separated)"
+          />
+          <Input
+            value={(form.aiSuggestedSearchTerms || []).join(", ")}
+            onChange={(e) => setField("aiSuggestedSearchTerms", csvToList(e.target.value, 6, 80))}
+            placeholder="Hero image search terms (comma separated)"
+          />
+          {form.aiGeneratedAt ? (
+            <p className="text-xs text-slate-500">AI draft generated: {new Date(form.aiGeneratedAt).toLocaleString()}</p>
+          ) : null}
           <textarea
             className="min-h-[90px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
             value={form.shortDescription}
@@ -444,12 +618,140 @@ function VenueEditor({ venueId, onBack }) {
           </Button>
         </CardContent>
       </Card>
+
+      <Modal
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        title="AI Assisted Venue Builder"
+        footer={(
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" onClick={generateAiDraft} disabled={aiGenerating}>
+              {aiGenerating ? "Generating..." : "Generate Draft"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={applyAiToForm} disabled={!aiDraft}>
+              Apply to Form
+            </Button>
+            <Button type="button" onClick={() => saveAiDraft(false)} disabled={!aiDraft || !!aiDraftSaving}>
+              {aiDraftSaving === "draft" ? "Saving..." : "Save Draft"}
+            </Button>
+            <Button type="button" onClick={() => saveAiDraft(true)} disabled={!aiDraft || !!aiDraftSaving}>
+              {aiDraftSaving === "publish" ? "Saving..." : "Save & Publish"}
+            </Button>
+          </div>
+        )}
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <Input
+              value={aiInput.venue_name}
+              onChange={(e) => setAiInput((prev) => ({ ...prev, venue_name: e.target.value }))}
+              placeholder="Venue name *"
+            />
+            <Input
+              value={aiInput.town_or_city}
+              onChange={(e) => setAiInput((prev) => ({ ...prev, town_or_city: e.target.value }))}
+              placeholder="Town or city *"
+            />
+            <Input
+              value={aiInput.county_or_region}
+              onChange={(e) => setAiInput((prev) => ({ ...prev, county_or_region: e.target.value }))}
+              placeholder="County or region"
+            />
+            <select
+              value={aiInput.venue_type}
+              onChange={(e) => setAiInput((prev) => ({ ...prev, venue_type: e.target.value }))}
+              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+            >
+              <option value="hotel">hotel</option>
+              <option value="barn">barn</option>
+              <option value="country house">country house</option>
+              <option value="village hall">village hall</option>
+              <option value="outdoor">outdoor</option>
+              <option value="restaurant">restaurant</option>
+              <option value="marquee site">marquee site</option>
+              <option value="other">other</option>
+            </select>
+            <div className="md:col-span-2">
+              <Input
+                value={aiInput.website_url}
+                onChange={(e) => setAiInput((prev) => ({ ...prev, website_url: e.target.value }))}
+                placeholder="Website URL (optional, not fetched)"
+              />
+            </div>
+          </div>
+          <textarea
+            className="min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+            value={aiInput.notes}
+            onChange={(e) => setAiInput((prev) => ({ ...prev, notes: e.target.value }))}
+            placeholder="Notes (optional)"
+          />
+          {aiError ? <p className="text-sm text-rose-600">{aiError}</p> : null}
+          {aiDraft ? (
+            <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <Input
+                value={aiDraft.name_suggestion}
+                onChange={(e) => setAiDraft((prev) => ({ ...prev, name_suggestion: e.target.value }))}
+                placeholder="Name suggestion"
+              />
+              <Input
+                value={aiDraft.slug_suggestion}
+                onChange={(e) => setAiDraft((prev) => ({ ...prev, slug_suggestion: e.target.value }))}
+                placeholder="Slug suggestion"
+              />
+              <Input
+                value={aiDraft.location_label}
+                onChange={(e) => setAiDraft((prev) => ({ ...prev, location_label: e.target.value }))}
+                placeholder="Location label"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="number"
+                  value={aiDraft.guest_min}
+                  onChange={(e) => setAiDraft((prev) => ({ ...prev, guest_min: e.target.value }))}
+                  placeholder="Guest min"
+                />
+                <Input
+                  type="number"
+                  value={aiDraft.guest_max}
+                  onChange={(e) => setAiDraft((prev) => ({ ...prev, guest_max: e.target.value }))}
+                  placeholder="Guest max"
+                />
+              </div>
+              <textarea
+                className="min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+                value={aiDraft.short_description}
+                onChange={(e) => setAiDraft((prev) => ({ ...prev, short_description: e.target.value }))}
+                placeholder="Short description"
+              />
+              <textarea
+                className="min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+                value={aiDraft.about}
+                onChange={(e) => setAiDraft((prev) => ({ ...prev, about: e.target.value }))}
+                placeholder="About"
+              />
+              <Input
+                value={(aiDraft.tags || []).join(", ")}
+                onChange={(e) => setAiDraft((prev) => ({ ...prev, tags: csvToList(e.target.value, 10, 40) }))}
+                placeholder="Tags (comma separated)"
+              />
+              <Input
+                value={(aiDraft.hero_image_search_terms || []).join(", ")}
+                onChange={(e) =>
+                  setAiDraft((prev) => ({ ...prev, hero_image_search_terms: csvToList(e.target.value, 6, 80) }))
+                }
+                placeholder="Hero image search terms (comma separated)"
+              />
+            </div>
+          ) : null}
+        </div>
+      </Modal>
     </div>
   );
 }
 
 export default function VenueList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
@@ -506,8 +808,33 @@ export default function VenueList() {
     }
   }
 
+  async function openAiBuilderFromList() {
+    setCreating(true);
+    setCreateError("");
+    try {
+      const initialName = createName.trim() || "Untitled venue";
+      const resp = await apiFetch("/api/admin-venue-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: initialName, listedPublicly: false }),
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to create venue");
+      const venueId = json?.venueId;
+      if (!venueId) throw new Error("Venue id missing");
+      setCreateName("");
+      navigate(`/admin/venues/${venueId}?ai=1`);
+    } catch (err) {
+      setCreateError(err?.message || "Failed to open AI builder");
+    } finally {
+      setCreating(false);
+    }
+  }
+
   if (id) {
-    return <VenueEditor venueId={id} onBack={() => navigate("/admin/venues")} />;
+    const searchParams = new URLSearchParams(location.search || "");
+    const autoOpenAi = searchParams.get("ai") === "1";
+    return <VenueEditor venueId={id} onBack={() => navigate("/admin/venues")} autoOpenAi={autoOpenAi} />;
   }
 
   return (
@@ -527,6 +854,9 @@ export default function VenueList() {
               placeholder="Venue name"
             />
             <Button type="submit" disabled={creating}>{creating ? "Creating..." : "Create"}</Button>
+            <Button type="button" variant="secondary" disabled={creating} onClick={openAiBuilderFromList}>
+              {creating ? "Opening..." : "AI Draft Venue"}
+            </Button>
           </form>
           {createError ? <p className="mt-2 text-sm text-rose-600">{createError}</p> : null}
         </CardContent>

@@ -2,11 +2,11 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "./_lib/adminAuth.js";
 import { parseBody } from "./_lib/venues.js";
+import { VENUE_IMAGES_BUCKET, ensureBucketExists } from "./_lib/storageBuckets.js";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 const EXT_BY_MIME = {
   "image/jpeg": "jpg",
-  "image/jpg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
 };
@@ -22,6 +22,56 @@ function decodeBase64Payload(dataBase64) {
   } catch {
     return null;
   }
+}
+
+function normalizeMimeType(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  const base = raw.split(";")[0].trim();
+  if (base === "image/jpg") return "image/jpeg";
+  if (base === "image/x-png") return "image/png";
+  return base;
+}
+
+function inferMimeTypeFromFileName(value) {
+  const fileName = String(value || "").trim().toLowerCase();
+  if (fileName.endsWith(".png")) return "image/png";
+  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
+  if (fileName.endsWith(".webp")) return "image/webp";
+  return "";
+}
+
+function inferMimeTypeFromBuffer(buffer) {
+  if (!buffer || !buffer.length) return "";
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  ) {
+    return "image/png";
+  }
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (
+    buffer.length >= 12 &&
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  return "";
 }
 
 export default async function handler(req, res) {
@@ -48,17 +98,28 @@ export default async function handler(req, res) {
     const body = parseBody(req);
     const venueId = String(body?.venueId || "").trim();
     const type = String(body?.type || "").trim().toLowerCase();
-    const mimeType = String(body?.mimeType || "").trim().toLowerCase();
+    const sourceName = String(body?.fileName || "").trim();
+    let mimeType = normalizeMimeType(body?.mimeType);
     const caption = String(body?.caption || "").trim() || null;
     const buffer = decodeBase64Payload(body?.dataBase64);
+    if (!mimeType || mimeType === "application/octet-stream") {
+      mimeType = inferMimeTypeFromBuffer(buffer) || inferMimeTypeFromFileName(sourceName);
+    }
 
     if (!venueId) return res.status(400).json({ ok: false, error: "Bad request", details: "venueId is required" });
     if (!["hero", "gallery"].includes(type)) return res.status(400).json({ ok: false, error: "Bad request", details: "type must be hero or gallery" });
-    if (!ALLOWED_TYPES.has(mimeType)) return res.status(400).json({ ok: false, error: "Bad request", details: "Unsupported image type" });
+    if (!ALLOWED_TYPES.has(mimeType)) {
+      return res.status(400).json({ ok: false, error: "Bad request", details: `Unsupported image type (${mimeType || "unknown"})` });
+    }
     if (!buffer || !buffer.length) return res.status(400).json({ ok: false, error: "Bad request", details: "Missing image payload" });
     if (buffer.length > MAX_BYTES) return res.status(400).json({ ok: false, error: "Bad request", details: "Image must be 5MB or smaller" });
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+    const ensureResp = await ensureBucketExists(admin, VENUE_IMAGES_BUCKET, { public: true });
+    if (!ensureResp.ok) {
+      return res.status(500).json({ ok: false, error: "Failed to ensure venue images bucket", details: ensureResp.error });
+    }
+
     const venueResp = await admin.from("venues").select("id").eq("id", venueId).maybeSingle();
     if (venueResp.error) return res.status(500).json({ ok: false, error: "Venue lookup failed", details: venueResp.error.message });
     if (!venueResp.data) return res.status(404).json({ ok: false, error: "Venue not found" });
@@ -79,16 +140,16 @@ export default async function handler(req, res) {
     }
 
     const ext = EXT_BY_MIME[mimeType] || "jpg";
-    const objectPath = `${venueId}/${crypto.randomUUID()}.${ext}`;
+    const objectPath = `venues/${venueId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
     const uploadResp = await admin.storage
-      .from("venue-gallery")
+      .from(VENUE_IMAGES_BUCKET)
       .upload(objectPath, buffer, { contentType: mimeType, upsert: false });
     if (uploadResp.error) return res.status(500).json({ ok: false, error: "Failed to upload image", details: uploadResp.error.message });
 
     if (type === "hero") {
       const previousHero = currentImages.find((img) => img.type === "hero");
       if (previousHero) {
-        await admin.storage.from("venue-gallery").remove([previousHero.path]);
+        await admin.storage.from(VENUE_IMAGES_BUCKET).remove([previousHero.path]);
         await admin.from("venue_images").delete().eq("id", previousHero.id).eq("venue_id", venueId);
       }
     }
@@ -106,7 +167,7 @@ export default async function handler(req, res) {
       .select("id")
       .single();
     if (insertResp.error) {
-      await admin.storage.from("venue-gallery").remove([objectPath]);
+      await admin.storage.from(VENUE_IMAGES_BUCKET).remove([objectPath]);
       return res.status(500).json({ ok: false, error: "Failed to save image metadata", details: insertResp.error.message });
     }
 
@@ -116,4 +177,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
   }
 }
-
