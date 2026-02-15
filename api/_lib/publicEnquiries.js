@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { computeSupplierGateFromData } from "./supplierGate.js";
 import { createSupplierNotification, reserveEvent } from "./notifications.js";
+import { sendEmail } from "./email.js";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -24,6 +25,28 @@ function parseBody(req) {
     }
   }
   return body || {};
+}
+
+function getBearerToken(req) {
+  const authHeader = req.headers.authorization || "";
+  return authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+}
+
+function publicAppOrigin() {
+  const explicit =
+    process.env.PUBLIC_APP_URL ||
+    process.env.VITE_PUBLIC_APP_URL ||
+    process.env.VITE_SITE_URL ||
+    "";
+  if (explicit) return String(explicit).replace(/\/+$/, "");
+  const vercelUrl = String(process.env.VERCEL_URL || "").trim();
+  if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "")}`;
+  return "";
+}
+
+function callbackUrlForMagicLink() {
+  const origin = publicAppOrigin();
+  return origin ? `${origin}/auth/callback` : null;
 }
 
 function sanitizeText(value, max = 4000) {
@@ -354,34 +377,69 @@ function pickEligibleSuppliers(
   return eligible.slice(0, limit);
 }
 
-async function upsertCustomer(admin, { fullName, email, phone, contactPreference }) {
-  const existingCustomerResp = await admin
-    .from("customers")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle();
+async function getAuthUserFromToken({ supabaseUrl, anonKey, token }) {
+  if (!token || !supabaseUrl || !anonKey) return null;
+  const authed = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+  });
+  const { data, error } = await authed.auth.getUser(token);
+  if (error || !data?.user) return null;
+  return data.user;
+}
 
-  if (existingCustomerResp.error) {
-    throw new Error(`Failed to look up customer: ${existingCustomerResp.error.message}`);
-  }
+async function resolveUserRole(admin, userId) {
+  if (!userId) return null;
 
-  if (existingCustomerResp.data?.id) {
-    const customerId = existingCustomerResp.data.id;
+  const profile = await admin.from("user_profiles").select("role").eq("user_id", userId).maybeSingle();
+  if (!profile.error && profile.data?.role) return String(profile.data.role).toLowerCase();
+
+  const legacyAdmin = await admin.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+  if (!legacyAdmin.error && legacyAdmin.data?.role) return "admin";
+
+  const supplier = await admin.from("suppliers").select("id").eq("auth_user_id", userId).maybeSingle();
+  if (!supplier.error && supplier.data?.id) return "supplier";
+
+  const customer = await admin.from("customers").select("id").eq("user_id", userId).maybeSingle();
+  if (!customer.error && customer.data?.id) return "customer";
+
+  return null;
+}
+
+async function upsertUserProfileRole(admin, userId, role) {
+  if (!userId || !role) return;
+  await admin.from("user_profiles").upsert(
+    {
+      user_id: userId,
+      role,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
+}
+
+async function upsertCustomerLinkedToUser(admin, { userId, fullName, email, phone, contactPreference }) {
+  if (!userId) return null;
+
+  const byUser = await admin.from("customers").select("id").eq("user_id", userId).maybeSingle();
+  if (!byUser.error && byUser.data?.id) {
     await admin
       .from("customers")
       .update({
         full_name: fullName,
+        email,
         phone,
         preferred_contact_method: contactPreference || (phone ? "phone" : "email"),
       })
-      .eq("id", customerId);
-    return customerId;
+      .eq("id", byUser.data.id);
+    return byUser.data.id;
   }
 
   const createResp = await admin
     .from("customers")
     .insert([
       {
+        user_id: userId,
         full_name: fullName,
         email,
         phone,
@@ -391,10 +449,43 @@ async function upsertCustomer(admin, { fullName, email, phone, contactPreference
     .select("id")
     .single();
 
-  if (createResp.error || !createResp.data?.id) {
-    throw new Error(`Failed to create customer: ${createResp.error?.message || "insert failed"}`);
-  }
+  if (createResp.error || !createResp.data?.id) return null;
   return createResp.data.id;
+}
+
+async function findAuthUserIdByEmail(admin, email) {
+  const rpc = await admin.rpc("find_auth_user_by_email", { p_email: email });
+  if (rpc.error) return null;
+  return typeof rpc.data === "string" && rpc.data ? rpc.data : null;
+}
+
+async function sendCustomerMagicLinkEmail(admin, email, fullName) {
+  if (!email) return { ok: false };
+  const redirectTo = callbackUrlForMagicLink();
+  const linkResp = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: redirectTo ? { redirectTo } : undefined,
+  });
+
+  if (linkResp.error || !linkResp.data?.properties?.action_link) {
+    return { ok: false, error: linkResp.error?.message || "Failed to generate magic link" };
+  }
+
+  const actionLink = linkResp.data.properties.action_link;
+  await sendEmail({
+    to: email,
+    subject: "Manage your Eventwow enquiries",
+    html: `
+      <p>Hi ${String(fullName || "").trim() || "there"},</p>
+      <p>Your enquiry was received. Use the secure link below to manage your enquiries:</p>
+      <p><a href="${actionLink}">Continue to your Eventwow dashboard</a></p>
+      <p>If you did not request this, you can ignore this email.</p>
+    `,
+    eventKey: "customer_magic_link",
+  });
+
+  return { ok: true };
 }
 
 export async function handleCreatePublicEnquiry(req, res) {
@@ -405,6 +496,7 @@ export async function handleCreatePublicEnquiry(req, res) {
 
     const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
     if (!SUPABASE_URL || !SERVICE_KEY) {
       return res.status(500).json({
         ok: false,
@@ -440,7 +532,61 @@ export async function handleCreatePublicEnquiry(req, res) {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-    const customerId = await upsertCustomer(admin, input);
+    const token = getBearerToken(req);
+    const authUser = await getAuthUserFromToken({ supabaseUrl: SUPABASE_URL, anonKey: ANON_KEY, token });
+    let linkedCustomerId = null;
+    let linkedCustomerUserId = null;
+
+    if (authUser?.id) {
+      const role = await resolveUserRole(admin, authUser.id);
+      if (role === "customer") {
+        linkedCustomerUserId = authUser.id;
+        linkedCustomerId = await upsertCustomerLinkedToUser(admin, {
+          userId: authUser.id,
+          fullName: input.fullName,
+          email: authUser.email || input.email,
+          phone: input.phone,
+          contactPreference: input.contactPreference,
+        });
+      }
+    } else {
+      const existingUserId = await findAuthUserIdByEmail(admin, input.email);
+
+      if (!existingUserId) {
+        const createUserResp = await admin.auth.admin.createUser({
+          email: input.email,
+          email_confirm: false,
+          user_metadata: { full_name: input.fullName || null },
+        });
+        if (!createUserResp.error && createUserResp.data?.user?.id) {
+          linkedCustomerUserId = createUserResp.data.user.id;
+          await upsertUserProfileRole(admin, linkedCustomerUserId, "customer");
+          linkedCustomerId = await upsertCustomerLinkedToUser(admin, {
+            userId: linkedCustomerUserId,
+            fullName: input.fullName,
+            email: input.email,
+            phone: input.phone,
+            contactPreference: input.contactPreference,
+          });
+          await sendCustomerMagicLinkEmail(admin, input.email, input.fullName);
+        }
+      } else {
+        const existingRole = await resolveUserRole(admin, existingUserId);
+        const isPrivileged = existingRole === "admin" || existingRole === "supplier" || existingRole === "venue";
+        if (!isPrivileged) {
+          linkedCustomerUserId = existingUserId;
+          await upsertUserProfileRole(admin, existingUserId, "customer");
+          linkedCustomerId = await upsertCustomerLinkedToUser(admin, {
+            userId: existingUserId,
+            fullName: input.fullName,
+            email: input.email,
+            phone: input.phone,
+            contactPreference: input.contactPreference,
+          });
+        }
+        await sendCustomerMagicLinkEmail(admin, input.email, input.fullName);
+      }
+    }
     const publicToken = crypto.randomUUID();
     const ipHash = crypto.createHash("sha256").update(getRequestIp(req)).digest("hex");
 
@@ -462,7 +608,8 @@ export async function handleCreatePublicEnquiry(req, res) {
       .from("enquiries")
       .insert([
         {
-          customer_id: customerId,
+          customer_id: linkedCustomerId,
+          customer_user_id: linkedCustomerUserId,
           status: "new",
           event_type: input.eventType,
           enquiry_category_slug: input.enquiryCategorySlug || null,
@@ -621,7 +768,7 @@ export async function handleCreatePublicEnquiry(req, res) {
       enquiryId,
       publicToken: enquiryInsertResp.data.public_token,
       invitedCount: invites.length,
-      message: "Your enquiry has been submitted and suppliers have been invited.",
+      message: "Thanks - we have emailed you a link to manage your request.",
     });
   } catch (err) {
     console.error("public enquiries create crashed:", err);

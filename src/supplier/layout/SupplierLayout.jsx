@@ -76,6 +76,7 @@ export default function SupplierLayout({ user, supplier, onSignOut, children }) 
       title="Eventwow Supplier"
       user={user}
       supplier={supplier}
+      showBrandMeta={false}
       onSignOut={onSignOut}
       nav={nav}
       activeKey={tab}

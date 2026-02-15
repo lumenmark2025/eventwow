@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 import MarketingShell from "../../components/layout/MarketingShell";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -112,9 +113,14 @@ export default function RequestPage() {
         source_page: "/request",
         structured_answers: {},
       };
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token || "";
       const resp = await fetch("/api/public/enquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       const json = await resp.json().catch(() => ({}));

@@ -1,10 +1,12 @@
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
+import eventwowLogo from "../../assets/brand/eventwow-logo.svg";
 
 export default function AppShell({
   title = "Eventwow",
   user,
   supplier,
+  showBrandMeta = true,
   onSignOut,
   nav = [],
   activeKey,
@@ -18,15 +20,23 @@ export default function AppShell({
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-foreground text-sm font-bold">
-              EW
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-slate-900">{title}</div>
-              {supplier?.business_name ? (
-                <div className="text-xs text-slate-500">{supplier.business_name}</div>
-              ) : null}
-            </div>
+            <img
+              src={eventwowLogo}
+              alt="Eventwow"
+              width="170"
+              height="32"
+              className="h-7 w-auto sm:h-8"
+              loading="eager"
+              decoding="async"
+            />
+            {showBrandMeta ? (
+              <div>
+                <div className="text-sm font-semibold text-slate-900">{title}</div>
+                {supplier?.business_name ? (
+                  <div className="text-xs text-slate-500">{supplier.business_name}</div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="hidden md:flex items-center gap-2">

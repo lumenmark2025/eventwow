@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { getAuthCallbackUrl } from "../lib/siteUrl";
+import eventwowLogo from "../assets/brand/eventwow-logo.svg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -42,8 +43,16 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
       <form onSubmit={onSubmit} className="w-full max-w-sm rounded-2xl border bg-white p-6 space-y-4">
-        <h1 className="text-xl font-semibold">Eventwow</h1>
-        <p className="text-sm text-gray-600">Admins can use password login. Suppliers can use a magic link.</p>
+        <img
+          src={eventwowLogo}
+          alt="Eventwow"
+          width="180"
+          height="34"
+          className="h-8 w-auto"
+          loading="eager"
+          decoding="async"
+        />
+        <p className="text-sm text-gray-600">Admins can use password login. Suppliers and customers can use a magic link.</p>
         <div className="space-y-2">
           <label className="text-sm">Email</label>
           <input className="w-full border rounded-lg px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} />

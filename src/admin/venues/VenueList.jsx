@@ -24,6 +24,23 @@ async function apiFetch(path, options = {}) {
   return fetch(path, { ...options, headers });
 }
 
+function getApiErrorMessage(payload, fallback = "Request failed") {
+  const json = payload && typeof payload === "object" ? payload : {};
+  if (typeof json.details === "string" && json.details.trim()) return json.details;
+  if (typeof json.error === "string" && json.error.trim()) return json.error;
+  if (json.details && typeof json.details === "object") {
+    const fields = Object.entries(json.details)
+      .map(([k, v]) => `${k}: ${String(v)}`)
+      .join(", ");
+    if (fields) return fields;
+  }
+  if (json.error && typeof json.error === "object") {
+    const msg = json.error.message || json.error.type;
+    if (typeof msg === "string" && msg.trim()) return msg;
+  }
+  return fallback;
+}
+
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -261,7 +278,7 @@ function VenueEditor({ venueId, onBack, autoOpenAi }) {
         body: JSON.stringify(aiInput),
       });
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to generate draft");
+      if (!resp.ok) throw new Error(getApiErrorMessage(json, "Failed to generate draft"));
       setAiDraft({
         name_suggestion: json?.name_suggestion || aiInput.venue_name || "",
         slug_suggestion: json?.slug_suggestion || "",
@@ -752,17 +769,22 @@ function VenueEditor({ venueId, onBack, autoOpenAi }) {
 export default function VenueList() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.venueId || params.id;
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
   const [listError, setListError] = useState("");
+  const [listSuccess, setListSuccess] = useState("");
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
   const [createName, setCreateName] = useState("");
+  const [draftToDelete, setDraftToDelete] = useState(null);
+  const [deletingDraft, setDeletingDraft] = useState(false);
 
   async function loadVenues() {
     setLoading(true);
     setListError("");
+    setListSuccess("");
     try {
       const resp = await apiFetch("/api/admin-venues");
       const json = await resp.json().catch(() => ({}));
@@ -831,6 +853,27 @@ export default function VenueList() {
     }
   }
 
+  async function deleteDraftVenue() {
+    if (!draftToDelete?.id) return;
+    setDeletingDraft(true);
+    setListError("");
+    setListSuccess("");
+    try {
+      const resp = await apiFetch(`/api/admin/venues/drafts/${encodeURIComponent(draftToDelete.id)}`, {
+        method: "DELETE",
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(getApiErrorMessage(json, "Failed to delete draft"));
+      setRows((prev) => prev.filter((row) => row.id !== draftToDelete.id));
+      setListSuccess(`Deleted draft: ${draftToDelete.name || "Venue"}.`);
+      setDraftToDelete(null);
+    } catch (err) {
+      setListError(err?.message || "Failed to delete draft");
+    } finally {
+      setDeletingDraft(false);
+    }
+  }
+
   if (id) {
     const searchParams = new URLSearchParams(location.search || "");
     const autoOpenAi = searchParams.get("ai") === "1";
@@ -864,6 +907,7 @@ export default function VenueList() {
 
       <Section title="Venue list" right={<Badge variant="neutral">{rows.length} total</Badge>}>
         <Card className="overflow-hidden">
+          {listSuccess ? <p className="px-6 pt-4 text-sm text-emerald-700">{listSuccess}</p> : null}
           {loading ? (
             <CardContent className="space-y-2">
               <Skeleton className="h-10 w-full" />
@@ -891,6 +935,7 @@ export default function VenueList() {
                     <TH>Location</TH>
                     <TH>Guests</TH>
                     <TH>Status</TH>
+                    <TH className="text-right">Actions</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -911,6 +956,25 @@ export default function VenueList() {
                           {isVenuePublished(v) ? "Published" : "Hidden"}
                         </Badge>
                       </TD>
+                      <TD className="text-right">
+                        {!isVenuePublished(v) ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="border-rose-200 text-rose-700 hover:bg-rose-50"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDraftToDelete(v);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </TD>
                     </TR>
                   ))}
                 </TBody>
@@ -919,6 +983,30 @@ export default function VenueList() {
           )}
         </Card>
       </Section>
+
+      <Modal
+        open={!!draftToDelete}
+        onClose={() => {
+          if (deletingDraft) return;
+          setDraftToDelete(null);
+        }}
+        title="Delete draft venue?"
+        footer={(
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" onClick={() => setDraftToDelete(null)} disabled={deletingDraft}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={deleteDraftVenue} disabled={deletingDraft}>
+              {deletingDraft ? "Deleting..." : "Delete draft"}
+            </Button>
+          </div>
+        )}
+      >
+        <p className="text-sm text-slate-700">
+          This permanently deletes the unpublished draft
+          {draftToDelete?.name ? ` "${draftToDelete.name}"` : ""} and removes any uploaded venue images.
+        </p>
+      </Modal>
     </div>
   );
 }

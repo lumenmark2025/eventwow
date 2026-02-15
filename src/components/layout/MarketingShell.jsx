@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import Button from "../ui/Button";
+import eventwowLogo from "../../assets/brand/eventwow-logo.svg";
 
 const navItems = [
   { to: "/request", label: "Request quotes" },
@@ -20,13 +21,17 @@ export default function MarketingShell({ children }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <NavLink to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-white">EW</div>
-            <div>
-              <div className="text-base font-semibold tracking-tight">Eventwow</div>
-              <div className="text-xs text-slate-500">Event supplier marketplace</div>
-            </div>
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
+          <NavLink to="/" className="inline-flex items-center transition-opacity duration-200 hover:opacity-80">
+            <img
+              src={eventwowLogo}
+              alt="Eventwow"
+              width="180"
+              height="34"
+              className="h-7 w-auto sm:h-8"
+              loading="eager"
+              decoding="async"
+            />
           </NavLink>
 
           <nav className="hidden items-center gap-1 md:flex">
@@ -39,7 +44,7 @@ export default function MarketingShell({ children }) {
 
           <div className="flex items-center gap-2">
             <Button as={NavLink} to="/login" variant="ghost" size="sm" className="hidden sm:inline-flex">
-              Supplier login
+              Login
             </Button>
             <Button as={NavLink} to="/browse" size="sm">
               Get quotes
@@ -53,8 +58,18 @@ export default function MarketingShell({ children }) {
       <footer className="mt-14 border-t border-slate-200 bg-white">
         <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
           <div>
-            <div className="text-base font-semibold">Eventwow</div>
-            <p className="mt-2 text-sm text-slate-600">Book trusted event suppliers with a simple quote flow.</p>
+            <NavLink to="/" className="inline-flex items-center transition-opacity duration-200 hover:opacity-80">
+              <img
+                src={eventwowLogo}
+                alt="Eventwow"
+                width="144"
+                height="28"
+                className="h-6 w-auto"
+                loading="lazy"
+                decoding="async"
+              />
+            </NavLink>
+            <p className="mt-3 text-sm text-slate-600">Book trusted event suppliers with a simple quote flow.</p>
           </div>
           <div className="text-sm">
             <p className="font-medium text-slate-900">Explore</p>
@@ -75,7 +90,7 @@ export default function MarketingShell({ children }) {
           </div>
           <div className="text-sm text-slate-600">
             <p className="font-medium text-slate-900">Legal</p>
-            <p className="mt-2">Copyright {new Date().getFullYear()} Eventwow. All rights reserved.</p>
+            <p className="mt-2">© {new Date().getFullYear()} Eventwow</p>
           </div>
         </div>
       </footer>

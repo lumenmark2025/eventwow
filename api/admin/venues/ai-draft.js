@@ -232,9 +232,9 @@ export default async function handler(req, res) {
 
     const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const AI_PROVIDER = String(process.env.AI_PROVIDER || "openai").trim().toLowerCase();
-    const AI_API_KEY = String(process.env.AI_API_KEY || "").trim();
-    const AI_MODEL = String(process.env.AI_MODEL || "").trim();
+    const AI_PROVIDER = String(process.env.AI_PROVIDER || process.env.OPENAI_PROVIDER || "openai").trim().toLowerCase();
+    const AI_API_KEY = String(process.env.AI_API_KEY || process.env.OPENAI_API_KEY || "").trim();
+    const AI_MODEL = String(process.env.AI_MODEL || process.env.OPENAI_MODEL || "").trim();
 
     if (!SUPABASE_URL || !SERVICE_KEY) {
       return res.status(500).json({
@@ -250,11 +250,7 @@ export default async function handler(req, res) {
       return res.status(500).json({
         ok: false,
         error: "Missing AI env vars",
-        details: {
-          AI_PROVIDER,
-          AI_API_KEY: !!AI_API_KEY,
-          AI_MODEL: !!AI_MODEL,
-        },
+        details: `AI configuration is incomplete (provider=${AI_PROVIDER}, api_key_set=${!!AI_API_KEY}, model_set=${!!AI_MODEL})`,
       });
     }
 

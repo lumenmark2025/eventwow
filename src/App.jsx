@@ -5,6 +5,7 @@ import { supabase } from "./lib/supabase";
 import Login from "./components/Login";
 import AdminLayout from "./admin/layout/AdminLayout";
 import SupplierLayout from "./supplier/layout/SupplierLayout";
+import CustomerLayout from "./customer/layout/CustomerLayout";
 import { warnIfAuthOriginLooksWrong } from "./lib/siteUrl";
 
 import AdminVenuesPage from "./pages/admin/VenuesPage";
@@ -22,6 +23,9 @@ import BookingsPage from "./pages/supplier/BookingsPage";
 import MessagesPage from "./pages/supplier/MessagesPage";
 import NotificationsPage from "./pages/supplier/NotificationsPage";
 import ListingPage from "./pages/supplier/ListingPage";
+import CustomerDashboardPage from "./pages/customer/DashboardPage";
+import CustomerEnquiriesPage from "./pages/customer/EnquiriesPage";
+import CustomerEnquiryDetailPage from "./pages/customer/EnquiryDetailPage";
 
 import PublicQuotePage from "./pages/PublicQuotePage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
@@ -68,20 +72,35 @@ function LoadingAccess() {
   return <div className="min-h-screen flex items-center justify-center">Checking access...</div>;
 }
 
+function normalizeReturnTo(rawValue) {
+  const raw = String(rawValue || "").trim();
+  if (!raw || !raw.startsWith("/")) return "";
+  if (raw.startsWith("//")) return "";
+  return raw;
+}
+
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [authState, setAuthState] = useState({
     loading: true,
     role: null,
     supplier: null,
+    customer: null,
     error: null,
   });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => setSession(newSession));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setSessionLoading(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setSessionLoading(false);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
 
@@ -97,12 +116,47 @@ export default function App() {
     async function resolveRole() {
       try {
         if (!user) {
-          if (!cancelled) setAuthState({ loading: false, role: null, supplier: null, error: null });
+          if (!cancelled) setAuthState({ loading: false, role: null, supplier: null, customer: null, error: null });
           return;
         }
 
         if (!cancelled) {
           setAuthState((s) => ({ ...s, loading: true, error: null }));
+        }
+
+        const { data: profileRow, error: profileErr } = await supabase
+          .from("user_profiles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const profileRole = !profileErr && profileRow?.role ? String(profileRow.role).toLowerCase() : null;
+
+        if (profileRole === "admin") {
+          if (!cancelled) setAuthState({ loading: false, role: "admin", supplier: null, customer: null, error: null });
+          return;
+        }
+        if (profileRole === "supplier") {
+          const { data: supplierRow } = await supabase
+            .from("suppliers")
+            .select("id,business_name,credits_balance,is_published")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
+          if (!cancelled) setAuthState({ loading: false, role: "supplier", supplier: supplierRow || null, customer: null, error: null });
+          return;
+        }
+        if (profileRole === "customer") {
+          const { data: customerRow } = await supabase
+            .from("customers")
+            .select("id,full_name,email,phone")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (!cancelled) setAuthState({ loading: false, role: "customer", supplier: null, customer: customerRow || null, error: null });
+          return;
+        }
+        if (profileRole === "venue") {
+          if (!cancelled) setAuthState({ loading: false, role: "venue", supplier: null, customer: null, error: null });
+          return;
         }
 
         const { data: roleRow, error: roleErr } = await supabase
@@ -112,7 +166,7 @@ export default function App() {
           .maybeSingle();
 
         if (!roleErr && roleRow?.role === "admin") {
-          if (!cancelled) setAuthState({ loading: false, role: "admin", supplier: null, error: null });
+          if (!cancelled) setAuthState({ loading: false, role: "admin", supplier: null, customer: null, error: null });
           return;
         }
 
@@ -123,15 +177,25 @@ export default function App() {
           .maybeSingle();
 
         if (!supplierErr && supplierRow?.id) {
-          if (!cancelled) setAuthState({ loading: false, role: "supplier", supplier: supplierRow, error: null });
+          if (!cancelled) setAuthState({ loading: false, role: "supplier", supplier: supplierRow, customer: null, error: null });
           return;
         }
 
-        if (!cancelled) setAuthState({ loading: false, role: "none", supplier: null, error: null });
+        const { data: customerRow, error: customerErr } = await supabase
+          .from("customers")
+          .select("id,full_name,email,phone")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!customerErr && customerRow?.id) {
+          if (!cancelled) setAuthState({ loading: false, role: "customer", supplier: null, customer: customerRow, error: null });
+          return;
+        }
+
+        if (!cancelled) setAuthState({ loading: false, role: "none", supplier: null, customer: null, error: null });
       } catch (err) {
         console.error("resolveRole failed:", err);
         if (!cancelled) {
-          setAuthState({ loading: false, role: "none", supplier: null, error: "Role check failed (see console)." });
+          setAuthState({ loading: false, role: "none", supplier: null, customer: null, error: "Role check failed (see console)." });
         }
       }
     }
@@ -150,24 +214,46 @@ export default function App() {
       console.error("signOut failed:", err);
     } finally {
       setSession(null);
-      setAuthState({ loading: false, role: null, supplier: null, error: null });
+      setAuthState({ loading: false, role: null, supplier: null, customer: null, error: null });
       navigate("/", { replace: true });
     }
   }
 
   function adminGuard(element) {
-    if (!user) return <Navigate to="/login" replace />;
-    if (authState.loading) return <LoadingAccess />;
+    if (sessionLoading || (user && authState.loading)) return <LoadingAccess />;
+    if (!user) {
+      const returnTo = encodeURIComponent(`${location.pathname}${location.search || ""}${location.hash || ""}`);
+      return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
+    }
     if (authState.role === "admin") return element;
+    if (authState.role === "venue") return <Navigate to="/admin/venues" replace />;
     if (authState.role === "supplier") return <Navigate to="/supplier/dashboard" replace />;
     return <AccessDenied error={authState.error} onSignOut={signOut} />;
   }
 
   function supplierGuard(element) {
-    if (!user) return <Navigate to="/login" replace />;
-    if (authState.loading) return <LoadingAccess />;
+    if (sessionLoading || (user && authState.loading)) return <LoadingAccess />;
+    if (!user) {
+      const returnTo = encodeURIComponent(`${location.pathname}${location.search || ""}${location.hash || ""}`);
+      return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
+    }
     if (authState.role === "supplier") return element;
     if (authState.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    if (authState.role === "venue") return <Navigate to="/admin/venues" replace />;
+    if (authState.role === "customer") return <Navigate to="/customer" replace />;
+    return <AccessDenied error={authState.error} onSignOut={signOut} />;
+  }
+
+  function customerGuard(element) {
+    if (sessionLoading || (user && authState.loading)) return <LoadingAccess />;
+    if (!user) {
+      const returnTo = encodeURIComponent(`${location.pathname}${location.search || ""}${location.hash || ""}`);
+      return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
+    }
+    if (authState.role === "customer") return element;
+    if (authState.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    if (authState.role === "venue") return <Navigate to="/admin/venues" replace />;
+    if (authState.role === "supplier") return <Navigate to="/supplier/dashboard" replace />;
     return <AccessDenied error={authState.error} onSignOut={signOut} />;
   }
 
@@ -208,13 +294,55 @@ export default function App() {
       <Route
         path="/login"
         element={
-          user ? (
+          sessionLoading ? (
+            <LoadingAccess />
+          ) : user ? (
             authState.loading ? (
               <LoadingAccess />
             ) : authState.role === "admin" ? (
-              <Navigate to="/admin/dashboard" replace />
+              <Navigate
+                to={
+                  (() => {
+                    const requested = normalizeReturnTo(new URLSearchParams(location.search || "").get("returnTo"));
+                    if (requested && requested.startsWith("/admin")) return requested;
+                    return "/admin/dashboard";
+                  })()
+                }
+                replace
+              />
             ) : authState.role === "supplier" ? (
-              <Navigate to="/supplier/dashboard" replace />
+              <Navigate
+                to={
+                  (() => {
+                    const requested = normalizeReturnTo(new URLSearchParams(location.search || "").get("returnTo"));
+                    if (requested && requested.startsWith("/supplier")) return requested;
+                    return "/supplier/dashboard";
+                  })()
+                }
+                replace
+              />
+            ) : authState.role === "customer" ? (
+              <Navigate
+                to={
+                  (() => {
+                    const requested = normalizeReturnTo(new URLSearchParams(location.search || "").get("returnTo"));
+                    if (requested && requested.startsWith("/customer")) return requested;
+                    return "/customer";
+                  })()
+                }
+                replace
+              />
+            ) : authState.role === "venue" ? (
+              <Navigate
+                to={
+                  (() => {
+                    const requested = normalizeReturnTo(new URLSearchParams(location.search || "").get("returnTo"));
+                    if (requested && requested.startsWith("/admin/venues")) return requested;
+                    return "/admin/venues";
+                  })()
+                }
+                replace
+              />
             ) : (
               <AccessDenied error={authState.error} onSignOut={signOut} />
             )
@@ -258,6 +386,14 @@ export default function App() {
         )}
       />
       <Route
+        path="/admin/venues/:venueId"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <AdminVenuesPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
         path="/admin/venues/:id"
         element={adminGuard(
           <AdminLayout user={user} onSignOut={signOut}>
@@ -287,6 +423,31 @@ export default function App() {
           <AdminLayout user={user} onSignOut={signOut}>
             <AdminEnquiriesPage user={user} />
           </AdminLayout>
+        )}
+      />
+
+      <Route
+        path="/customer"
+        element={customerGuard(
+          <CustomerLayout user={user} onSignOut={signOut}>
+            <CustomerDashboardPage />
+          </CustomerLayout>
+        )}
+      />
+      <Route
+        path="/customer/enquiries"
+        element={customerGuard(
+          <CustomerLayout user={user} onSignOut={signOut}>
+            <CustomerEnquiriesPage />
+          </CustomerLayout>
+        )}
+      />
+      <Route
+        path="/customer/enquiries/:id"
+        element={customerGuard(
+          <CustomerLayout user={user} onSignOut={signOut}>
+            <CustomerEnquiryDetailPage />
+          </CustomerLayout>
         )}
       />
 
@@ -348,6 +509,7 @@ export default function App() {
       />
 
       <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/customer/*" element={<Navigate to="/customer" replace />} />
       <Route path="/supplier/*" element={<Navigate to="/supplier/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

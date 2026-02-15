@@ -85,53 +85,62 @@ export default function SupplierDashboard({ supplier }) {
 
       try {
         const today = new Date().toISOString().slice(0, 10);
+        setCreditsBalance(supplier?.credits_balance ?? 0);
 
-        setCreditsBalance(supplier.credits_balance ?? 0);
+        const [creditsResult, linkResult, activeResult, sentResult, acceptedResult, bookingsResult] = await Promise.allSettled([
+          supabase
+            .from("credit_transactions")
+            .select("id, change, reason, created_at")
+            .eq("supplier_id", supplierId)
+            .order("created_at", { ascending: false })
+            .limit(20),
+          supabase
+            .from("enquiry_suppliers")
+            .select("id", { count: "exact", head: true })
+            .eq("supplier_id", supplierId),
+          supabase
+            .from("enquiry_suppliers")
+            .select("id", { count: "exact", head: true })
+            .eq("supplier_id", supplierId)
+            .not("supplier_status", "in", "(declined)"),
+          supabase
+            .from("quotes")
+            .select("id", { count: "exact", head: true })
+            .eq("supplier_id", supplierId)
+            .in("status", ["sent", "accepted", "declined", "closed"]),
+          supabase
+            .from("quotes")
+            .select("id", { count: "exact", head: true })
+            .eq("supplier_id", supplierId)
+            .eq("status", "accepted"),
+          supabase
+            .from("off_platform_bookings")
+            .select("id", { count: "exact", head: true })
+            .eq("supplier_id", supplierId)
+            .gte("event_date", today)
+            .in("status", ["tentative", "confirmed"]),
+        ]);
 
-        const { data: credits, error: creditErr } = await supabase
-          .from("credit_transactions")
-          .select("id, change, reason, created_at")
-          .eq("supplier_id", supplierId)
-          .order("created_at", { ascending: false })
-          .limit(20);
+        function extract(result, label) {
+          if (result.status !== "fulfilled") {
+            console.error(`supplier dashboard ${label} query failed:`, result.reason);
+            return null;
+          }
+          if (result.value?.error) {
+            console.error(`supplier dashboard ${label} query failed:`, result.value.error);
+            return null;
+          }
+          return result.value;
+        }
 
-        if (creditErr) throw creditErr;
-        setCreditHistory(credits || []);
+        const creditsResp = extract(creditsResult, "credit history");
+        const linkResp = extract(linkResult, "invited count");
+        const activeResp = extract(activeResult, "active count");
+        const sentResp = extract(sentResult, "quotes sent count");
+        const acceptedResp = extract(acceptedResult, "accepted count");
+        const bookingsResp = extract(bookingsResult, "upcoming bookings count");
 
-        const { count: linkCount, error: linkErr } = await supabase
-          .from("enquiry_suppliers")
-          .select("id", { count: "exact", head: true })
-          .eq("supplier_id", supplierId);
-        if (linkErr) throw linkErr;
-
-        const { count: activeCount, error: activeErr } = await supabase
-          .from("enquiry_suppliers")
-          .select("id", { count: "exact", head: true })
-          .eq("supplier_id", supplierId)
-          .not("supplier_status", "in", "(declined)");
-        if (activeErr) throw activeErr;
-
-        const { count: quotesSent, error: qErr } = await supabase
-          .from("quotes")
-          .select("id", { count: "exact", head: true })
-          .eq("supplier_id", supplierId)
-          .in("status", ["sent", "accepted", "declined", "closed"]);
-        if (qErr) throw qErr;
-
-        const { count: accepted, error: aErr } = await supabase
-          .from("quotes")
-          .select("id", { count: "exact", head: true })
-          .eq("supplier_id", supplierId)
-          .eq("status", "accepted");
-        if (aErr) throw aErr;
-
-        const { count: upcomingBookings, error: bErr } = await supabase
-          .from("off_platform_bookings")
-          .select("id", { count: "exact", head: true })
-          .eq("supplier_id", supplierId)
-          .gte("event_date", today)
-          .in("status", ["tentative", "confirmed"]);
-        if (bErr) throw bErr;
+        setCreditHistory(Array.isArray(creditsResp?.data) ? creditsResp.data : []);
 
         const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
         if (sessionErr) throw sessionErr;
@@ -155,11 +164,11 @@ export default function SupplierDashboard({ supplier }) {
         }
 
         setStats({
-          invitedCount: linkCount || 0,
-          activeEnquiriesCount: activeCount || 0,
-          quotesSentCount: quotesSent || 0,
-          acceptedCount: accepted || 0,
-          upcomingBookingsCount: upcomingBookings || 0,
+          invitedCount: Number(linkResp?.count || 0),
+          activeEnquiriesCount: Number(activeResp?.count || 0),
+          quotesSentCount: Number(sentResp?.count || 0),
+          acceptedCount: Number(acceptedResp?.count || 0),
+          upcomingBookingsCount: Number(bookingsResp?.count || 0),
         });
       } catch (ex) {
         setErr(ex?.message || "Failed to load dashboard.");
@@ -301,10 +310,6 @@ export default function SupplierDashboard({ supplier }) {
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
             <div className="text-xs uppercase tracking-wide text-slate-500">Activity</div>
             <div className="mt-1 text-sm font-medium text-slate-900">{ranking?.activity_label || "No recent activity data"}</div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
-            <div className="text-xs uppercase tracking-wide text-slate-500">Volume confidence</div>
-            <div className="mt-1 text-sm font-medium text-slate-900">{ranking?.volume_label || "Low"}</div>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
             <div className="text-xs uppercase tracking-wide text-slate-500">Response score</div>

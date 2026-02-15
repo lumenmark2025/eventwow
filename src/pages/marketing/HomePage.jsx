@@ -31,11 +31,18 @@ export default function HomePage() {
             <Badge variant="neutral">No spam</Badge>
             <Badge variant="success">Fast quotes</Badge>
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">Book trusted event suppliers - fast.</h1>
+          <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-6xl">Book trusted event suppliers faster.</h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-600">Send one request, receive quotes, choose the best fit.</p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button as={Link} to="/request" size="lg">Get quotes</Button>
-            <Button as={Link} to="/login" size="lg" variant="secondary">Become a supplier</Button>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button as={Link} to="/request" size="lg">Post an enquiry</Button>
+            <Button as={Link} to="/venues" size="lg" variant="secondary">Browse venues</Button>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium text-slate-600">
+            <span>Free to enquire</span>
+            <span className="text-slate-300">&middot;</span>
+            <span>Compare quotes</span>
+            <span className="text-slate-300">&middot;</span>
+            <span>Trusted suppliers</span>
           </div>
         </div>
       </section>
@@ -94,3 +101,4 @@ export default function HomePage() {
     </MarketingShell>
   );
 }
+
