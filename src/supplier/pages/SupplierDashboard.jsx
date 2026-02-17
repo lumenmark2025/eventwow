@@ -129,11 +129,11 @@ export default function SupplierDashboard({ supplier }) {
             .eq("supplier_id", supplierId)
             .eq("status", "accepted"),
           supabase
-            .from("off_platform_bookings")
+            .from("supplier_bookings")
             .select("id", { count: "exact", head: true })
             .eq("supplier_id", supplierId)
             .gte("event_date", today)
-            .in("status", ["tentative", "confirmed"]),
+            .in("status", ["draft", "confirmed"]),
         ]);
 
         function extract(result, label) {
@@ -261,7 +261,7 @@ export default function SupplierDashboard({ supplier }) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <StatCard label="Open requests" value={stats.activeEnquiriesCount} hint={`Linked total: ${stats.invitedCount}`} />
           <StatCard label="My quotes" value={stats.quotesSentCount} hint={`Accepted: ${stats.acceptedCount}`} />
-          <StatCard label="My bookings" value={stats.upcomingBookingsCount} hint="Upcoming tentative + confirmed" />
+          <StatCard label="My bookings" value={stats.upcomingBookingsCount} hint="Upcoming draft + confirmed" />
         </div>
       </Section>
 
