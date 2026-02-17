@@ -38,6 +38,31 @@ async function createDraftFromStorageIfNeeded() {
   }
 }
 
+async function resolveSupplierStartRouteForVerify() {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    const token = data?.session?.access_token;
+    if (!token) return null;
+    const resp = await fetch("/api/suppliers/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (resp.status === 404) return "/suppliers/join";
+    const json = await resp.json().catch(() => ({}));
+    if (!resp.ok) return null;
+    const supplier = json?.supplier || null;
+    if (!supplier?.id) return "/suppliers/join";
+    if (supplier.is_published) return "/supplier/dashboard";
+    const onboarding = String(supplier.onboarding_status || "").trim().toLowerCase();
+    if (!onboarding || onboarding === "approved") return "/supplier/dashboard";
+    if (onboarding === "pending_review") return "/supplier/dashboard";
+    if (onboarding === "awaiting_email_verification") return "/suppliers/verify";
+    return "/suppliers/onboarding";
+  } catch {
+    return null;
+  }
+}
+
 export default function SupplierVerifyPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -57,7 +82,8 @@ export default function SupplierVerifyPage() {
         } catch {
           // ignore; onboarding endpoint will show clear error if needed
         }
-        navigate("/suppliers/onboarding", { replace: true });
+        const startRoute = await resolveSupplierStartRouteForVerify();
+        navigate(startRoute || "/suppliers/onboarding", { replace: true });
       }
     });
   }, [navigate]);
@@ -77,7 +103,8 @@ export default function SupplierVerifyPage() {
         return;
       }
       await createDraftFromStorageIfNeeded();
-      navigate("/suppliers/onboarding", { replace: true });
+      const startRoute = await resolveSupplierStartRouteForVerify();
+      navigate(startRoute || "/suppliers/onboarding", { replace: true });
     } catch (err) {
       setError(err?.message || "Could not verify session");
     } finally {

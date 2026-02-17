@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         .eq("enquiry_id", enquiryId),
       admin
         .from("quotes")
-        .select("id,supplier_id,status,total_amount,currency_code,sent_at,accepted_at,declined_at,created_at")
+        .select("id,supplier_id,status,total_amount,currency_code,quote_text,sent_at,accepted_at,declined_at,created_at")
         .eq("enquiry_id", enquiryId)
         .order("created_at", { ascending: false }),
     ]);
@@ -131,6 +131,7 @@ export default async function handler(req, res) {
         status: row.status,
         totalAmount: toNumber(row.total_amount),
         currencyCode: String(row.currency_code || "GBP").toUpperCase(),
+        quoteText: row.quote_text || null,
         sentAt: row.sent_at || null,
         acceptedAt: row.accepted_at || null,
         declinedAt: row.declined_at || null,

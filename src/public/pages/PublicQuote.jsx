@@ -124,6 +124,13 @@ export default function PublicQuote() {
           {quote?.declined_at ? <div className="text-sm text-red-700">Declined: {fmtDate(quote.declined_at)}</div> : null}
         </div>
 
+        {quote?.quote_text ? (
+          <div className="rounded-xl border p-4 bg-white">
+            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Message from supplier</div>
+            <div className="text-sm text-gray-700 whitespace-pre-wrap">{quote.quote_text}</div>
+          </div>
+        ) : null}
+
         <div className="rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">

@@ -3,13 +3,18 @@ import {
   getAuthUserId,
   getBearerToken,
   getEnv,
-} from "./message-utils.js";
-import { buildSupplierEnquiryDto } from "./_lib/supplierEnquiryDto.js";
+} from "../../message-utils.js";
+import { buildSupplierEnquiryDto } from "../../_lib/supplierEnquiryDto.js";
 
 export default async function handler(req, res) {
   try {
     if (req.method !== "GET") {
       return res.status(405).json({ ok: false, error: "Method Not Allowed" });
+    }
+
+    const enquiryId = String(req.query?.id || "").trim();
+    if (!enquiryId) {
+      return res.status(400).json({ ok: false, error: "Bad request", details: "Missing enquiry id" });
     }
 
     const { SUPABASE_URL, SERVICE_KEY, ANON_KEY } = getEnv();
@@ -46,51 +51,41 @@ export default async function handler(req, res) {
     if (!supplierResp.data?.id) {
       return res.status(404).json({ ok: false, error: "Supplier not found" });
     }
-    const supplierId = supplierResp.data.id;
 
-    const statusFilter = String(req.query?.status || "").trim().toLowerCase();
-    const query = admin
+    const inviteResp = await admin
       .from("enquiry_suppliers")
       .select(
-        "id,enquiry_id,supplier_id,supplier_status,invited_at,viewed_at,responded_at,quote_id,declined_reason,enquiries(id,status,event_date,start_time,event_time,event_postcode,location_label,guest_count,category_label,enquiry_category_slug,budget_range,budget_amount,budget_unit,venue_name,venue_postcode,customer_name,customer_email,message,notes,created_at,customers(full_name),venues(name,address,location_label))"
+        "id,enquiry_id,supplier_status,invited_at,viewed_at,responded_at,quote_id,declined_reason,enquiries(id,status,event_date,start_time,event_time,event_postcode,location_label,guest_count,category_label,enquiry_category_slug,budget_range,budget_amount,budget_unit,venue_name,venue_postcode,customer_name,customer_email,message,notes,created_at,customers(full_name),venues(name,address,location_label))"
       )
-      .eq("supplier_id", supplierId)
-      .order("invited_at", { ascending: false });
+      .eq("supplier_id", supplierResp.data.id)
+      .eq("enquiry_id", enquiryId)
+      .maybeSingle();
 
-    if (statusFilter) {
-      query.eq("supplier_status", statusFilter);
+    if (inviteResp.error) {
+      return res.status(500).json({ ok: false, error: "Failed to load enquiry", details: inviteResp.error.message });
+    }
+    if (!inviteResp.data?.enquiries) {
+      return res.status(404).json({ ok: false, error: "Enquiry not found" });
     }
 
-    const invitesResp = await query.limit(200);
-    if (invitesResp.error) {
-      return res.status(500).json({
-        ok: false,
-        error: "Failed to load enquiries",
-        details: invitesResp.error.message,
-      });
-    }
+    const enquiry = buildSupplierEnquiryDto(inviteResp.data.enquiries);
 
     return res.status(200).json({
       ok: true,
-      rows: (invitesResp.data || []).map((row) => {
-        const enquiry = row.enquiries ? buildSupplierEnquiryDto(row.enquiries) : null;
-        return {
-          id: row.id,
-          enquiryId: row.enquiry_id,
-          status: row.supplier_status,
-          invitedAt: row.invited_at,
-          viewedAt: row.viewed_at,
-          respondedAt: row.responded_at,
-          quoteId: row.quote_id || null,
-          declineReason: row.declined_reason || null,
-          customerName: enquiry?.customerName || "Customer",
-          shortMessagePreview: enquiry?.shortMessagePreview || null,
-          enquiry,
-        };
-      }),
+      enquiry,
+      invite: {
+        id: inviteResp.data.id,
+        enquiryId: inviteResp.data.enquiry_id,
+        status: inviteResp.data.supplier_status,
+        invitedAt: inviteResp.data.invited_at,
+        viewedAt: inviteResp.data.viewed_at,
+        respondedAt: inviteResp.data.responded_at,
+        quoteId: inviteResp.data.quote_id || null,
+        declineReason: inviteResp.data.declined_reason || null,
+      },
     });
   } catch (err) {
-    console.error("supplier-enquiries crashed:", err);
+    console.error("supplier enquiry detail crashed:", err);
     return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
   }
 }

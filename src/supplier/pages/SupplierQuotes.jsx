@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
 import Skeleton from "../../components/ui/Skeleton";
+import EnquirySummaryCard from "../components/EnquirySummaryCard";
 
 const ENABLE_DEPOSIT_PAYMENTS = String(import.meta.env.VITE_ENABLE_DEPOSIT_PAYMENTS || "").toLowerCase() === "true";
 
@@ -61,6 +62,9 @@ export default function SupplierQuotes({ supplierId }) {
 
   const [quote, setQuote] = useState(null);
   const [items, setItems] = useState([]);
+  const [quoteText, setQuoteText] = useState("");
+  const [enquiryDetail, setEnquiryDetail] = useState(null);
+  const [draftBusy, setDraftBusy] = useState(false);
   const [payment, setPayment] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentSaving, setPaymentSaving] = useState(false);
@@ -156,6 +160,8 @@ export default function SupplierQuotes({ supplierId }) {
     setSelectedQuoteId(null);
     setQuote(null);
     setItems([]);
+    setQuoteText("");
+    setEnquiryDetail(null);
     setQuoteErr("");
     setQuoteOk("");
     setPublicQuoteUrl("");
@@ -189,6 +195,8 @@ export default function SupplierQuotes({ supplierId }) {
     setSelectedQuoteId(quoteId);
     setQuote(null);
     setItems([]);
+    setQuoteText("");
+    setEnquiryDetail(null);
     setQuoteErr("");
     setQuoteOk("");
     setIsDirty(false);
@@ -202,7 +210,7 @@ export default function SupplierQuotes({ supplierId }) {
       // Load quote (ensure supplier owns it via RLS)
       const { data: q, error: qErr } = await supabase
         .from("quotes")
-        .select("id,status,total_amount,currency_code,enquiry_id,message,notes,created_at,sent_at,accepted_at,declined_at,closed_at")
+        .select("id,status,total_amount,currency_code,enquiry_id,message,notes,quote_text,created_at,sent_at,accepted_at,declined_at,closed_at")
         .eq("id", quoteId)
         .maybeSingle();
 
@@ -220,6 +228,7 @@ export default function SupplierQuotes({ supplierId }) {
       if (itErr) throw itErr;
 
       setQuote(q);
+      setQuoteText(String(q?.quote_text || ""));
       setPublicQuoteUrl("");
       setItems(
         (its || []).map((it) => ({
@@ -230,6 +239,7 @@ export default function SupplierQuotes({ supplierId }) {
       );
 
       setIsDirty(false);
+      await loadEnquiryDetail(q.enquiry_id);
       const quoteStatus = String(q?.status || "").toLowerCase();
       if (quoteStatus && quoteStatus !== "draft") {
         await fetchPublicLinkForQuote(q.id, { copyToClipboard: false, silent: true });
@@ -279,6 +289,37 @@ export default function SupplierQuotes({ supplierId }) {
     loadPaymentStatusForToken(token);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quote?.id, quote?.status, publicQuoteUrl]);
+
+  async function loadEnquiryDetail(enquiryId) {
+    if (!enquiryId) {
+      setEnquiryDetail(null);
+      return;
+    }
+    try {
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) throw sessionErr;
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error("Not authenticated");
+
+      const resp = await fetch(`/api/supplier/enquiries/${encodeURIComponent(String(enquiryId))}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load enquiry details");
+      setEnquiryDetail(json?.enquiry || null);
+    } catch (e) {
+      setEnquiryDetail(null);
+      setQuoteErr((prev) => prev || e?.message || "Failed to load enquiry details");
+    }
+  }
+
+  function updateQuoteText(value) {
+    setQuoteText(value);
+    setIsDirty(true);
+    setSaveStatus("idle");
+    setQuoteOk("");
+    setQuoteErr("");
+  }
 
   function updateItem(id, patch) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -412,6 +453,7 @@ export default function SupplierQuotes({ supplierId }) {
         body: JSON.stringify({
           quote_id: quote.id,
           items: payloadItems,
+          quote_text: quoteText,
         }),
       });
 
@@ -423,6 +465,7 @@ export default function SupplierQuotes({ supplierId }) {
       // DB truth back into state
       if (json.quote) {
         setQuote(json.quote);
+        setQuoteText(String(json.quote.quote_text || ""));
         patchQuoteRow({
           ...json.quote,
           total_amount: json.total ?? json.quote.total_amount,
@@ -488,7 +531,7 @@ export default function SupplierQuotes({ supplierId }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ quote_id: quote.id }),
+        body: JSON.stringify({ quote_id: quote.id, quote_text: quoteText }),
       });
 
       const json = await resp.json().catch(() => ({}));
@@ -520,6 +563,32 @@ export default function SupplierQuotes({ supplierId }) {
   async function copyCustomerLink() {
     if (!quote?.id || linkBusy) return;
     await fetchPublicLinkForQuote(quote.id, { copyToClipboard: true, silent: false });
+  }
+
+  async function generateDraftText() {
+    if (!quote?.enquiry_id || draftBusy) return;
+    setDraftBusy(true);
+    setQuoteErr("");
+    setQuoteOk("");
+    try {
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) throw sessionErr;
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error("Not authenticated");
+
+      const resp = await fetch(
+        `/api/supplier/enquiries/${encodeURIComponent(String(quote.enquiry_id))}/quote-text-draft`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to generate draft text");
+      updateQuoteText(String(json?.draftText || ""));
+      setQuoteOk("Draft reply generated.");
+    } catch (e) {
+      setQuoteErr(e?.message || "Failed to generate draft text.");
+    } finally {
+      setDraftBusy(false);
+    }
   }
 
   async function openMessages() {
@@ -911,6 +980,8 @@ export default function SupplierQuotes({ supplierId }) {
               </div>
             ) : null}
 
+            <EnquirySummaryCard enquiry={enquiryDetail} />
+
             <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
               <div>
                 <div className="text-sm text-gray-600">Quote</div>
@@ -1024,6 +1095,36 @@ export default function SupplierQuotes({ supplierId }) {
 
             {/* Items */}
             <div className="rounded-xl border bg-gray-50 p-3 sm:p-4">
+              <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <label className="text-sm font-medium text-slate-900" htmlFor="quote-text">
+                    Message to customer
+                  </label>
+                  <button
+                    type="button"
+                    className="border rounded-md px-3 py-1.5 bg-white text-xs disabled:opacity-50"
+                    onClick={generateDraftText}
+                    disabled={draftBusy || String(quote.status).toLowerCase() !== "draft"}
+                  >
+                    {draftBusy ? "Generating..." : "Generate draft reply (coming soon)"}
+                  </button>
+                </div>
+                <p className="mb-2 text-xs text-slate-500">
+                  Explain what is included, setup details, timings, and any options.
+                </p>
+                <textarea
+                  id="quote-text"
+                  value={quoteText}
+                  onChange={(e) => updateQuoteText(e.target.value)}
+                  rows={5}
+                  maxLength={4000}
+                  disabled={String(quote.status).toLowerCase() !== "draft" || saving || sending}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                  placeholder="Write a message to the customer..."
+                />
+                <div className="mt-1 text-right text-xs text-slate-500">{quoteText.length}/4000</div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="font-medium">Quote items</div>
                 <button

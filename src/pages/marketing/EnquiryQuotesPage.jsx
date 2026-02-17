@@ -397,6 +397,14 @@ export default function EnquiryQuotesPage() {
                           </td>
                         ))}
                       </tr>
+                      <tr className="border-b border-slate-100">
+                        <td className="px-3 py-3 font-medium text-slate-700">Supplier message</td>
+                        {quotes.map((q) => (
+                          <td key={`msg-${q.quoteId}`} className="px-3 py-3 align-top text-slate-700 whitespace-pre-wrap">
+                            {q.quoteText || "-"}
+                          </td>
+                        ))}
+                      </tr>
                       <tr>
                         <td className="px-3 py-3 font-medium text-slate-700">Actions</td>
                         {quotes.map((q) => (
@@ -459,6 +467,13 @@ export default function EnquiryQuotesPage() {
                           ))}
                         </div>
                       </div>
+
+                      {quote.quoteText ? (
+                        <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 whitespace-pre-wrap">
+                          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Message from supplier</p>
+                          {quote.quoteText}
+                        </div>
+                      ) : null}
 
                       <div className="flex flex-wrap gap-2">
                         <Button

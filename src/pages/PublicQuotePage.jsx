@@ -345,6 +345,12 @@ export default function PublicQuotePage() {
               <CardTitle>Quote Items</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {quote?.quote_text ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Message from supplier</p>
+                  {quote.quote_text}
+                </div>
+              ) : null}
               {items.length === 0 ? (
                 <EmptyState title="No quote items" description="The supplier has not added line items yet." />
               ) : (

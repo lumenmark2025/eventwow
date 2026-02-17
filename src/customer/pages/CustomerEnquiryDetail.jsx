@@ -297,6 +297,12 @@ export default function CustomerEnquiryDetail() {
                   </div>
                   <p className="text-lg font-semibold text-slate-900">{money(quote.totalAmount, quote.currencyCode)}</p>
                 </div>
+                {quote.quoteText ? (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Message from supplier</p>
+                    {quote.quoteText}
+                  </div>
+                ) : null}
                 {(quote.items || []).length > 0 ? (
                   <ul className="text-sm text-slate-700 space-y-1">
                     {quote.items.map((item) => (

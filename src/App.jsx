@@ -95,11 +95,26 @@ function isSupplierEmailVerified(user) {
   return !!user?.email_confirmed_at;
 }
 
+function normalizeSupplierOnboardingStatus(supplier) {
+  if (!supplier) return "";
+  if (supplier.is_published === true) return "approved";
+  const onboarding = String(supplier.onboarding_status || "").trim().toLowerCase();
+  if (onboarding) return onboarding;
+  const legacy = String(supplier.status || "").trim().toLowerCase();
+  if (legacy === "approved") return "approved";
+  if (legacy === "pending_review") return "pending_review";
+  if (legacy === "rejected") return "rejected";
+  // Legacy suppliers created before onboarding_status existed should still access supplier dashboard.
+  return "approved";
+}
+
 function getSupplierStartRoute(user, supplier) {
-  const verified = isSupplierEmailVerified(user);
-  const onboardingStatus = String(supplier?.onboarding_status || supplier?.status || "").toLowerCase();
-  if (!verified || onboardingStatus === "awaiting_email_verification") return "/suppliers/verify";
   if (!supplier?.id) return "/suppliers/join";
+  const verified = isSupplierEmailVerified(user);
+  const onboardingStatus = normalizeSupplierOnboardingStatus(supplier);
+  if (supplier?.is_published === true) return "/supplier/dashboard";
+  if (onboardingStatus === "approved") return "/supplier/dashboard";
+  if (onboardingStatus === "awaiting_email_verification" && !verified) return "/suppliers/verify";
   if (["draft", "profile_incomplete", "rejected"].includes(onboardingStatus)) return "/suppliers/onboarding";
   return "/supplier/dashboard";
 }
@@ -133,6 +148,27 @@ export default function App() {
   }, []);
 
   const user = session?.user;
+  const isDev = import.meta.env.DEV;
+
+  useEffect(() => {
+    if (!isDev) return;
+    const supplierSummary = authState?.supplier
+      ? {
+          id: authState.supplier.id || null,
+          is_published: !!authState.supplier.is_published,
+          onboarding_status: authState.supplier.onboarding_status || null,
+        }
+      : null;
+    console.debug("[auth-debug]", {
+      route: location.pathname,
+      sessionLoading,
+      hasSession: !!session,
+      userId: user?.id || null,
+      role: authState.role,
+      authLoading: authState.loading,
+      supplier: supplierSummary,
+    });
+  }, [isDev, location.pathname, sessionLoading, session, user?.id, authState.role, authState.loading, authState.supplier]);
 
   useEffect(() => {
     let cancelled = false;
@@ -378,8 +414,10 @@ export default function App() {
                 to={
                   (() => {
                     const requested = normalizeReturnTo(new URLSearchParams(location.search || "").get("returnTo"));
-                    if (requested && (requested.startsWith("/supplier") || requested.startsWith("/suppliers/"))) return requested;
-                    return getSupplierStartRoute(user, authState.supplier);
+                    const startRoute = getSupplierStartRoute(user, authState.supplier);
+                    if (requested && requested.startsWith("/supplier")) return requested;
+                    if (requested && requested.startsWith("/suppliers/") && startRoute.startsWith("/suppliers/")) return requested;
+                    return startRoute;
                   })()
                 }
                 replace

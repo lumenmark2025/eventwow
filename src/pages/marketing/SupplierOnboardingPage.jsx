@@ -48,6 +48,15 @@ export default function SupplierOnboardingPage() {
   });
 
   const onboardingStatus = String(supplier?.onboarding_status || "").toLowerCase();
+  const isPublished = !!supplier?.is_published;
+
+  function isLegacyOrApprovedSupplier(row) {
+    if (!row?.id) return false;
+    if (row.is_published) return true;
+    const onboarding = String(row.onboarding_status || "").trim().toLowerCase();
+    if (!onboarding) return true;
+    return onboarding === "approved";
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -64,10 +73,6 @@ export default function SupplierOnboardingPage() {
           navigate("/login?returnTo=%2Fsuppliers%2Fonboarding", { replace: true });
           return;
         }
-        if (!user.email_confirmed_at) {
-          navigate("/suppliers/verify", { replace: true });
-          return;
-        }
 
         const catJson = await catsResp.json().catch(() => []);
         if (mounted) setCategories(Array.isArray(catJson) ? catJson : []);
@@ -79,12 +84,12 @@ export default function SupplierOnboardingPage() {
           navigate("/suppliers/join", { replace: true });
           return;
         }
-        if (String(row.onboarding_status || "").toLowerCase() === "awaiting_email_verification") {
-          navigate("/suppliers/verify", { replace: true });
+        if (isLegacyOrApprovedSupplier(row)) {
+          navigate("/supplier/dashboard", { replace: true });
           return;
         }
-        if (row.is_published || String(row.onboarding_status || "").toLowerCase() === "approved") {
-          navigate("/supplier/dashboard", { replace: true });
+        if (!user.email_confirmed_at && String(row.onboarding_status || "").toLowerCase() === "awaiting_email_verification") {
+          navigate("/suppliers/verify", { replace: true });
           return;
         }
 
@@ -102,6 +107,10 @@ export default function SupplierOnboardingPage() {
           setSubmitted(true);
         }
       } catch (err) {
+        if (String(err?.message || "").toLowerCase().includes("supplier not found")) {
+          navigate("/suppliers/join", { replace: true });
+          return;
+        }
         if (mounted) setError(err?.message || "Failed to load onboarding");
       } finally {
         if (mounted) setLoading(false);
@@ -197,6 +206,14 @@ export default function SupplierOnboardingPage() {
             </div>
           </CardContent>
         </Card>
+      </MarketingShell>
+    );
+  }
+
+  if (isPublished) {
+    return (
+      <MarketingShell>
+        <p className="text-sm text-slate-600">Redirecting to supplier dashboard...</p>
       </MarketingShell>
     );
   }

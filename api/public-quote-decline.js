@@ -17,6 +17,7 @@ function toPublicDto(quote, items) {
       tax: null,
       total: quote.total_amount,
       currency: quote.currency_code || "GBP",
+      quote_text: quote.quote_text || null,
     },
     supplier: {
       name: quote.suppliers?.business_name || "Supplier",
@@ -54,7 +55,7 @@ async function loadQuoteByToken(supabaseAdmin, token) {
   const { data: quote, error: quoteErr } = await supabaseAdmin
     .from("quotes")
     .select(
-      "id,status,total_amount,currency_code,sent_at,accepted_at,declined_at,closed_at,suppliers(business_name),enquiries(event_date,event_postcode,venues(name))"
+      "id,status,total_amount,currency_code,quote_text,sent_at,accepted_at,declined_at,closed_at,suppliers(business_name),enquiries(event_date,event_postcode,venues(name))"
     )
     .eq("id", link.quote_id)
     .maybeSingle();

@@ -17,6 +17,7 @@ function buildQuoteDto(row, supplier, heroPath, quoteToken, items, supabaseUrl) 
     quoteId: row.id,
     quoteToken: quoteToken || null,
     quoteStatus: row.status,
+    quoteText: row.quote_text || null,
     sentAt: row.sent_at,
     acceptedAt: row.accepted_at,
     declinedAt: row.declined_at,
@@ -167,7 +168,7 @@ export default async function handler(req, res) {
 
     const quotesResp = await admin
       .from("quotes")
-      .select("id,enquiry_id,supplier_id,status,total_amount,currency_code,sent_at,accepted_at,declined_at,closed_at,created_at")
+      .select("id,enquiry_id,supplier_id,status,total_amount,currency_code,quote_text,sent_at,accepted_at,declined_at,closed_at,created_at")
       .eq("enquiry_id", enquiryId)
       .in("status", ALLOWED_QUOTE_STATUSES)
       .order("created_at", { ascending: false });

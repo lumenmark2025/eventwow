@@ -58,6 +58,7 @@ export default async function handler(req, res) {
 
     const quote_id = body?.quote_id;
     const items = body?.items;
+    const quote_text = typeof body?.quote_text === "string" ? body.quote_text.trim() : null;
 
     if (typeof quote_id !== "string" || !UUID_RE.test(quote_id)) {
       return res.status(400).json({
@@ -109,7 +110,7 @@ export default async function handler(req, res) {
     const { data: quote, error: quoteErr } = await supabaseAdmin
       .from("quotes")
       .select(
-        "id,status,supplier_id,total_amount,total_price_gbp,currency_code,enquiry_id,message,notes,created_at,sent_at,accepted_at,declined_at"
+        "id,status,supplier_id,total_amount,total_price_gbp,currency_code,enquiry_id,message,notes,quote_text,created_at,sent_at,accepted_at,declined_at"
       )
       .eq("id", quote_id)
       .maybeSingle();
@@ -256,6 +257,7 @@ export default async function handler(req, res) {
       .update({
         total_amount: total,
         total_price_gbp: total,
+        quote_text,
         updated_at: nowIso,
         updated_by_user: userId,
       })

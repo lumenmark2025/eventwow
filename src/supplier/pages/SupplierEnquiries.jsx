@@ -7,6 +7,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
 import Skeleton from "../../components/ui/Skeleton";
 import { supabase } from "../../lib/supabase";
+import EnquirySummaryCard from "../components/EnquirySummaryCard";
 
 function fmtDate(value) {
   if (!value) return "-";
@@ -89,9 +90,14 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
     return rows.filter((row) => {
       const hay = [
         row?.status,
+        row?.customerName,
+        row?.enquiry?.customerName,
         row?.enquiry?.locationLabel,
+        row?.enquiry?.venue?.name,
+        row?.enquiry?.venue?.address,
         row?.enquiry?.postcode,
         row?.enquiry?.message,
+        row?.shortMessagePreview,
       ]
         .filter(Boolean)
         .join(" ")
@@ -158,7 +164,7 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
     <div className="space-y-6">
       <PageHeader
         title="Enquiries"
-        subtitle="Review new invitations and start quotes."
+        subtitle="Review invitations with full event details before sending quotes."
         actions={[{ key: "refresh", label: "Refresh", variant: "secondary", onClick: load }]}
       />
 
@@ -166,7 +172,7 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search location, status, notes"
+          placeholder="Search customer, venue, status or notes"
         />
         <select
           className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
@@ -192,20 +198,19 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <CardTitle className="text-lg">
-                    {row.enquiry?.categoryLabel || "General enquiry"}
+                    {row.customerName || row.enquiry?.customerName || "Customer"}
                   </CardTitle>
                   <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex flex-wrap gap-2">
+                  {row.enquiry?.categoryLabel ? <Badge variant="neutral">{row.enquiry.categoryLabel}</Badge> : null}
                   {row.enquiry?.eventDate ? <Badge variant="neutral">{row.enquiry.eventDate}</Badge> : null}
                   {row.enquiry?.guestCount ? <Badge variant="neutral">{row.enquiry.guestCount} guests</Badge> : null}
-                  {row.enquiry?.locationLabel ? <Badge variant="neutral">{row.enquiry.locationLabel}</Badge> : null}
+                  {row.enquiry?.budget?.label ? <Badge variant="neutral">Budget: {row.enquiry.budget.label}</Badge> : null}
                 </div>
-                {row.enquiry?.message ? (
-                  <p className="text-sm text-slate-700">{row.enquiry.message}</p>
-                ) : null}
+                <EnquirySummaryCard enquiry={row.enquiry} compact />
                 <p className="text-xs text-slate-500">Invited: {fmtDate(row.invitedAt)}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button

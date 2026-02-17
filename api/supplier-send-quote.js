@@ -53,6 +53,7 @@ export default async function handler(req, res) {
     let body = req.body;
     if (typeof body === "string") body = JSON.parse(body || "{}");
     const quote_id = body?.quote_id;
+    const quote_text = typeof body?.quote_text === "string" ? body.quote_text.trim() : null;
     if (!quote_id || !UUID_RE.test(String(quote_id))) {
       return res.status(400).json({ ok: false, error: "Bad request", details: "Invalid quote_id" });
     }
@@ -86,7 +87,7 @@ export default async function handler(req, res) {
     const { data: quote, error: qErr } = await supabaseAdmin
       .from("quotes")
       .select(
-        "id,supplier_id,enquiry_id,status,total_amount,total_price_gbp,currency_code,message,notes,created_at,sent_at,accepted_at,declined_at"
+        "id,supplier_id,enquiry_id,status,total_amount,total_price_gbp,currency_code,message,notes,quote_text,created_at,sent_at,accepted_at,declined_at"
       )
       .eq("id", quote_id)
       .eq("supplier_id", supplier.id)
@@ -149,6 +150,7 @@ export default async function handler(req, res) {
       .update({
         status: "sent",
         sent_at: nowIso,
+        quote_text,
         sent_by_user: userId,
         updated_at: nowIso,
         updated_by_user: userId,
