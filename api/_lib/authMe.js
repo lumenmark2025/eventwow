@@ -45,12 +45,20 @@ export async function resolveAuthMe(req) {
     if (!supplierResp.error && supplierResp.data?.id) role = "supplier";
   }
   if (!role) {
+    const venueOwnerRole = await admin.from("user_roles").select("role").eq("user_id", userId).eq("role", "venue_owner").maybeSingle();
+    if (!venueOwnerRole.error && venueOwnerRole.data?.role) role = "venue_owner";
+  }
+  if (!role) {
+    const venueOwnerLinkResp = await admin.from("venue_owners_link").select("id").eq("user_id", userId).maybeSingle();
+    if (!venueOwnerLinkResp.error && venueOwnerLinkResp.data?.id) role = "venue_owner";
+  }
+  if (!role) {
     const customerResp = await admin.from("customers").select("id").eq("user_id", userId).maybeSingle();
     if (!customerResp.error && customerResp.data?.id) role = "customer";
   }
   if (!role) role = "customer";
 
-  if (!profileResp.error && !profileResp.data?.role && ["admin", "supplier", "customer", "venue"].includes(role)) {
+  if (!profileResp.error && !profileResp.data?.role && ["admin", "supplier", "customer", "venue", "venue_owner"].includes(role)) {
     await admin.from("user_profiles").upsert(
       {
         user_id: userId,

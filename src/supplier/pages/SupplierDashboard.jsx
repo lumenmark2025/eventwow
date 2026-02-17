@@ -217,6 +217,31 @@ export default function SupplierDashboard({ supplier }) {
         subtitle="Track requests, quote performance, credits and upcoming commitments."
       />
 
+      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "awaiting_email_verification" ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Please verify your email to continue onboarding.
+        </div>
+      ) : null}
+      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "profile_incomplete" || String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "draft" ? (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          Complete your profile and submit it for review before going live.
+        </div>
+      ) : null}
+      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "pending_review" ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Your listing is under review. You can keep editing, but it won't appear publicly yet.
+        </div>
+      ) : null}
+      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "rejected" ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <p>Your listing was rejected. Update your details and resubmit for review.</p>
+          {supplier?.admin_notes ? <p className="mt-1">Admin note: {supplier.admin_notes}</p> : null}
+          <p className="mt-1">
+            Need help? <a href="/contact" className="underline">Contact support</a>.
+          </p>
+        </div>
+      ) : null}
+
       <Section title="Snapshot" right={<Badge variant="brand">Live</Badge>}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <StatCard label="Open requests" value={stats.activeEnquiriesCount} hint={`Linked total: ${stats.invitedCount}`} />

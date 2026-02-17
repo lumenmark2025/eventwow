@@ -4,10 +4,9 @@ import eventwowLogo from "../../assets/brand/eventwow-logo.svg";
 
 const navItems = [
   { to: "/request", label: "Request quotes" },
-  { to: "/browse", label: "Browse" },
+  { to: "/categories", label: "Browse" },
   { to: "/how-it-works", label: "How it works" },
   { to: "/pricing", label: "Pricing" },
-  { to: "/contact", label: "Contact" },
 ];
 
 function navClass(isActive) {
@@ -46,7 +45,7 @@ export default function MarketingShell({ children }) {
             <Button as={NavLink} to="/login" variant="ghost" size="sm" className="hidden sm:inline-flex">
               Login
             </Button>
-            <Button as={NavLink} to="/browse" size="sm">
+            <Button as={NavLink} to="/categories" size="sm">
               Get quotes
             </Button>
           </div>
@@ -74,7 +73,7 @@ export default function MarketingShell({ children }) {
           <div className="text-sm">
             <p className="font-medium text-slate-900">Explore</p>
             <div className="mt-2 space-y-2">
-              <NavLink to="/browse" className="block text-slate-600 hover:text-slate-900">Browse</NavLink>
+              <NavLink to="/categories" className="block text-slate-600 hover:text-slate-900">Browse</NavLink>
               <NavLink to="/request" className="block text-slate-600 hover:text-slate-900">Request quotes</NavLink>
               <NavLink to="/suppliers" className="block text-slate-600 hover:text-slate-900">Suppliers</NavLink>
               <NavLink to="/venues" className="block text-slate-600 hover:text-slate-900">Venues</NavLink>

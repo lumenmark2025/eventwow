@@ -11,11 +11,8 @@ import { useMarketingMeta } from "../../lib/marketingMeta";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
 
 function guestRange(venue) {
-  const min = Number(venue?.guestMin);
   const max = Number(venue?.guestMax);
-  if (Number.isFinite(min) && Number.isFinite(max)) return `${min}-${max} guests`;
-  if (Number.isFinite(min)) return `${min}+ guests`;
-  if (Number.isFinite(max)) return `Up to ${max} guests`;
+  if (Number.isFinite(max) && max > 0) return `Up to ${max} guests`;
   return null;
 }
 
@@ -172,6 +169,12 @@ export default function VenueProfilePage() {
                   <Button as={Link} to={`/request?venue=${encodeURIComponent(String(venue.slug || ""))}`} className="w-full">
                     Request quotes
                   </Button>
+                  <p className="text-center text-xs text-slate-500">
+                    Manage this listing?{" "}
+                    <Link to={`/venues/${encodeURIComponent(String(venue.slug || ""))}/claim`} className="font-medium text-teal-700 hover:underline">
+                      Claim this venue
+                    </Link>
+                  </p>
                   <Button as={Link} to="/venues" variant="secondary" className="w-full">Back to venues</Button>
                 </CardContent>
               </Card>

@@ -28,13 +28,13 @@ export default function SupplierSeoLandingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
-  const [meta, setMeta] = useState({ title: "Local Suppliers", description: "Find local suppliers.", canonical: `https://eventwow.co.uk/${slug || ""}` });
+  const [meta, setMeta] = useState({ title: "Suppliers", description: "Find trusted suppliers.", canonical: `https://eventwow.co.uk/${slug || ""}` });
   const [schema, setSchema] = useState(null);
   const [categorySlug, setCategorySlug] = useState("");
 
   useMarketingMeta({
-    title: meta.title?.replace(/\s*\|\s*Eventwow$/i, "") || "Local Suppliers",
-    description: meta.description || "Find local suppliers and request quotes.",
+    title: meta.title?.replace(/\s*\|\s*Eventwow$/i, "") || "Suppliers",
+    description: meta.description || "Find trusted suppliers and request quotes.",
     path: `/${slug || ""}`,
   });
 
@@ -50,8 +50,8 @@ export default function SupplierSeoLandingPage() {
         if (!mounted) return;
         setRows(Array.isArray(json?.rows) ? json.rows : []);
         setMeta({
-          title: json?.meta?.title || "Local Suppliers | Eventwow",
-          description: json?.meta?.description || "Find local suppliers on Eventwow.",
+          title: json?.meta?.title || "Suppliers | Eventwow",
+          description: json?.meta?.description || "Find trusted suppliers on Eventwow.",
           canonical: json?.meta?.canonical || `https://eventwow.co.uk/${slug || ""}`,
         });
         setSchema(json?.schema || null);
@@ -79,8 +79,8 @@ export default function SupplierSeoLandingPage() {
   return (
     <MarketingShell>
       <PageHeader
-        title={meta.title?.replace(/\s*\|\s*Eventwow$/i, "") || "Local Suppliers"}
-        subtitle="Find trusted local suppliers and request quotes."
+        title={meta.title?.replace(/\s*\|\s*Eventwow$/i, "") || "Suppliers"}
+        subtitle="Find trusted suppliers and request quotes."
       />
 
       {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}

@@ -64,7 +64,7 @@ function normalizeDraft(supplier) {
     services: Array.isArray(supplier?.services) ? supplier.services : [],
     locationLabel: supplier?.locationLabel || "",
     categories: Array.isArray(supplier?.categories) ? supplier.categories : [],
-    listedPublicly: !!supplier?.listedPublicly,
+    isPublished: !!supplier?.isPublished,
   };
 }
 
@@ -89,7 +89,7 @@ export default function SupplierListingEditor({ supplierId }) {
       source.shortDescription === draft.shortDescription &&
       source.about === draft.about &&
       source.locationLabel === draft.locationLabel &&
-      source.listedPublicly === draft.listedPublicly &&
+      source.isPublished === draft.isPublished &&
       arraysEqual(source.services, draft.services) &&
       arraysEqual(source.categories, draft.categories)
     );
@@ -173,7 +173,7 @@ export default function SupplierListingEditor({ supplierId }) {
     setOk("");
   }
 
-  function onToggleListedPublicly(checked) {
+  function onToggleIsPublished(checked) {
     if (checked && !canPublish) {
       const detail =
         publishMissing.length > 0
@@ -182,7 +182,7 @@ export default function SupplierListingEditor({ supplierId }) {
       setErr(detail);
       return;
     }
-    updateDraft("listedPublicly", checked);
+    updateDraft("isPublished", checked);
   }
 
   function toggleCategory(name) {
@@ -250,7 +250,7 @@ export default function SupplierListingEditor({ supplierId }) {
           services: draft.services,
           locationLabel: draft.locationLabel,
           categories: draft.categories,
-          listedPublicly: draft.listedPublicly && canPublish,
+          isPublished: draft.isPublished && canPublish,
         }),
       });
       const json = await resp.json().catch(() => ({}));
@@ -407,8 +407,8 @@ export default function SupplierListingEditor({ supplierId }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={draft.listedPublicly ? "success" : "neutral"}>
-                  {draft.listedPublicly ? "Listed publicly" : "Hidden from directory"}
+                <Badge variant={draft.isPublished ? "success" : "neutral"}>
+                  {draft.isPublished ? "Published" : "Hidden from directory"}
                 </Badge>
                 {!canPublish ? <Badge variant="warning">Complete required fields to publish</Badge> : null}
               </div>
@@ -416,11 +416,15 @@ export default function SupplierListingEditor({ supplierId }) {
                 <input
                   type="checkbox"
                   className="h-4 w-4 rounded border-slate-300"
-                  checked={draft.listedPublicly}
-                  onChange={(e) => onToggleListedPublicly(e.target.checked)}
+                  checked={draft.isPublished}
+                  onChange={(e) => onToggleIsPublished(e.target.checked)}
+                  disabled
                 />
-                Show this supplier in the public directory
+                Publish this supplier to the public directory (admin approval required)
               </label>
+              <p className="text-xs text-slate-500">
+                You can keep editing your profile here. Your listing goes live only after admin approval.
+              </p>
               {!canPublish ? (
                 <p className="text-xs text-amber-700">
                   Required before publish: {publishMissing.join(" and ")}.
@@ -633,3 +637,4 @@ export default function SupplierListingEditor({ supplierId }) {
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "../../../_lib/adminAuth.js";
 import { UUID_RE, parseBody } from "../../../message-utils.js";
+import { fetchFhrsEstablishment, parseFsaUrl } from "../../../_lib/fsa.js";
 
 function trimText(value, max = 4000) {
   const text = String(value ?? "").trim();
@@ -15,6 +16,26 @@ function toBool(value) {
   if (["true", "1", "yes", "y", "on"].includes(v)) return true;
   if (["false", "0", "no", "n", "off"].includes(v)) return false;
   return null;
+}
+
+async function refreshFsaRating(admin, supplierId, establishmentId) {
+  const fetched = await fetchFhrsEstablishment(establishmentId);
+  const update = await admin
+    .from("suppliers")
+    .update({
+      fsa_rating_value: fetched.ratingValue,
+      fsa_rating_date: fetched.ratingDate,
+      fsa_rating_last_fetched_at: fetched.lastFetchedAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", supplierId)
+    .select(
+      "id,business_name,slug,base_city,base_postcode,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,is_insured,fsa_rating_url,fsa_establishment_id,fsa_rating_value,fsa_rating_date,fsa_rating_last_fetched_at,credits_balance,short_description,about,services,location_label,listing_categories,created_at,updated_at"
+    )
+    .maybeSingle();
+
+  if (update.error) throw update.error;
+  return update.data;
 }
 
 export default async function handler(req, res) {
@@ -43,6 +64,7 @@ export default async function handler(req, res) {
     }
 
     const body = parseBody(req);
+    let warning = null;
 
     // Basic profile fields already present in admin UI.
     const patch = {};
@@ -67,6 +89,26 @@ export default async function handler(req, res) {
     if (Object.prototype.hasOwnProperty.call(body, "is_published") && isPublished !== null) patch.is_published = isPublished;
     const isVerified = toBool(body?.is_verified);
     if (Object.prototype.hasOwnProperty.call(body, "is_verified") && isVerified !== null) patch.is_verified = isVerified;
+    if (Object.prototype.hasOwnProperty.call(body, "is_insured") || Object.prototype.hasOwnProperty.call(body, "isInsured")) {
+      const insured = toBool(Object.prototype.hasOwnProperty.call(body, "isInsured") ? body.isInsured : body.is_insured);
+      if (insured !== null) patch.is_insured = insured;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "fsa_rating_url") || Object.prototype.hasOwnProperty.call(body, "fsaRatingUrl")) {
+      const rawUrl = Object.prototype.hasOwnProperty.call(body, "fsaRatingUrl") ? body.fsaRatingUrl : body.fsa_rating_url;
+      const parsedFsa = parseFsaUrl(rawUrl);
+      if (parsedFsa?.error) {
+        return res.status(400).json({ ok: false, error: "Bad request", details: parsedFsa.error });
+      }
+
+      patch.fsa_rating_url = parsedFsa.url;
+      patch.fsa_establishment_id = parsedFsa.establishmentId;
+      if (!parsedFsa.url) {
+        patch.fsa_rating_value = null;
+        patch.fsa_rating_date = null;
+        patch.fsa_rating_last_fetched_at = null;
+      }
+    }
 
     if (Object.prototype.hasOwnProperty.call(body, "updated_by_user_id")) {
       const u = trimText(body.updated_by_user_id, 80);
@@ -83,7 +125,7 @@ export default async function handler(req, res) {
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq("id", supplierId)
       .select(
-        "id,business_name,slug,base_city,base_postcode,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,credits_balance,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at"
+        "id,business_name,slug,base_city,base_postcode,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,is_insured,fsa_rating_url,fsa_establishment_id,fsa_rating_value,fsa_rating_date,fsa_rating_last_fetched_at,credits_balance,short_description,about,services,location_label,listing_categories,created_at,updated_at"
       )
       .maybeSingle();
 
@@ -92,10 +134,19 @@ export default async function handler(req, res) {
     }
     if (!updated.data) return res.status(404).json({ ok: false, error: "Supplier not found" });
 
-    return res.status(200).json({ ok: true, supplier: updated.data });
+    let supplier = updated.data;
+    if (supplier.fsa_establishment_id) {
+      try {
+        const refreshed = await refreshFsaRating(admin, supplierId, supplier.fsa_establishment_id);
+        if (refreshed) supplier = refreshed;
+      } catch (err) {
+        warning = `Saved, but FHRS refresh failed: ${String(err?.message || err)}`;
+      }
+    }
+
+    return res.status(200).json({ ok: true, supplier, warning });
   } catch (err) {
     console.error("admin supplier patch crashed:", err);
     return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
   }
 }
-

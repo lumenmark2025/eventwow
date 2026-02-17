@@ -119,3 +119,42 @@ export function customerDeclinedConfirmationEmail({ customerName, quoteSummary, 
     ),
   };
 }
+
+export function venueClaimRequestLinkEmail({ requesterName, venueName, claimUrl }) {
+  return {
+    subject: "Confirm your Eventwow venue claim request",
+    html: wrapTemplate(
+      "Venue claim request received",
+      `Hi ${requesterName || "there"}, use the secure link below to verify your venue claim request for ${venueName || "your venue"}.`,
+      "Verify claim request",
+      claimUrl,
+      ["Admin approval is still required before you can manage this venue.", "This link expires in 7 days."]
+    ),
+  };
+}
+
+export function venueClaimApprovedEmail({ requesterName, venueName, loginUrl }) {
+  return {
+    subject: "Your venue claim was approved",
+    html: wrapTemplate(
+      "Venue claim approved",
+      `Hi ${requesterName || "there"}, your claim for ${venueName || "the venue"} has been approved.`,
+      "Open Eventwow",
+      loginUrl,
+      ["Sign in with this email to access your venue dashboard."]
+    ),
+  };
+}
+
+export function venueClaimRejectedEmail({ requesterName, venueName, contactUrl }) {
+  return {
+    subject: "Update on your venue claim request",
+    html: wrapTemplate(
+      "Venue claim not approved",
+      `Hi ${requesterName || "there"}, we could not approve your claim for ${venueName || "the venue"} at this time.`,
+      "Contact support",
+      contactUrl,
+      ["If this is a mistake, please reply with additional ownership details."]
+    ),
+  };
+}

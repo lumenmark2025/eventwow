@@ -65,9 +65,9 @@ export default async function handler(req, res) {
       supplierIds.length > 0
         ? await admin
             .from("suppliers")
-            .select("id,slug,business_name,short_description,description,about,services,location_label,listing_categories,base_city,listed_publicly")
+            .select("id,slug,business_name,short_description,description,about,services,location_label,listing_categories,base_city,is_published")
             .in("id", supplierIds)
-            .eq("listed_publicly", true)
+            .eq("is_published", true)
         : { data: [], error: null };
     if (suppliersResp.error) {
       return res.status(500).json({ ok: false, error: "Failed to load suppliers", details: suppliersResp.error.message });

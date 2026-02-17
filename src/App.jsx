@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 
@@ -15,6 +15,9 @@ import AdminDashboardPage from "./pages/admin/DashboardPage";
 import CreditsLedgerPage from "./pages/admin/CreditsLedgerPage";
 import SupplierPerformancePage from "./pages/admin/SupplierPerformancePage";
 import ReviewsPage from "./pages/admin/ReviewsPage";
+import VenueClaimsPage from "./pages/admin/VenueClaimsPage";
+import CategoriesPage from "./pages/admin/CategoriesPage";
+import SupplierApplicationsPage from "./pages/admin/SupplierApplicationsPage";
 
 import DashboardPage from "./pages/supplier/DashboardPage";
 import SupplierEnquiriesPage from "./pages/supplier/EnquiriesPage";
@@ -26,6 +29,9 @@ import ListingPage from "./pages/supplier/ListingPage";
 import CustomerDashboardPage from "./pages/customer/DashboardPage";
 import CustomerEnquiriesPage from "./pages/customer/EnquiriesPage";
 import CustomerEnquiryDetailPage from "./pages/customer/EnquiryDetailPage";
+import VenueLayout from "./venue/layout/VenueLayout";
+import VenueDashboardPage from "./pages/venue/DashboardPage";
+import VenueEditPage from "./pages/venue/VenueEditPage";
 
 import PublicQuotePage from "./pages/PublicQuotePage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
@@ -42,11 +48,17 @@ import SuppliersPage from "./pages/marketing/SuppliersPage";
 import SupplierProfilePage from "./pages/marketing/SupplierProfilePage";
 import VenuesPage from "./pages/marketing/VenuesPage";
 import VenueProfilePage from "./pages/marketing/VenueProfilePage";
+import VenueClaimRequestPage from "./pages/marketing/VenueClaimRequestPage";
+import VenueClaimVerifyPage from "./pages/marketing/VenueClaimVerifyPage";
 import RequestPage from "./pages/marketing/RequestPage";
 import SupplierRequestQuotePage from "./pages/marketing/SupplierRequestQuotePage";
 import EnquiryQuotesPage from "./pages/marketing/EnquiryQuotesPage";
 import CategoryLocationLandingPage from "./pages/marketing/CategoryLocationLandingPage";
 import SupplierSeoLandingPage from "./pages/marketing/SupplierSeoLandingPage";
+import CategoryLandingPage from "./pages/marketing/CategoryLandingPage";
+import SupplierJoinPage from "./pages/marketing/SupplierJoinPage";
+import SupplierVerifyPage from "./pages/marketing/SupplierVerifyPage";
+import SupplierOnboardingPage from "./pages/marketing/SupplierOnboardingPage";
 
 function AccessDenied({ error, onSignOut }) {
   return (
@@ -57,7 +69,7 @@ function AccessDenied({ error, onSignOut }) {
           <p className="text-sm text-red-600">{error}</p>
         ) : (
           <p className="text-sm text-gray-600">
-            Your user is not recognised as an admin (public.user_roles) or a supplier (public.suppliers.auth_user_id).
+            Your user is not recognised as an admin, supplier, customer, or venue owner.
           </p>
         )}
         <button onClick={onSignOut} className="border rounded-lg px-3 py-2 bg-white">
@@ -79,9 +91,21 @@ function normalizeReturnTo(rawValue) {
   return raw;
 }
 
+function isSupplierEmailVerified(user) {
+  return !!user?.email_confirmed_at;
+}
+
+function getSupplierStartRoute(user, supplier) {
+  const verified = isSupplierEmailVerified(user);
+  const onboardingStatus = String(supplier?.onboarding_status || supplier?.status || "").toLowerCase();
+  if (!verified || onboardingStatus === "awaiting_email_verification") return "/suppliers/verify";
+  if (!supplier?.id) return "/suppliers/join";
+  if (["draft", "profile_incomplete", "rejected"].includes(onboardingStatus)) return "/suppliers/onboarding";
+  return "/supplier/dashboard";
+}
+
 export default function App() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [authState, setAuthState] = useState({
@@ -139,7 +163,7 @@ export default function App() {
         if (profileRole === "supplier") {
           const { data: supplierRow } = await supabase
             .from("suppliers")
-            .select("id,business_name,credits_balance,is_published")
+            .select("id,business_name,credits_balance,is_published,status,onboarding_status,admin_notes")
             .eq("auth_user_id", user.id)
             .maybeSingle();
           if (!cancelled) setAuthState({ loading: false, role: "supplier", supplier: supplierRow || null, customer: null, error: null });
@@ -154,8 +178,8 @@ export default function App() {
           if (!cancelled) setAuthState({ loading: false, role: "customer", supplier: null, customer: customerRow || null, error: null });
           return;
         }
-        if (profileRole === "venue") {
-          if (!cancelled) setAuthState({ loading: false, role: "venue", supplier: null, customer: null, error: null });
+        if (profileRole === "venue_owner" || profileRole === "venue") {
+          if (!cancelled) setAuthState({ loading: false, role: "venue_owner", supplier: null, customer: null, error: null });
           return;
         }
 
@@ -163,6 +187,7 @@ export default function App() {
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
+          .eq("role", "admin")
           .maybeSingle();
 
         if (!roleErr && roleRow?.role === "admin") {
@@ -172,12 +197,23 @@ export default function App() {
 
         const { data: supplierRow, error: supplierErr } = await supabase
           .from("suppliers")
-          .select("id,business_name,credits_balance,is_published")
+          .select("id,business_name,credits_balance,is_published,status,onboarding_status,admin_notes")
           .eq("auth_user_id", user.id)
           .maybeSingle();
 
         if (!supplierErr && supplierRow?.id) {
           if (!cancelled) setAuthState({ loading: false, role: "supplier", supplier: supplierRow, customer: null, error: null });
+          return;
+        }
+
+        const { data: venueOwnerRoleRow, error: venueOwnerRoleErr } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "venue_owner")
+          .maybeSingle();
+        if (!venueOwnerRoleErr && venueOwnerRoleRow?.role) {
+          if (!cancelled) setAuthState({ loading: false, role: "venue_owner", supplier: null, customer: null, error: null });
           return;
         }
 
@@ -215,7 +251,7 @@ export default function App() {
     } finally {
       setSession(null);
       setAuthState({ loading: false, role: null, supplier: null, customer: null, error: null });
-      navigate("/", { replace: true });
+      window.location.assign("/");
     }
   }
 
@@ -226,8 +262,8 @@ export default function App() {
       return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
     }
     if (authState.role === "admin") return element;
-    if (authState.role === "venue") return <Navigate to="/admin/venues" replace />;
-    if (authState.role === "supplier") return <Navigate to="/supplier/dashboard" replace />;
+    if (authState.role === "venue_owner" || authState.role === "venue") return <Navigate to="/venue" replace />;
+    if (authState.role === "supplier") return <Navigate to={getSupplierStartRoute(user, authState.supplier)} replace />;
     return <AccessDenied error={authState.error} onSignOut={signOut} />;
   }
 
@@ -237,9 +273,15 @@ export default function App() {
       const returnTo = encodeURIComponent(`${location.pathname}${location.search || ""}${location.hash || ""}`);
       return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
     }
-    if (authState.role === "supplier") return element;
+    if (authState.role === "supplier") {
+      const startRoute = getSupplierStartRoute(user, authState.supplier);
+      if (startRoute !== "/supplier/dashboard" && location.pathname.startsWith("/supplier")) {
+        return <Navigate to={startRoute} replace />;
+      }
+      return element;
+    }
     if (authState.role === "admin") return <Navigate to="/admin/dashboard" replace />;
-    if (authState.role === "venue") return <Navigate to="/admin/venues" replace />;
+    if (authState.role === "venue_owner" || authState.role === "venue") return <Navigate to="/venue" replace />;
     if (authState.role === "customer") return <Navigate to="/customer" replace />;
     return <AccessDenied error={authState.error} onSignOut={signOut} />;
   }
@@ -252,8 +294,21 @@ export default function App() {
     }
     if (authState.role === "customer") return element;
     if (authState.role === "admin") return <Navigate to="/admin/dashboard" replace />;
-    if (authState.role === "venue") return <Navigate to="/admin/venues" replace />;
-    if (authState.role === "supplier") return <Navigate to="/supplier/dashboard" replace />;
+    if (authState.role === "venue_owner" || authState.role === "venue") return <Navigate to="/venue" replace />;
+    if (authState.role === "supplier") return <Navigate to={getSupplierStartRoute(user, authState.supplier)} replace />;
+    return <AccessDenied error={authState.error} onSignOut={signOut} />;
+  }
+
+  function venueGuard(element) {
+    if (sessionLoading || (user && authState.loading)) return <LoadingAccess />;
+    if (!user) {
+      const returnTo = encodeURIComponent(`${location.pathname}${location.search || ""}${location.hash || ""}`);
+      return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
+    }
+    if (authState.role === "venue_owner" || authState.role === "venue") return element;
+    if (authState.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    if (authState.role === "supplier") return <Navigate to={getSupplierStartRoute(user, authState.supplier)} replace />;
+    if (authState.role === "customer") return <Navigate to="/customer" replace />;
     return <AccessDenied error={authState.error} onSignOut={signOut} />;
   }
 
@@ -269,7 +324,6 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/browse" element={<BrowsePage />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/contact" element={<ContactPage />} />
@@ -277,14 +331,23 @@ export default function App() {
       <Route path="/request/:token" element={<EnquiryQuotesPage />} />
       <Route path="/enquiry/:token" element={<EnquiryQuotesPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
+      <Route path="/suppliers/join" element={<SupplierJoinPage />} />
+      <Route path="/suppliers/verify" element={<SupplierVerifyPage />} />
+      <Route path="/suppliers/onboarding" element={<SupplierOnboardingPage />} />
       <Route path="/suppliers/:slug" element={<SupplierProfilePage />} />
       <Route path="/suppliers/:slug/request-quote" element={<SupplierRequestQuotePage />} />
+      <Route path="/browse" element={<Navigate to="/categories" replace />} />
+      <Route path="/categories" element={<BrowsePage />} />
+      <Route path="/categories/:slug" element={<CategoryLandingPage />} />
+      <Route path="/list-your-business" element={<Navigate to="/suppliers/join" replace />} />
       <Route path="/category/:categorySlug/:locationSlug" element={<CategoryLocationLandingPage />} />
       <Route path="/category/:categorySlug" element={<CategoryLocationLandingPage />} />
       <Route path="/location/:locationSlug" element={<CategoryLocationLandingPage />} />
       <Route path="/:slug" element={<SupplierSeoLandingPage />} />
       <Route path="/venues" element={<VenuesPage />} />
       <Route path="/venues/:slug" element={<VenueProfilePage />} />
+      <Route path="/venues/:slug/claim" element={<VenueClaimRequestPage />} />
+      <Route path="/claim/venue" element={<VenueClaimVerifyPage />} />
 
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/reset" element={<AuthResetPage />} />
@@ -315,8 +378,8 @@ export default function App() {
                 to={
                   (() => {
                     const requested = normalizeReturnTo(new URLSearchParams(location.search || "").get("returnTo"));
-                    if (requested && requested.startsWith("/supplier")) return requested;
-                    return "/supplier/dashboard";
+                    if (requested && (requested.startsWith("/supplier") || requested.startsWith("/suppliers/"))) return requested;
+                    return getSupplierStartRoute(user, authState.supplier);
                   })()
                 }
                 replace
@@ -332,13 +395,13 @@ export default function App() {
                 }
                 replace
               />
-            ) : authState.role === "venue" ? (
+            ) : authState.role === "venue_owner" || authState.role === "venue" ? (
               <Navigate
                 to={
                   (() => {
                     const requested = normalizeReturnTo(new URLSearchParams(location.search || "").get("returnTo"));
-                    if (requested && requested.startsWith("/admin/venues")) return requested;
-                    return "/admin/venues";
+                    if (requested && requested.startsWith("/venue")) return requested;
+                    return "/venue";
                   })()
                 }
                 replace
@@ -402,6 +465,14 @@ export default function App() {
         )}
       />
       <Route
+        path="/admin/categories"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <CategoriesPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
         path="/admin/reviews"
         element={adminGuard(
           <AdminLayout user={user} onSignOut={signOut}>
@@ -410,10 +481,26 @@ export default function App() {
         )}
       />
       <Route
+        path="/admin/venue-claims"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <VenueClaimsPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
         path="/admin/suppliers"
         element={adminGuard(
           <AdminLayout user={user} onSignOut={signOut}>
             <AdminSuppliersPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/supplier-applications"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <SupplierApplicationsPage user={user} />
           </AdminLayout>
         )}
       />
@@ -508,9 +595,27 @@ export default function App() {
         )}
       />
 
+      <Route
+        path="/venue"
+        element={venueGuard(
+          <VenueLayout user={user} onSignOut={signOut}>
+            <VenueDashboardPage />
+          </VenueLayout>
+        )}
+      />
+      <Route
+        path="/venue/:venueId/edit"
+        element={venueGuard(
+          <VenueLayout user={user} onSignOut={signOut}>
+            <VenueEditPage />
+          </VenueLayout>
+        )}
+      />
+
       <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="/customer/*" element={<Navigate to="/customer" replace />} />
       <Route path="/supplier/*" element={<Navigate to="/supplier/dashboard" replace />} />
+      <Route path="/venue/*" element={<Navigate to="/venue" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

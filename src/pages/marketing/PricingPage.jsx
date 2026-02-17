@@ -20,7 +20,7 @@ export default function PricingPage() {
     <MarketingShell>
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <h1 className="text-3xl font-semibold tracking-tight">Simple pricing</h1>
-        <p className="mt-2 text-sm text-slate-600">Built to keep customer requests open and supplier spend efficient.</p>
+        <p className="mt-2 text-sm text-slate-600">Eventwow is free for customers and fair for suppliers — no inflated fees, no high percentage commissions.</p>
       </section>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-3">
@@ -53,4 +53,3 @@ export default function PricingPage() {
     </MarketingShell>
   );
 }
-

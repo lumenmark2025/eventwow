@@ -64,7 +64,7 @@ export default async function handler(req, res) {
 
     const suppliersResp = await admin
       .from("suppliers")
-      .select("id,business_name,slug,listed_publicly")
+      .select("id,business_name,slug,is_published")
       .order("business_name", { ascending: true })
       .limit(1000);
     if (suppliersResp.error) {
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
         id: s.id,
         name: s.business_name || "Supplier",
         slug: s.slug || null,
-        listedPublicly: !!s.listed_publicly,
+        listedPublicly: !!s.is_published,
       })),
     });
   } catch (err) {

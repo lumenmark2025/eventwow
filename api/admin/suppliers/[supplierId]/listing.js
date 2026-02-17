@@ -11,7 +11,7 @@ import {
 async function loadSupplier(admin, supplierId) {
   return admin
     .from("suppliers")
-    .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at,last_active_at")
+    .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,created_at,updated_at,last_active_at")
     .eq("id", supplierId)
     .maybeSingle();
 }
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       }
 
       const next = validated.value;
-      const requestedPublish = !!next.listedPublicly;
+      const requestedPublish = !!next.isPublished;
 
       const supplierLookup = await loadSupplier(admin, supplierId);
       if (supplierLookup.error) {
@@ -80,12 +80,12 @@ export default async function handler(req, res) {
           services: next.services,
           location_label: next.locationLabel,
           listing_categories: next.categories,
-          listed_publicly: false,
+          is_published: false,
           updated_at: new Date().toISOString(),
           last_active_at: new Date().toISOString(),
         })
         .eq("id", supplierId)
-        .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at,last_active_at")
+        .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,created_at,updated_at,last_active_at")
         .single();
 
       if (updateErr) {
@@ -105,12 +105,12 @@ export default async function handler(req, res) {
         const publishResp = await admin
           .from("suppliers")
           .update({
-            listed_publicly: true,
+            is_published: true,
             updated_at: new Date().toISOString(),
             last_active_at: new Date().toISOString(),
           })
           .eq("id", supplierId)
-          .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at,last_active_at")
+          .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,created_at,updated_at,last_active_at")
           .single();
 
         if (publishResp.error) {

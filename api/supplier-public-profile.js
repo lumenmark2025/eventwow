@@ -14,7 +14,7 @@ async function loadSupplierByAuthUser(admin, userId) {
   return admin
     .from("suppliers")
     .select(
-      "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at"
+      "id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,created_at,updated_at"
     )
     .eq("auth_user_id", userId)
     .maybeSingle();

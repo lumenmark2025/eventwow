@@ -73,6 +73,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
+  const [warn, setWarn] = useState("");
 
   const [form, setForm] = useState({
     business_name: "",
@@ -86,6 +87,10 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
     public_phone: "",
     is_published: true,
     is_verified: false,
+    is_insured: false,
+    fsa_rating_url: "",
+    fsa_rating_value: null,
+    fsa_rating_last_fetched_at: null,
     credits_balance: 0,
   });
 
@@ -122,11 +127,12 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
       setLoading(true);
       setErr("");
       setOk("");
+      setWarn("");
 
       const { data, error } = await supabase
         .from("suppliers")
         .select(
-          "id,business_name,slug,base_city,base_postcode,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,credits_balance"
+          "id,business_name,slug,base_city,base_postcode,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_last_fetched_at,credits_balance"
         )
         .eq("id", supplierId)
         .maybeSingle();
@@ -146,6 +152,10 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
           public_phone: data.public_phone ?? "",
           is_published: !!data.is_published,
           is_verified: !!data.is_verified,
+          is_insured: !!data.is_insured,
+          fsa_rating_url: data.fsa_rating_url ?? "",
+          fsa_rating_value: data.fsa_rating_value ?? null,
+          fsa_rating_last_fetched_at: data.fsa_rating_last_fetched_at ?? null,
           credits_balance: Number(data.credits_balance ?? 0),
         });
         loadCreditTransactions();
@@ -311,6 +321,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
     setSaving(true);
     setErr("");
     setOk("");
+    setWarn("");
 
     if (!form.business_name?.trim()) {
       setErr("Business name is required.");
@@ -335,15 +346,27 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
       public_phone: form.public_phone?.trim() || null,
       is_published: !!form.is_published,
       is_verified: !!form.is_verified,
+      is_insured: !!form.is_insured,
+      fsa_rating_url: form.fsa_rating_url?.trim() || null,
       updated_by_user_id: user?.id || null,
     };
 
     try {
-      await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}`, {
+      const json = await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (json?.supplier) {
+        setForm((prev) => ({
+          ...prev,
+          is_insured: !!json.supplier.is_insured,
+          fsa_rating_url: json.supplier.fsa_rating_url ?? "",
+          fsa_rating_value: json.supplier.fsa_rating_value ?? null,
+          fsa_rating_last_fetched_at: json.supplier.fsa_rating_last_fetched_at ?? null,
+        }));
+      }
+      if (json?.warning) setWarn(json.warning);
       setOk("Saved.");
       onSaved?.();
     } catch (e) {
@@ -351,6 +374,28 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
     }
 
     setSaving(false);
+  }
+
+  async function refreshFsaRating() {
+    setErr("");
+    setOk("");
+    setWarn("");
+    try {
+      const json = await fetchAuthedJson("/api/admin/suppliers/refresh-fsa-rating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ supplierId }),
+      });
+      setForm((prev) => ({
+        ...prev,
+        fsa_rating_url: json?.supplier?.fsa_rating_url ?? prev.fsa_rating_url,
+        fsa_rating_value: json?.supplier?.fsa_rating_value ?? null,
+        fsa_rating_last_fetched_at: json?.supplier?.fsa_rating_last_fetched_at ?? null,
+      }));
+      setOk("FHRS rating refreshed.");
+    } catch (e) {
+      setErr(e?.message || "Failed to refresh FHRS rating");
+    }
   }
 
   function updateListingField(key, value) {
@@ -408,7 +453,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
         services: Array.isArray(listing.services) ? listing.services : [],
         locationLabel: listing.locationLabel || "",
         categories: Array.isArray(listing.categories) ? listing.categories : [],
-        listedPublicly: !!listing.listedPublicly,
+        isPublished: !!listing.isPublished,
       };
       const resp = await fetchAuthedJson(`/api/admin/suppliers/${encodeURIComponent(supplierId)}/listing`, {
         method: "PATCH",
@@ -507,6 +552,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
 
       {err ? <p className="text-sm text-rose-600">{err}</p> : null}
       {ok ? <p className="text-sm text-emerald-700">{ok}</p> : null}
+      {warn ? <p className="text-sm text-amber-700">{warn}</p> : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <StatCard label="Credits balance" value={form.credits_balance ?? 0} hint="Current available credits" />
@@ -647,6 +693,34 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
             />
             Verified
           </label>
+
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              id="is_insured"
+              type="checkbox"
+              checked={form.is_insured}
+              onChange={(e) => setField("is_insured", e.target.checked)}
+            />
+            Insured
+          </label>
+
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium text-slate-700">Food hygiene rating link (FSA)</label>
+            <Input
+              value={form.fsa_rating_url}
+              onChange={(e) => setField("fsa_rating_url", e.target.value)}
+              placeholder="https://ratings.food.gov.uk/business/1234567/example-business"
+            />
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <span>Current rating: {form.fsa_rating_value || "Not set"}</span>
+              {form.fsa_rating_last_fetched_at ? (
+                <span>Last fetched: {new Date(form.fsa_rating_last_fetched_at).toLocaleString()}</span>
+              ) : null}
+            </div>
+            <Button type="button" variant="secondary" onClick={refreshFsaRating}>
+              Refresh FHRS rating
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -665,18 +739,18 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
               <div className="space-y-4 lg:col-span-2">
                 <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={listing.listedPublicly ? "success" : "neutral"}>
-                      {listing.listedPublicly ? "Listed publicly" : "Hidden from directory"}
+                    <Badge variant={listing.isPublished ? "success" : "neutral"}>
+                      {listing.isPublished ? "Published" : "Hidden from directory"}
                     </Badge>
                     {gate && gate.canPublish ? <Badge variant="brand">Publish-ready</Badge> : <Badge variant="warning">Missing requirements</Badge>}
                   </div>
                   <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                     <input
                       type="checkbox"
-                      checked={!!listing.listedPublicly}
-                      onChange={(e) => updateListingField("listedPublicly", e.target.checked)}
+                      checked={!!listing.isPublished}
+                      onChange={(e) => updateListingField("isPublished", e.target.checked)}
                     />
-                    Show this supplier in the public directory
+                    Publish this supplier to the public directory
                   </label>
                   {gate && !gate.canPublish && Array.isArray(gate.reasons) && gate.reasons.length > 0 ? (
                     <p className="text-xs text-amber-700">Required before publish: {gate.reasons.join(" ")}</p>
@@ -1222,3 +1296,4 @@ export default function SupplierList({ user }) {
     </div>
   );
 }
+

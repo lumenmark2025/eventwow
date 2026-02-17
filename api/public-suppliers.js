@@ -22,6 +22,18 @@ function toCardRow(supplier, supabaseUrl, performance) {
     performance,
     reviewRating: Number.isFinite(Number(supplier._reviewAverage)) ? Number(supplier._reviewAverage) : null,
     reviewCount: Number.isFinite(Number(supplier._reviewCount)) ? Number(supplier._reviewCount) : 0,
+    isInsured: profile.isInsured,
+    is_insured: profile.isInsured,
+    fsaRatingValue: profile.fsaRatingValue,
+    fsa_rating_value: profile.fsaRatingValue,
+    fsaRatingUrl: profile.fsaRatingUrl,
+    fsa_rating_url: profile.fsaRatingUrl,
+    fsaRatingDate: profile.fsaRatingDate,
+    fsa_rating_date: profile.fsaRatingDate,
+    fsaRatingBadgeKey: profile.fsaRatingBadgeKey,
+    fsa_rating_badge_key: profile.fsaRatingBadgeKey,
+    fsaRatingBadgeUrl: profile.fsaRatingBadgeUrl,
+    fsa_rating_badge_url: profile.fsaRatingBadgeUrl,
     recommendedScore: supplier.is_verified ? 2 : 1,
   };
 }
@@ -57,9 +69,9 @@ export default async function handler(req, res) {
     const { data: suppliers, error } = await admin
       .from("suppliers")
       .select(
-        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,listed_publicly,is_verified,created_at,updated_at"
+        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
       )
-      .eq("listed_publicly", true)
+      .eq("is_published", true)
       .order("created_at", { ascending: false })
       .limit(500);
 

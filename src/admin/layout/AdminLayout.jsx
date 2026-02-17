@@ -1,70 +1,78 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import AppShell from "../../components/layout/AppShell";
+import { useLocation } from "react-router-dom";
 import Badge from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
+import eventwowLogo from "../../assets/brand/eventwow-logo.svg";
+import AdminSidebar from "./AdminSidebar";
+import AdminMobileDrawer from "./AdminMobileDrawer";
 
 export default function AdminLayout({ user, onSignOut, children }) {
-  const [tab, setTab] = useState("dashboard");
-
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Keep active tab in sync with URL (for button highlight only)
   useEffect(() => {
-    const path = (location.pathname || "").toLowerCase();
-
-    if (path.startsWith("/admin/dashboard")) return setTab("dashboard");
-    if (path.startsWith("/admin/credits-ledger")) return setTab("credits-ledger");
-    if (path.startsWith("/admin/performance")) return setTab("performance");
-    if (path.startsWith("/admin/suppliers")) return setTab("suppliers");
-    if (path.startsWith("/admin/enquiries")) return setTab("enquiries");
-    if (path.startsWith("/admin/venues")) return setTab("venues");
-    if (path.startsWith("/admin/reviews")) return setTab("reviews");
-
-    // default highlight
-    if (path === "/" || path === "/admin" || path === "/admin/") setTab("dashboard");
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  function go(nextTab) {
-    if (nextTab === "dashboard") navigate("/admin/dashboard");
-    if (nextTab === "credits-ledger") navigate("/admin/credits-ledger");
-    if (nextTab === "performance") navigate("/admin/performance");
-    if (nextTab === "venues") navigate("/admin/venues");
-    if (nextTab === "reviews") navigate("/admin/reviews");
-    if (nextTab === "suppliers") navigate("/admin/suppliers");
-    if (nextTab === "enquiries") navigate("/admin/enquiries");
-  }
-
   return (
-    <AppShell
-      title="Eventwow Admin"
-      user={user}
-      onSignOut={onSignOut}
-      nav={[
-        { key: "dashboard", label: "Dashboard" },
-        { key: "credits-ledger", label: "Credits Ledger" },
-        { key: "performance", label: "Performance" },
-        { key: "venues", label: "Venues" },
-        { key: "reviews", label: "Reviews" },
-        { key: "suppliers", label: "Suppliers" },
-        { key: "enquiries", label: "Enquiries" },
-      ]}
-      activeKey={tab}
-      onNavigate={go}
-    >
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-            <div>
-              <p className="text-sm font-medium text-slate-900">Admin Control Panel</p>
-              <p className="text-sm text-slate-600">Signed in as {user.email}</p>
-            </div>
-            <Badge variant="brand">Admin</Badge>
-          </CardContent>
-        </Card>
-        <div>{children}</div>
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="md:hidden"
+              aria-label="Open admin navigation"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M3 6h18M3 12h18M3 18h18" />
+              </svg>
+            </Button>
+
+            <img
+              src={eventwowLogo}
+              alt="Eventwow"
+              width="170"
+              height="32"
+              className="h-7 w-auto sm:h-8"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {user?.email ? <Badge variant="neutral" className="hidden sm:inline-flex">{user.email}</Badge> : null}
+            {onSignOut ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onSignOut}>
+                Sign out
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto flex w-full max-w-7xl gap-6 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <AdminSidebar />
+
+        <main className="min-w-0 flex-1 space-y-6">
+          <Card>
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+              <div>
+                <p className="text-sm font-medium text-slate-900">Admin Control Panel</p>
+                <p className="text-sm text-slate-600">Signed in as {user?.email}</p>
+              </div>
+              <Badge variant="brand">Admin</Badge>
+            </CardContent>
+          </Card>
+          <div>{children}</div>
+        </main>
       </div>
-    </AppShell>
+
+      <AdminMobileDrawer open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+    </div>
   );
 }

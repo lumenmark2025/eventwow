@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "../ui/Card";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
+import { getFsaBadgeLabel, getFsaBadgePath } from "../../lib/fsaBadge";
 
 function formatResponseHours(value) {
   const n = Number(value);
@@ -26,7 +27,7 @@ function Stars({ rating }) {
   );
 }
 
-export default function SupplierCard({ supplier }) {
+export default function SupplierCard({ supplier, showFsa = true }) {
   const performance = supplier?.performance || {};
   const replySignal = formatResponseHours(performance.typicalResponseHours);
   const primaryCategory = Array.isArray(supplier?.categoryBadges) && supplier.categoryBadges.length > 0
@@ -35,6 +36,10 @@ export default function SupplierCard({ supplier }) {
   const reviewRating = Number(supplier?.reviewRating);
   const reviewCount = Number(supplier?.reviewCount || 0);
   const hasReviews = Number.isFinite(reviewRating) && reviewCount > 0;
+  const isInsured = !!(supplier?.isInsured ?? supplier?.is_insured);
+  const fsaRatingValue = showFsa ? (supplier?.fsaRatingValue ?? supplier?.fsa_rating_value ?? null) : null;
+  const fsaBadgeSrc = supplier?.fsaRatingBadgeUrl ?? supplier?.fsa_rating_badge_url ?? getFsaBadgePath(fsaRatingValue);
+  const fsaLabel = getFsaBadgeLabel(fsaRatingValue);
   const meta = [
     replySignal,
     hasReviews ? `${reviewRating.toFixed(1)} (${reviewCount})` : null,
@@ -58,6 +63,17 @@ export default function SupplierCard({ supplier }) {
           {supplier.locationLabel ? <p className="mt-1 text-xs text-slate-500">{supplier.locationLabel}</p> : null}
         </div>
         {primaryCategory ? <Badge variant="neutral">{primaryCategory}</Badge> : null}
+        {(isInsured || fsaLabel) ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {isInsured ? <Badge variant="success">Insured</Badge> : null}
+            {fsaLabel ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700">
+                {fsaBadgeSrc ? <img src={fsaBadgeSrc} alt={fsaLabel} className="h-4 w-auto" loading="lazy" /> : null}
+                <span>{fsaRatingValue}</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         {meta.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             {replySignal ? <span>{replySignal}</span> : null}

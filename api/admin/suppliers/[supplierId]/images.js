@@ -29,7 +29,7 @@ function decodeBase64Payload(dataBase64) {
 async function loadSupplier(admin, supplierId) {
   return admin
     .from("suppliers")
-    .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at")
+    .select("id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,created_at,updated_at")
     .eq("id", supplierId)
     .maybeSingle();
 }

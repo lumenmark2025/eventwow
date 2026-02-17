@@ -353,7 +353,7 @@ export default function EnquiryQuotesPage() {
             <EmptyState
               title="Waiting for suppliers"
               description="Quotes have not arrived yet. Check back shortly."
-              action={<Button as={Link} to="/browse">Browse suppliers</Button>}
+              action={<Button as={Link} to="/categories">Browse suppliers</Button>}
             />
           ) : view === "compare" ? (
             <Card className="rounded-3xl">

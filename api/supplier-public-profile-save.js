@@ -16,7 +16,7 @@ async function loadSupplierByAuthUser(admin, userId) {
   return admin
     .from("suppliers")
     .select(
-      "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at"
+      "id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,status,created_at,updated_at"
     )
     .eq("auth_user_id", userId)
     .maybeSingle();
@@ -79,8 +79,6 @@ export default async function handler(req, res) {
     }
 
     const next = validated.value;
-    const requestedPublish = !!next.listedPublicly;
-
     const { data: updatedSupplier, error: updateErr } = await admin
       .from("suppliers")
       .update({
@@ -89,13 +87,13 @@ export default async function handler(req, res) {
         services: next.services,
         location_label: next.locationLabel,
         listing_categories: next.categories,
-        listed_publicly: false,
+        is_published: false,
         updated_at: new Date().toISOString(),
         last_active_at: new Date().toISOString(),
       })
       .eq("id", supplierLookup.data.id)
       .select(
-        "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at,last_active_at"
+        "id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,status,created_at,updated_at,last_active_at"
       )
       .single();
 
@@ -119,30 +117,7 @@ export default async function handler(req, res) {
     const images = imagesResp.data || [];
     const gate = computeSupplierGateFromData({ supplier: updatedSupplier, images });
 
-    let finalSupplier = updatedSupplier;
-    if (requestedPublish && gate.canPublish) {
-      const publishResp = await admin
-        .from("suppliers")
-        .update({
-          listed_publicly: true,
-          updated_at: new Date().toISOString(),
-          last_active_at: new Date().toISOString(),
-        })
-        .eq("id", supplierLookup.data.id)
-        .select(
-          "id,slug,business_name,short_description,about,services,location_label,listing_categories,listed_publicly,created_at,updated_at,last_active_at"
-        )
-        .single();
-
-      if (publishResp.error) {
-        return res.status(500).json({
-          ok: false,
-          error: "Failed to publish listing",
-          details: publishResp.error.message,
-        });
-      }
-      finalSupplier = publishResp.data;
-    }
+    const finalSupplier = updatedSupplier;
 
     const dto = buildEditableListingDto(
       finalSupplier,
@@ -150,20 +125,6 @@ export default async function handler(req, res) {
       categoryOptions,
       SUPABASE_URL
     );
-
-    if (requestedPublish && !gate.canPublish) {
-      return res.status(409).json({
-        ok: false,
-        error: "Cannot publish listing",
-        details: "Micro content gate failed.",
-        gate,
-        ...dto,
-        supplier: {
-          ...dto.supplier,
-          canPublish: false,
-        },
-      });
-    }
 
     return res.status(200).json({
       ok: true,

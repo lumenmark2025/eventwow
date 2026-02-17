@@ -1,7 +1,7 @@
 # PR18 UAT Checklist - Multi-Supplier Enquiry + Micro Gate
 
 1. Run migration `supabase/migrations/20260213_public_enquiry_flow.sql`.
-2. Ensure at least one supplier is `listed_publicly=true` and passes micro gate:
+2. Ensure at least one supplier is `is_published=true` and passes micro gate:
    - short description >= 30 chars
    - about >= 120 chars
    - location label >= 3 chars

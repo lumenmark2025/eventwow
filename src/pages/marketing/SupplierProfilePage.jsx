@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -8,6 +8,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import Badge from "../../components/ui/Badge";
 import { useMarketingMeta } from "../../lib/marketingMeta";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
+import { getFsaBadgeLabel, getFsaBadgePath } from "../../lib/fsaBadge";
 
 function formatResponseHours(value) {
   const n = Number(value);
@@ -105,6 +106,11 @@ export default function SupplierProfilePage() {
   const ratingSignal = hasReviewSummary ? `${reviewRating.toFixed(1)} (${reviewCount} review${reviewCount === 1 ? "" : "s"})` : null;
   const topSignals = [ratingSignal, replySignal].filter(Boolean);
   const primaryCategory = Array.isArray(supplier?.categories) && supplier.categories.length > 0 ? supplier.categories[0] : null;
+  const isInsured = !!(supplier?.isInsured ?? supplier?.is_insured);
+  const fsaRatingValue = supplier?.fsaRatingValue ?? supplier?.fsa_rating_value ?? null;
+  const fsaRatingUrl = supplier?.fsaRatingUrl ?? supplier?.fsa_rating_url ?? null;
+  const fsaBadgeSrc = supplier?.fsaRatingBadgeUrl ?? supplier?.fsa_rating_badge_url ?? getFsaBadgePath(fsaRatingValue);
+  const fsaLabel = getFsaBadgeLabel(fsaRatingValue);
 
   return (
     <MarketingShell>
@@ -134,27 +140,51 @@ export default function SupplierProfilePage() {
             ) : (
               <div className="h-56 w-full bg-gradient-to-br from-slate-100 via-white to-teal-50 sm:h-72" />
             )}
-            <div className="space-y-4 p-5 sm:p-6">
-              <div className="flex flex-wrap items-center gap-2">
-                {primaryCategory ? <Badge variant="brand">{primaryCategory.name}</Badge> : null}
-                {supplier.locationLabel ? <Badge variant="neutral">{supplier.locationLabel}</Badge> : null}
-              </div>
-              {topSignals.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                  {ratingSignal ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Stars rating={reviewRating} />
-                      <span>{ratingSignal}</span>
-                    </span>
+            <div className="p-5 sm:p-6">
+              <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {primaryCategory ? <Badge variant="brand">{primaryCategory.name}</Badge> : null}
+                    {supplier.locationLabel ? <Badge variant="neutral">{supplier.locationLabel}</Badge> : null}
+                  </div>
+                  {topSignals.length > 0 ? (
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                      {ratingSignal ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Stars rating={reviewRating} />
+                          <span>{ratingSignal}</span>
+                        </span>
+                      ) : null}
+                      {ratingSignal && replySignal ? <span aria-hidden="true">•</span> : null}
+                      {replySignal ? <span>{replySignal}</span> : null}
+                    </div>
                   ) : null}
-                  {ratingSignal && replySignal ? <span aria-hidden="true">•</span> : null}
-                  {replySignal ? <span>{replySignal}</span> : null}
+                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{supplier.name}</h1>
+                  <p className="max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                    {supplier.shortDescription || "Trusted event supplier on Eventwow."}
+                  </p>
+                  {isInsured ? <Badge variant="success">Insured</Badge> : null}
                 </div>
-              ) : null}
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{supplier.name}</h1>
-              <p className="max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
-                {supplier.shortDescription || "Trusted event supplier on Eventwow."}
-              </p>
+
+                {fsaLabel ? (
+                  fsaRatingUrl ? (
+                    <a
+                      href={fsaRatingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center hover:bg-slate-50 lg:justify-self-end"
+                    >
+                      {fsaBadgeSrc ? <img src={fsaBadgeSrc} alt={fsaLabel} className="h-16 w-auto sm:h-20" loading="lazy" /> : null}
+                      <span className="mt-2 text-sm font-medium text-slate-700">{fsaLabel}</span>
+                    </a>
+                  ) : (
+                    <div className="inline-flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center lg:justify-self-end">
+                      {fsaBadgeSrc ? <img src={fsaBadgeSrc} alt={fsaLabel} className="h-16 w-auto sm:h-20" loading="lazy" /> : null}
+                      <span className="mt-2 text-sm font-medium text-slate-700">{fsaLabel}</span>
+                    </div>
+                  )
+                ) : null}
+              </div>
             </div>
           </section>
 
@@ -255,7 +285,7 @@ export default function SupplierProfilePage() {
               </Card>
 
               <Card className="rounded-3xl">
-                <CardHeader>
+                <CardHeader className={showPerformance ? "pb-3" : "pb-6"}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle className="text-xl">Performance</CardTitle>
                     <Button
@@ -319,3 +349,7 @@ export default function SupplierProfilePage() {
     </MarketingShell>
   );
 }
+
+
+
+

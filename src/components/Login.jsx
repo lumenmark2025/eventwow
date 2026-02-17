@@ -52,7 +52,7 @@ export default function Login() {
           loading="eager"
           decoding="async"
         />
-        <p className="text-sm text-gray-600">Admins can use password login. Suppliers and customers can use a magic link.</p>
+        <p className="text-sm text-gray-600">Admins can use password login. Suppliers, venue owners, and customers can use a magic link.</p>
         <div className="space-y-2">
           <label className="text-sm">Email</label>
           <input className="w-full border rounded-lg px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} />

@@ -95,9 +95,9 @@ export default async function handler(req, res) {
     const { data: suppliers, error } = await admin
       .from("suppliers")
       .select(
-        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,listed_publicly,is_published,is_verified,created_at,updated_at"
+        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,is_published,is_verified,created_at,updated_at"
       )
-      .or("is_published.eq.true,listed_publicly.eq.true")
+      .eq("is_published", true)
       .order("created_at", { ascending: false })
       .limit(1000);
 

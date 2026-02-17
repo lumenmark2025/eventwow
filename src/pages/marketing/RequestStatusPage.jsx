@@ -110,7 +110,7 @@ export default function RequestStatusPage() {
           </Card>
 
           <div className="flex gap-2">
-            <Button as={Link} to="/browse" variant="secondary">
+            <Button as={Link} to="/categories" variant="secondary">
               Browse suppliers
             </Button>
             <Button as={Link} to="/request">

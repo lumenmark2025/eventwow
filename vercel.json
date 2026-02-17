@@ -13,11 +13,15 @@
     { "source": "/suppliers", "destination": "/index.html" },
     { "source": "/suppliers/:slug", "destination": "/index.html" },
     { "source": "/suppliers/:slug/request-quote", "destination": "/index.html" },
+    { "source": "/categories", "destination": "/index.html" },
+    { "source": "/categories/:slug", "destination": "/index.html" },
     { "source": "/category/:categorySlug", "destination": "/index.html" },
     { "source": "/location/:locationSlug", "destination": "/index.html" },
     { "source": "/:slug([a-z0-9]+(?:-[a-z0-9]+)+)", "destination": "/index.html" },
     { "source": "/venues", "destination": "/index.html" },
     { "source": "/venues/:slug", "destination": "/index.html" },
+    { "source": "/venues/:slug/claim", "destination": "/index.html" },
+    { "source": "/claim/venue", "destination": "/index.html" },
     { "source": "/login", "destination": "/index.html" },
     { "source": "/supplier/login", "destination": "/index.html" },
     { "source": "/reset-password", "destination": "/index.html" },
@@ -25,6 +29,7 @@
     { "source": "/auth/callback", "destination": "/index.html" },
     { "source": "/auth/reset", "destination": "/index.html" },
     { "source": "/supplier/:path*", "destination": "/index.html" },
+    { "source": "/venue/:path*", "destination": "/index.html" },
     { "source": "/admin/:path*", "destination": "/index.html" },
     { "source": "/quote/:token", "destination": "/index.html" }
   ]

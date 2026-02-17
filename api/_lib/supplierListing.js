@@ -1,4 +1,5 @@
 import { getPublicImageUrl } from "./publicImage.js";
+import { getFsaBadgeKey, toPublicFsaBadgeUrl } from "./fsa.js";
 
 export const SUPPLIER_CATEGORY_OPTIONS = [
   "Pizza Catering",
@@ -88,7 +89,7 @@ export function validateListingPayload(body, options = {}) {
   const locationLabel = normalizeText(body?.locationLabel, 120);
   const services = normalizeServices(body?.services);
   const categories = normalizeCategories(body?.categories, allowedSet);
-  const listedPublicly = !!body?.listedPublicly;
+  const isPublished = !!body?.isPublished;
 
   if (String(body?.shortDescription || "").trim().length > 160) {
     return { ok: false, error: "shortDescription must be 160 characters or less" };
@@ -117,7 +118,7 @@ export function validateListingPayload(body, options = {}) {
       locationLabel,
       services,
       categories,
-      listedPublicly,
+      isPublished,
     },
   };
 }
@@ -137,7 +138,7 @@ export function buildEditableListingDto(supplier, images, categoryOptions = SUPP
       about: supplier.about || null,
       services: Array.isArray(supplier.services) ? supplier.services : [],
       locationLabel: supplier.location_label || null,
-      listedPublicly: !!supplier.listed_publicly,
+      isPublished: !!supplier.is_published,
       categories: Array.isArray(supplier.listing_categories) ? supplier.listing_categories : [],
       updatedAt: supplier.updated_at || supplier.created_at || null,
     },
@@ -196,6 +197,12 @@ export function buildPublicSupplierDto(supplier, images, supabaseUrl = "") {
         sortOrder: Number(img.sort_order || 0),
       }))
       .filter((img) => !!img.url),
+    isInsured: !!supplier.is_insured,
+    fsaRatingValue: supplier.fsa_rating_value || null,
+    fsaRatingUrl: supplier.fsa_rating_url || null,
+    fsaRatingDate: supplier.fsa_rating_date || null,
+    fsaRatingBadgeKey: getFsaBadgeKey(supplier.fsa_rating_value),
+    fsaRatingBadgeUrl: toPublicFsaBadgeUrl(supplier.fsa_rating_value),
     lastUpdatedAt: supplier.updated_at || supplier.created_at || null,
   };
 }

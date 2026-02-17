@@ -40,9 +40,9 @@ export default async function handler(req, res) {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const supplierResp = await admin
       .from("suppliers")
-      .select("id,slug,business_name,short_description,about,services,listing_categories,location_label,listed_publicly")
+      .select("id,slug,business_name,short_description,about,services,listing_categories,location_label,is_published")
       .eq("slug", supplierSlug)
-      .eq("listed_publicly", true)
+      .eq("is_published", true)
       .maybeSingle();
 
     if (supplierResp.error) {

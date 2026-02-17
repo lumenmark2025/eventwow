@@ -42,7 +42,7 @@ export default function CategoryLocationLandingPage() {
     if (categoryName && locationName) return `${categoryName} in ${locationName}`;
     if (categoryName) return `${categoryName}`;
     if (locationName) return `Suppliers in ${locationName}`;
-    return "Local Suppliers";
+    return "Suppliers";
   }, [categoryName, locationName]);
 
   const pageDescription = useMemo(() => {

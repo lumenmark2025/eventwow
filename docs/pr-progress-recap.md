@@ -92,8 +92,7 @@
   - no INNER JOIN in list path (prevents dropping venues lacking images/links)
   - ordered by `updated_at desc`, then `created_at desc`.
 - Publish flag drift mitigation:
-  - Admin save writes both flags together:
-    - `listed_publicly`
+  - Admin save writes the canonical flag:
     - `is_published`
   - Added sync migration + trigger:
     - `supabase/migrations/20260214_venues_publish_flags_sync.sql`
@@ -128,4 +127,3 @@
 - Apply latest migrations in production DB (including publish-flag sync migration).
 - Deploy latest API routes/UI bundle (ensure `/api/admin-venues` is not 404).
 - Re-run UAT checklists on production.
-

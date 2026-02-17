@@ -58,9 +58,8 @@ export default function HowItWorksPage() {
       <section className="mt-10 rounded-3xl border border-teal-200 bg-teal-50 p-8 shadow-sm">
         <h2 className="text-2xl font-semibold tracking-tight">Ready to get quotes?</h2>
         <p className="mt-2 text-sm text-slate-700">Start your request and compare suppliers quickly.</p>
-        <div className="mt-4"><Button as={Link} to="/browse" size="lg">Get quotes</Button></div>
+        <div className="mt-4"><Button as={Link} to="/categories" size="lg">Get quotes</Button></div>
       </section>
     </MarketingShell>
   );
 }
-

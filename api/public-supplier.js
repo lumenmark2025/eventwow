@@ -33,10 +33,10 @@ export default async function handler(req, res) {
     const { data: supplier, error } = await admin
       .from("suppliers")
       .select(
-        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,listed_publicly,created_at,updated_at"
+        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,is_published,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
       )
       .eq("slug", slug)
-      .eq("listed_publicly", true)
+      .eq("is_published", true)
       .maybeSingle();
 
     if (error) {
@@ -110,10 +110,18 @@ export default async function handler(req, res) {
       });
     }
 
+    const profile = buildPublicSupplierDto(supplier, imagesResp.data || [], SUPABASE_URL);
+
     return res.status(200).json({
       ok: true,
       supplier: {
-        ...buildPublicSupplierDto(supplier, imagesResp.data || [], SUPABASE_URL),
+        ...profile,
+        is_insured: !!supplier.is_insured,
+        fsa_rating_value: supplier.fsa_rating_value || null,
+        fsa_rating_url: supplier.fsa_rating_url || null,
+        fsa_rating_date: supplier.fsa_rating_date || null,
+        fsa_rating_badge_key: profile.fsaRatingBadgeKey || null,
+        fsa_rating_badge_url: profile.fsaRatingBadgeUrl || null,
         performance: buildPerformanceSignals((perfResp && perfResp.data) || null),
         reviewRating: Number.isFinite(Number(reviewStatsResp.data?.average_rating))
           ? Number(reviewStatsResp.data.average_rating)

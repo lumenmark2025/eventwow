@@ -12,8 +12,8 @@ export default function ContactPage() {
 
   return (
     <MarketingShell>
-      <section className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <section>
+        <Card>
           <CardHeader><CardTitle>Contact Eventwow</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-700">
             <p>Questions about requests, supplier onboarding, or support? We can help.</p>
@@ -23,17 +23,7 @@ export default function ContactPage() {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Support hours</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-700">
-            <p>Mon-Fri: 9:00-17:30</p>
-            <p>Sat: 10:00-14:00</p>
-            <p>Sun: Closed</p>
-          </CardContent>
-        </Card>
       </section>
     </MarketingShell>
   );
 }
-
