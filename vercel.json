@@ -10,6 +10,7 @@
     { "source": "/request", "destination": "/index.html" },
     { "source": "/request/:token", "destination": "/index.html" },
     { "source": "/enquiry/:token", "destination": "/index.html" },
+    { "source": "/booking-access", "destination": "/index.html" },
     { "source": "/suppliers", "destination": "/index.html" },
     { "source": "/suppliers/:slug", "destination": "/index.html" },
     { "source": "/suppliers/:slug/request-quote", "destination": "/index.html" },

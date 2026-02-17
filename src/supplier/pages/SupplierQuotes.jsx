@@ -139,19 +139,24 @@ export default function SupplierQuotes({ supplierId }) {
 
     setLoading(true);
     setErr("");
+    try {
+      const { data: authRes, error: authErr } = await supabase.auth.getSession();
+      if (authErr) throw authErr;
+      const token = authRes?.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase
-      .from("quotes")
-      .select(
-        "id,status,total_amount,currency_code,enquiry_id,created_at,sent_at,accepted_at,declined_at,closed_at,enquiries(event_date,event_postcode,venues(name))"
-      )
-      .eq("supplier_id", supplierId)
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (error) setErr(error.message);
-    setRows(data || []);
-    setLoading(false);
+      const resp = await fetch("/api/supplier/quotes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load quotes");
+      setRows(Array.isArray(json?.rows) ? json.rows : []);
+    } catch (e) {
+      setErr(e?.message || "Failed to load quotes");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ✅ Load quotes list + credits on mount (and if supplierId changes)
@@ -920,17 +925,25 @@ export default function SupplierQuotes({ supplierId }) {
                   }
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="font-medium">
-                      {q.enquiries?.venues?.name || "No venue"} · {q.enquiries?.event_date || "—"}
+                    <div>
+                      <div className="font-medium">
+                        {q.customer?.name || q.enquiries?.customer_name || "Unknown customer"}
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        {q.event_location_label || q.enquiries?.location_label || "Location not provided"}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Guests: {q.enquiry?.guestCount ?? q.enquiries?.guest_count ?? "—"} · Date: {q.enquiry?.eventDate || q.enquiries?.event_date || "—"}
+                        {(q.enquiry?.startTime || q.enquiries?.start_time) ? ` · Time: ${q.enquiry?.startTime || q.enquiries?.start_time}` : ""}
+                      </div>
                     </div>
                     <div className="text-sm">status: {q.status}</div>
                   </div>
 
                   <div className="text-sm text-gray-600">
-                    {q.enquiries?.event_postcode || ""}
                     {q.total_amount !== null && q.total_amount !== undefined
-                      ? ` · total: £${money(q.total_amount)}`
-                      : ""}
+                      ? `Total: £${money(q.total_amount)}`
+                      : "Total: £0.00"}
                   </div>
 
                   <div className="text-xs text-gray-500 mt-1">

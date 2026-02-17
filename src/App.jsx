@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
+import { getSupplierStartRoute } from "./lib/authRedirect";
 
 import Login from "./components/Login";
 import AdminLayout from "./admin/layout/AdminLayout";
@@ -35,7 +36,7 @@ import VenueEditPage from "./pages/venue/VenueEditPage";
 
 import PublicQuotePage from "./pages/PublicQuotePage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
-import AuthResetPage from "./pages/AuthResetPage";
+import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 
@@ -53,6 +54,7 @@ import VenueClaimVerifyPage from "./pages/marketing/VenueClaimVerifyPage";
 import RequestPage from "./pages/marketing/RequestPage";
 import SupplierRequestQuotePage from "./pages/marketing/SupplierRequestQuotePage";
 import EnquiryQuotesPage from "./pages/marketing/EnquiryQuotesPage";
+import BookingAccessPage from "./pages/marketing/BookingAccessPage";
 import CategoryLocationLandingPage from "./pages/marketing/CategoryLocationLandingPage";
 import SupplierSeoLandingPage from "./pages/marketing/SupplierSeoLandingPage";
 import CategoryLandingPage from "./pages/marketing/CategoryLandingPage";
@@ -89,34 +91,6 @@ function normalizeReturnTo(rawValue) {
   if (!raw || !raw.startsWith("/")) return "";
   if (raw.startsWith("//")) return "";
   return raw;
-}
-
-function isSupplierEmailVerified(user) {
-  return !!user?.email_confirmed_at;
-}
-
-function normalizeSupplierOnboardingStatus(supplier) {
-  if (!supplier) return "";
-  if (supplier.is_published === true) return "approved";
-  const onboarding = String(supplier.onboarding_status || "").trim().toLowerCase();
-  if (onboarding) return onboarding;
-  const legacy = String(supplier.status || "").trim().toLowerCase();
-  if (legacy === "approved") return "approved";
-  if (legacy === "pending_review") return "pending_review";
-  if (legacy === "rejected") return "rejected";
-  // Legacy suppliers created before onboarding_status existed should still access supplier dashboard.
-  return "approved";
-}
-
-function getSupplierStartRoute(user, supplier) {
-  if (!supplier?.id) return "/suppliers/join";
-  const verified = isSupplierEmailVerified(user);
-  const onboardingStatus = normalizeSupplierOnboardingStatus(supplier);
-  if (supplier?.is_published === true) return "/supplier/dashboard";
-  if (onboardingStatus === "approved") return "/supplier/dashboard";
-  if (onboardingStatus === "awaiting_email_verification" && !verified) return "/suppliers/verify";
-  if (["draft", "profile_incomplete", "rejected"].includes(onboardingStatus)) return "/suppliers/onboarding";
-  return "/supplier/dashboard";
 }
 
 export default function App() {
@@ -366,6 +340,7 @@ export default function App() {
       <Route path="/request" element={<RequestPage />} />
       <Route path="/request/:token" element={<EnquiryQuotesPage />} />
       <Route path="/enquiry/:token" element={<EnquiryQuotesPage />} />
+      <Route path="/booking-access" element={<BookingAccessPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
       <Route path="/suppliers/join" element={<SupplierJoinPage />} />
       <Route path="/suppliers/verify" element={<SupplierVerifyPage />} />
@@ -386,7 +361,8 @@ export default function App() {
       <Route path="/claim/venue" element={<VenueClaimVerifyPage />} />
 
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
-      <Route path="/auth/reset" element={<AuthResetPage />} />
+      <Route path="/auth/reset" element={<Navigate to="/reset-password" replace />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/update-password" element={<UpdatePassword />} />
 

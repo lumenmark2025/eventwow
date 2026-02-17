@@ -30,9 +30,13 @@ export function getAuthResetUrl() {
   return origin ? `${origin}/auth/reset` : "/auth/reset";
 }
 
-export function getUpdatePasswordUrl() {
+export function getResetPasswordUrl() {
   const origin = getSiteOrigin();
-  return origin ? `${origin}/update-password` : "/update-password";
+  return origin ? `${origin}/reset-password` : "/reset-password";
+}
+
+export function getUpdatePasswordUrl() {
+  return getResetPasswordUrl();
 }
 
 export function warnIfAuthOriginLooksWrong() {

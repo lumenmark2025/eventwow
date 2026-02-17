@@ -21,9 +21,24 @@ function StatCard({ label, value, hint }) {
   );
 }
 
+function normalizeSupplierLifecycleStatus(supplier) {
+  if (!supplier) return "";
+  if (supplier.is_published === true) return "approved";
+
+  const onboarding = String(supplier.onboarding_status || "").trim().toLowerCase();
+  if (onboarding) return onboarding;
+
+  const legacy = String(supplier.status || "").trim().toLowerCase();
+  if (legacy === "approved") return "approved";
+  if (legacy === "pending_review") return "pending_review";
+  if (legacy === "rejected") return "rejected";
+  return "approved";
+}
+
 export default function SupplierDashboard({ supplier }) {
   const supplierId = supplier?.id;
   const [searchParams, setSearchParams] = useSearchParams();
+  const supplierLifecycleStatus = normalizeSupplierLifecycleStatus(supplier);
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -217,22 +232,22 @@ export default function SupplierDashboard({ supplier }) {
         subtitle="Track requests, quote performance, credits and upcoming commitments."
       />
 
-      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "awaiting_email_verification" ? (
+      {supplierLifecycleStatus === "awaiting_email_verification" ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Please verify your email to continue onboarding.
         </div>
       ) : null}
-      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "profile_incomplete" || String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "draft" ? (
+      {supplierLifecycleStatus === "profile_incomplete" || supplierLifecycleStatus === "draft" ? (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           Complete your profile and submit it for review before going live.
         </div>
       ) : null}
-      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "pending_review" ? (
+      {supplierLifecycleStatus === "pending_review" ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Your listing is under review. You can keep editing, but it won't appear publicly yet.
         </div>
       ) : null}
-      {String(supplier?.onboarding_status || supplier?.status || "").toLowerCase() === "rejected" ? (
+      {supplierLifecycleStatus === "rejected" ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <p>Your listing was rejected. Update your details and resubmit for review.</p>
           {supplier?.admin_notes ? <p className="mt-1">Admin note: {supplier.admin_notes}</p> : null}
