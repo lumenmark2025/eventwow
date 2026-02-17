@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const enquiryResp = await admin
       .from("enquiries")
       .select(
-        "id,status,match_source,event_type,enquiry_category_slug,event_date,start_time,event_postcode,guest_count,budget_range,venue_known,venue_name,venue_postcode,indoor_outdoor,power_available,dietary_requirements,contact_preference,urgency,message,message_quality_score,message_quality_flags,structured_answers,source_page,created_at,customers(full_name,email,phone),venues(name)"
+        "id,status,match_source,event_type,enquiry_category_slug,event_date,start_time,event_postcode,guest_count,budget_range,budget_amount,budget_unit,venue_known,venue_name,venue_postcode,indoor_outdoor,power_available,dietary_requirements,contact_preference,urgency,message,message_quality_score,message_quality_flags,structured_answers,source_page,created_at,customers(full_name,email,phone),venues(name)"
       )
       .eq("id", id)
       .maybeSingle();

@@ -734,6 +734,10 @@ function EnquiryDetail({ enquiryId, user, onBack }) {
           <p><span className="text-slate-500">Start time:</span> {enquiry.start_time || "-"}</p>
           <p><span className="text-slate-500">Guests:</span> {enquiry.guest_count ?? "-"}</p>
           <p><span className="text-slate-500">Budget range:</span> {enquiry.budget_range || "-"}</p>
+          <p>
+            <span className="text-slate-500">Budget amount:</span>{" "}
+            {enquiry.budget_amount ? `£${Number(enquiry.budget_amount).toFixed(2)} ${enquiry.budget_unit === "per_person" ? "per person" : "in total"}` : "-"}
+          </p>
           <p><span className="text-slate-500">Venue:</span> {enquiry.venues?.name ?? "-"}</p>
           <p><span className="text-slate-500">Venue known:</span> {enquiry.venue_known ? "Yes" : "No"}</p>
           <p><span className="text-slate-500">Venue name:</span> {enquiry.venue_name || "-"}</p>

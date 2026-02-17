@@ -16,6 +16,20 @@ function parseGuestCount(value) {
   return Math.floor(n);
 }
 
+function parseBudgetAmount(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function budgetRangeFromAmount(amount, unit) {
+  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return null;
+  const safeAmount = Number(amount);
+  const formatted = Number.isInteger(safeAmount) ? safeAmount.toFixed(0) : safeAmount.toFixed(2);
+  return unit === "per_person" ? `£${formatted} per person` : `£${formatted} in total`;
+}
+
 function getPrompt(eventType, categorySlug) {
   if (categorySlug === "pizza-catering") {
     return "Where is the event and roughly how many guests? Is there power available and what time should serving start?";
@@ -63,6 +77,8 @@ export default function SupplierRequestQuotePage() {
     start_time: "",
     guest_count: "",
     budget_range: "",
+    budget_amount: "",
+    budget_unit: "in_total",
     venue_known: false,
     venue_name: "",
     venue_id: "",
@@ -198,6 +214,8 @@ export default function SupplierRequestQuotePage() {
 
     setSubmitting(true);
     try {
+      const parsedBudgetAmount = parseBudgetAmount(form.budget_amount);
+      const effectiveBudgetUnit = parsedBudgetAmount ? (form.budget_unit || "in_total") : null;
       const payload = {
         supplier_id: context?.supplierId,
         full_name: form.full_name,
@@ -208,7 +226,9 @@ export default function SupplierRequestQuotePage() {
         event_date: form.event_date || null,
         start_time: form.start_time || null,
         guest_count: parseGuestCount(form.guest_count),
-        budget_range: form.budget_range || null,
+        budget_amount: parsedBudgetAmount,
+        budget_unit: effectiveBudgetUnit,
+        budget_range: form.budget_range || budgetRangeFromAmount(parsedBudgetAmount, effectiveBudgetUnit),
         venue_known: !!form.venue_known,
         venue_name: form.venue_name || null,
         venue_id: form.venue_id || null,
@@ -302,7 +322,7 @@ export default function SupplierRequestQuotePage() {
                 </select>
 
                 {isSingleCategory ? (
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3">
+                  <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3">
                     <span className="text-sm text-slate-600">Category:</span>
                     <Badge variant="brand">{categoryOptions[0]?.name}</Badge>
                   </div>
@@ -330,24 +350,29 @@ export default function SupplierRequestQuotePage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <Input type="date" value={form.event_date} onChange={(e) => setField("event_date", e.target.value)} />
-                <Input type="time" value={form.start_time} onChange={(e) => setField("start_time", e.target.value)} />
-                <Input type="number" min={1} placeholder="Guest count" value={form.guest_count} onChange={(e) => setField("guest_count", e.target.value)} />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="min-w-0">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Date</span>
+                  <Input
+                    type="date"
+                    aria-label="Date"
+                    value={form.event_date}
+                    onChange={(e) => setField("event_date", e.target.value)}
+                  />
+                </label>
+                <label className="min-w-0">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Time</span>
+                  <Input
+                    type="time"
+                    aria-label="Time"
+                    value={form.start_time}
+                    onChange={(e) => setField("start_time", e.target.value)}
+                  />
+                </label>
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <select
-                  value={form.budget_range}
-                  onChange={(e) => setField("budget_range", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-                >
-                  <option value="">Budget range</option>
-                  <option value="<£500">&lt;£500</option>
-                  <option value="£500-£1000">£500-£1000</option>
-                  <option value="£1000-£2500">£1000-£2500</option>
-                  <option value="£2500+">£2500+</option>
-                </select>
+                <Input type="number" min={1} placeholder="Guest count" value={form.guest_count} onChange={(e) => setField("guest_count", e.target.value)} />
                 <select
                   value={form.indoor_outdoor}
                   onChange={(e) => setField("indoor_outdoor", e.target.value)}
@@ -370,6 +395,45 @@ export default function SupplierRequestQuotePage() {
                   <option value="urgent">Urgent</option>
                 </select>
               </div>
+
+              <fieldset className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <legend className="px-1 text-sm font-semibold text-slate-800">Budget</legend>
+                <div className="space-y-3">
+                  <label className="block min-w-0">
+                    <span className="mb-1 block text-sm text-slate-700">Amount</span>
+                    <div className="relative min-w-0">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">£</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        inputMode="decimal"
+                        placeholder="Enter budget"
+                        value={form.budget_amount}
+                        onChange={(e) => setField("budget_amount", e.target.value)}
+                        className="pl-7"
+                        aria-label="Budget amount"
+                      />
+                    </div>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant={form.budget_unit === "per_person" ? "primary" : "secondary"}
+                      onClick={() => setField("budget_unit", "per_person")}
+                    >
+                      Per person
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={form.budget_unit === "in_total" ? "primary" : "secondary"}
+                      onClick={() => setField("budget_unit", "in_total")}
+                    >
+                      In total
+                    </Button>
+                  </div>
+                </div>
+              </fieldset>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <label className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -456,7 +520,7 @@ export default function SupplierRequestQuotePage() {
 
               {(suggestions.length > 0 || serverHints.length > 0) ? (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  Suggestions: {Array.from(new Set([...suggestions, ...serverHints])).join(" • ")}
+                  Suggestions: {Array.from(new Set([...suggestions, ...serverHints])).join(" | ")}
                 </div>
               ) : null}
 

@@ -85,6 +85,21 @@ function parseGuestCount(value) {
   return Math.floor(n);
 }
 
+function parseBudgetAmount(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function parseBudgetUnit(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "per_person") return "per_person";
+  if (normalized === "in_total") return "in_total";
+  return null;
+}
+
 function looksLikeRepeatedChars(text) {
   return /(.)\1{11,}/i.test(String(text || ""));
 }
@@ -163,6 +178,8 @@ function normalizeEnquiryInput(req, body) {
   const startTime = sanitizeText(body.start_time || body.eventTime, 20);
   const guestCount = parseGuestCount(body.guest_count ?? body.guestCount);
   const budgetRange = sanitizeText(body.budget_range || body.budgetRange, 40);
+  const budgetAmount = parseBudgetAmount(body.budget_amount ?? body.budgetAmount);
+  const budgetUnit = budgetAmount ? parseBudgetUnit(body.budget_unit ?? body.budgetUnit) || "in_total" : null;
   const venueKnown = toBool(body.venue_known ?? body.venueKnown) ?? false;
   const venueName = sanitizeText(body.venue_name || body.venueName || body.locationLabel, 160);
   const venuePostcode = normalizePostcode(body.venue_postcode || body.postcode || body.venuePostcode);
@@ -211,6 +228,8 @@ function normalizeEnquiryInput(req, body) {
     startTime,
     guestCount,
     budgetRange,
+    budgetAmount,
+    budgetUnit,
     venueKnown,
     venueName,
     venuePostcode,
@@ -244,6 +263,12 @@ function validateAndScoreEnquiry(input) {
   if (input.startTime && !/^\d{2}:\d{2}(:\d{2})?$/.test(input.startTime)) {
     errors.push("start_time is invalid.");
   }
+  if (input.budgetAmount !== null && (!Number.isFinite(Number(input.budgetAmount)) || Number(input.budgetAmount) <= 0)) {
+    errors.push("budget_amount must be greater than 0.");
+  }
+  if (input.budgetUnit && !["per_person", "in_total"].includes(input.budgetUnit)) {
+    errors.push("budget_unit is invalid.");
+  }
   if (input.contactPreference && !CONTACT_PREFERENCES.has(input.contactPreference)) {
     errors.push("contact_preference is invalid.");
   }
@@ -262,7 +287,12 @@ function validateAndScoreEnquiry(input) {
   }
 
   const hasCoreDetail =
-    !!input.guestCount || !!input.eventDate || !!input.venueName || !!input.venuePostcode || !!input.budgetRange;
+    !!input.guestCount ||
+    !!input.eventDate ||
+    !!input.venueName ||
+    !!input.venuePostcode ||
+    !!input.budgetRange ||
+    Number.isFinite(Number(input.budgetAmount || null));
   if (!hasCoreDetail) {
     flags.push("low_detail");
     errors.push("Add at least one core detail: guest count, event date, venue info, or budget range.");
@@ -303,9 +333,9 @@ function validateAndScoreEnquiry(input) {
     flags.push("missing_venue");
     hints.push("Add venue name or postcode.");
   }
-  if (!input.budgetRange) {
+  if (!input.budgetRange && !input.budgetAmount) {
     flags.push("missing_budget");
-    hints.push("Add a budget range so suppliers can tailor quotes.");
+    hints.push("Add a budget so suppliers can tailor quotes.");
   }
 
   if (input.enquiryCategorySlug === "pizza-catering" && input.powerAvailable === null) {
@@ -323,7 +353,7 @@ function validateAndScoreEnquiry(input) {
   if (!input.guestCount) score -= 12;
   if (!input.eventDate) score -= 12;
   if (!input.venueName && !input.venuePostcode) score -= 12;
-  if (!input.budgetRange) score -= 8;
+  if (!input.budgetRange && !input.budgetAmount) score -= 8;
   if (!input.dietaryRequirements) score -= 4;
   if (looksLikeRepeatedChars(input.message)) score -= 35;
   if (looksLikeContactOnly(input.message)) score -= 45;
@@ -624,6 +654,8 @@ export async function handleCreatePublicEnquiry(req, res) {
           start_time: input.startTime || null,
           guest_count: input.guestCount,
           budget_range: input.budgetRange || null,
+          budget_amount: input.budgetAmount,
+          budget_unit: input.budgetUnit,
           venue_known: !!input.venueKnown || !!resolvedVenueId,
           venue_name: resolvedVenueName,
           venue_postcode: input.venuePostcode || null,
