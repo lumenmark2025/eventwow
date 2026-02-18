@@ -22,7 +22,7 @@ function normalizeSupplierOnboardingStatus(supplier) {
 }
 
 export function getSupplierStartRoute(user, supplier) {
-  if (!supplier?.id) return "/suppliers/join";
+  if (!supplier?.id) return "/supplier/signup";
   const verified = isSupplierEmailVerified(user);
   const onboardingStatus = normalizeSupplierOnboardingStatus(supplier);
   if (supplier?.is_published === true) return "/supplier/dashboard";
@@ -101,4 +101,3 @@ export async function resolvePostAuthRoute(supabase, user, requestedReturnTo = "
   if (returnTo && returnTo.startsWith("/customer")) return returnTo;
   return "/customer";
 }
-

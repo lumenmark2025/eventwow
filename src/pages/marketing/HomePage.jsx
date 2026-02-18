@@ -178,7 +178,7 @@ export default function HomePage() {
         <h2 className="text-2xl font-semibold tracking-tight">Win more bookings with less admin</h2>
         <p className="mt-2 text-sm text-slate-700">Quote quickly, manage customer responses, and keep your pipeline full.</p>
         <div className="mt-5">
-          <Button as={Link} to="/suppliers/join" size="lg">List your business</Button>
+          <Button as={Link} to="/supplier/signup" size="lg">List your business</Button>
         </div>
       </section>
     </MarketingShell>

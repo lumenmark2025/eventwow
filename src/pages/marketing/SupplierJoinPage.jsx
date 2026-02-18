@@ -6,43 +6,23 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { supabase } from "../../lib/supabase";
 
-const STORAGE_KEY = "supplier_join_basics_v1";
-
-async function createDraftWithSession(payload) {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  const token = data?.session?.access_token;
-  if (!token) return { ok: false, requiresSession: true };
-
-  const resp = await fetch("/api/suppliers/create-draft", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-  const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to create supplier draft");
-  return { ok: true };
-}
-
 export default function SupplierJoinPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [form, setForm] = useState({
     email: "",
-    password: "",
     business_name: "",
+    location_label: "",
     phone: "",
-    contact_email: "",
+    website_url: "",
   });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data?.session?.user?.email) {
-        setForm((prev) => ({ ...prev, email: prev.email || data.session.user.email, contact_email: prev.contact_email || data.session.user.email }));
+        setForm((prev) => ({ ...prev, email: prev.email || data.session.user.email }));
       }
     });
   }, []);
@@ -55,31 +35,23 @@ export default function SupplierJoinPage() {
     e.preventDefault();
     setBusy(true);
     setError("");
-
-    const payload = {
-      business_name: form.business_name,
-      phone: form.phone,
-      contact_email: form.contact_email || form.email,
-    };
+    setSuccess("");
 
     try {
-      const signUp = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const resp = await fetch("/api/public/suppliers/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          business_name: form.business_name,
+          location_label: form.location_label,
+          phone: form.phone,
+          website_url: form.website_url,
+        }),
       });
-      if (signUp.error) throw signUp.error;
-
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-
-      const draft = await createDraftWithSession(payload);
-      if (draft.ok) {
-        window.localStorage.removeItem(STORAGE_KEY);
-      }
-
-      navigate("/suppliers/verify", { replace: true });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to start signup");
+      setSuccess(json?.message || "Check your email to continue.");
     } catch (err) {
       setError(err?.message || "Failed to create account");
     } finally {
@@ -92,7 +64,7 @@ export default function SupplierJoinPage() {
       <section className="mx-auto max-w-3xl space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Join Eventwow as a supplier</h1>
-          <p className="text-sm text-slate-600">Create your account, complete your profile, and go live after admin review.</p>
+          <p className="text-sm text-slate-600">Create your supplier account and get 25 free credits to start quoting.</p>
         </div>
 
         <Card>
@@ -100,35 +72,48 @@ export default function SupplierJoinPage() {
             <CardTitle>Create supplier account</CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={submit}>
+            {success ? (
+              <div className="space-y-4">
+                <p className="text-sm text-emerald-700">{success}</p>
+                <p className="text-sm text-slate-600">
+                  We’ve sent a secure sign-in link if the account can be created. Use it to continue onboarding.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="button" onClick={() => navigate("/login")}>Go to login</Button>
+                  <Button type="button" variant="secondary" onClick={() => setSuccess("")}>Submit another email</Button>
+                </div>
+              </div>
+            ) : (
+              <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={submit}>
               <div className="space-y-1 md:col-span-2">
                 <label className="text-sm font-medium text-slate-700">Login email *</label>
                 <Input type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} required />
-              </div>
-              <div className="space-y-1 md:col-span-2">
-                <label className="text-sm font-medium text-slate-700">Password *</label>
-                <Input type="password" value={form.password} onChange={(e) => setField("password", e.target.value)} minLength={8} required />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-700">Business name *</label>
                 <Input value={form.business_name} onChange={(e) => setField("business_name", e.target.value)} required />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-700">Phone *</label>
-                <Input value={form.phone} onChange={(e) => setField("phone", e.target.value)} required />
+                <label className="text-sm font-medium text-slate-700">Location label</label>
+                <Input value={form.location_label} onChange={(e) => setField("location_label", e.target.value)} placeholder="e.g. Manchester & North West" />
               </div>
-              <div className="space-y-1 md:col-span-2">
-                <label className="text-sm font-medium text-slate-700">Contact email *</label>
-                <Input type="email" value={form.contact_email} onChange={(e) => setField("contact_email", e.target.value)} required />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">Phone</label>
+                <Input value={form.phone} onChange={(e) => setField("phone", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">Website URL</label>
+                <Input value={form.website_url} onChange={(e) => setField("website_url", e.target.value)} />
               </div>
 
               {error ? <p className="text-sm text-rose-600 md:col-span-2">{error}</p> : null}
 
               <div className="md:col-span-2 flex flex-wrap items-center gap-3">
-                <Button type="submit" disabled={busy}>{busy ? "Creating account..." : "Create account"}</Button>
+                <Button type="submit" disabled={busy}>{busy ? "Starting signup..." : "Create supplier account"}</Button>
                 <Link to="/login" className="text-sm text-slate-600 underline">Already have an account? Sign in</Link>
               </div>
             </form>
+            )}
           </CardContent>
         </Card>
       </section>

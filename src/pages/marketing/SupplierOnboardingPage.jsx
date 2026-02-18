@@ -81,7 +81,7 @@ export default function SupplierOnboardingPage() {
         if (!mounted) return;
         const row = me?.supplier;
         if (!row?.id) {
-          navigate("/suppliers/join", { replace: true });
+          navigate("/supplier/signup", { replace: true });
           return;
         }
         if (isLegacyOrApprovedSupplier(row)) {
@@ -108,7 +108,7 @@ export default function SupplierOnboardingPage() {
         }
       } catch (err) {
         if (String(err?.message || "").toLowerCase().includes("supplier not found")) {
-          navigate("/suppliers/join", { replace: true });
+          navigate("/supplier/signup", { replace: true });
           return;
         }
         if (mounted) setError(err?.message || "Failed to load onboarding");
@@ -224,6 +224,7 @@ export default function SupplierOnboardingPage() {
         <PageHeader title="Complete your supplier profile" subtitle="Finish onboarding to submit your listing for review." />
 
         <div className="flex flex-wrap gap-2">
+          <Badge variant="success">Welcome credit balance: {Number(supplier?.credits_balance || 0)}</Badge>
           {[1, 2, 3].map((n) => (
             <Badge key={n} variant={step === n ? "brand" : "neutral"}>Step {n}</Badge>
           ))}

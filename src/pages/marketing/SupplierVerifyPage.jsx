@@ -47,11 +47,11 @@ async function resolveSupplierStartRouteForVerify() {
     const resp = await fetch("/api/suppliers/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (resp.status === 404) return "/suppliers/join";
+    if (resp.status === 404) return "/supplier/signup";
     const json = await resp.json().catch(() => ({}));
     if (!resp.ok) return null;
     const supplier = json?.supplier || null;
-    if (!supplier?.id) return "/suppliers/join";
+    if (!supplier?.id) return "/supplier/signup";
     if (supplier.is_published) return "/supplier/dashboard";
     const onboarding = String(supplier.onboarding_status || "").trim().toLowerCase();
     if (!onboarding || onboarding === "approved") return "/supplier/dashboard";

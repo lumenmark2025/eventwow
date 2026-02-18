@@ -342,15 +342,17 @@ export default function App() {
       <Route path="/enquiry/:token" element={<EnquiryQuotesPage />} />
       <Route path="/booking-access" element={<BookingAccessPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
-      <Route path="/suppliers/join" element={<SupplierJoinPage />} />
+      <Route path="/supplier/signup" element={<SupplierJoinPage />} />
+      <Route path="/suppliers/join" element={<Navigate to="/supplier/signup" replace />} />
       <Route path="/suppliers/verify" element={<SupplierVerifyPage />} />
       <Route path="/suppliers/onboarding" element={<SupplierOnboardingPage />} />
+      <Route path="/supplier/onboarding" element={<Navigate to="/suppliers/onboarding" replace />} />
       <Route path="/suppliers/:slug" element={<SupplierProfilePage />} />
       <Route path="/suppliers/:slug/request-quote" element={<SupplierRequestQuotePage />} />
       <Route path="/browse" element={<Navigate to="/categories" replace />} />
       <Route path="/categories" element={<BrowsePage />} />
       <Route path="/categories/:slug" element={<CategoryLandingPage />} />
-      <Route path="/list-your-business" element={<Navigate to="/suppliers/join" replace />} />
+      <Route path="/list-your-business" element={<Navigate to="/supplier/signup" replace />} />
       <Route path="/category/:categorySlug/:locationSlug" element={<CategoryLocationLandingPage />} />
       <Route path="/category/:categorySlug" element={<CategoryLocationLandingPage />} />
       <Route path="/location/:locationSlug" element={<CategoryLocationLandingPage />} />

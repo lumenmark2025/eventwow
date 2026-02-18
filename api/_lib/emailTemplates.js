@@ -158,3 +158,19 @@ export function venueClaimRejectedEmail({ requesterName, venueName, contactUrl }
     ),
   };
 }
+
+export function supplierSignupMagicLinkEmail({ businessName, actionUrl }) {
+  return {
+    subject: "Your Eventwow supplier login link",
+    html: wrapTemplate(
+      "Welcome to Eventwow",
+      `Your supplier account${businessName ? ` for ${businessName}` : ""} is ready. Use the secure link below to continue onboarding.`,
+      "Continue to onboarding",
+      actionUrl,
+      [
+        "You start with 25 free credits.",
+        "Complete your listing profile before going live.",
+      ]
+    ),
+  };
+}
