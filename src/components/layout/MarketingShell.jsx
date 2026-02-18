@@ -76,6 +76,7 @@ export default function MarketingShell({ children }) {
               <NavLink to="/categories" className="block text-slate-600 hover:text-slate-900">Browse</NavLink>
               <NavLink to="/request" className="block text-slate-600 hover:text-slate-900">Request quotes</NavLink>
               <NavLink to="/suppliers" className="block text-slate-600 hover:text-slate-900">Suppliers</NavLink>
+              <NavLink to="/supplier/signup" className="block text-slate-600 hover:text-slate-900">List your business</NavLink>
               <NavLink to="/venues" className="block text-slate-600 hover:text-slate-900">Venues</NavLink>
             </div>
           </div>
