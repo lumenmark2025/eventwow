@@ -799,20 +799,38 @@ export default function EnquiryList({ user }) {
   const [err, setErr] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [mode, setMode] = useState("list");
+  const isDev = import.meta.env.DEV;
 
   async function load() {
     setErr("");
     setLoading(true);
+    const endpoint = "/api/admin/enquiries";
+    const params = { status: "all", page: 1, pageSize: 100 };
+    const query = new URLSearchParams(params).toString();
+    const url = `${endpoint}?${query}`;
 
-    const { data, error } = await supabase
-      .from("enquiries")
-      .select("id,event_date,event_postcode,status,match_source,created_at,customers(full_name),venues(name)")
-      .order("created_at", { ascending: false });
-
-    if (error) setErr(error.message);
-    else setRows(data || []);
-
-    setLoading(false);
+    try {
+      const json = await fetchAdminJson(url);
+      const nextRows = Array.isArray(json?.rows) ? json.rows : [];
+      if (isDev) {
+        console.debug("[admin/enquiries] load", {
+          endpoint: url,
+          params,
+          rowcount: nextRows.length,
+          request_id: json?.request_id || null,
+        });
+      }
+      setRows(nextRows);
+    } catch (ex) {
+      const message = ex?.message || "Failed to load enquiries";
+      if (isDev) {
+        console.debug("[admin/enquiries] load-error", { endpoint: url, params, error: message });
+      }
+      setErr(message);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -867,14 +885,21 @@ export default function EnquiryList({ user }) {
         <StatCard label="Quoted" value={rows.filter((r) => r.status === "quoted").length} />
       </div>
 
-      {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-
       <Card className="overflow-hidden">
         {loading ? (
           <CardContent className="space-y-2">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
+          </CardContent>
+        ) : err ? (
+          <CardContent>
+            <EmptyState
+              title="Error loading enquiries"
+              description={err}
+              actionLabel="Retry"
+              onAction={load}
+            />
           </CardContent>
         ) : rows.length === 0 ? (
           <CardContent>

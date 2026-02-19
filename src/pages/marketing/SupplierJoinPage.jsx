@@ -6,6 +6,27 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { supabase } from "../../lib/supabase";
 
+function toSignupMessage(resp, json) {
+  const rawDetails = String(json?.details || "").trim();
+  const rawError = String(json?.error || "").trim();
+  const combined = `${rawError} ${rawDetails}`.toLowerCase();
+  const requestId = json?.request_id ? ` (ref: ${json.request_id})` : "";
+
+  if (combined.includes("already") || combined.includes("registered") || combined.includes("user already")) {
+    return `This email already has an account - please log in or reset your password.${requestId}`;
+  }
+  if (combined.includes("valid email is required")) {
+    return `Please enter a valid email address.${requestId}`;
+  }
+  if (combined.includes("business name is required")) {
+    return `Please enter your business name.${requestId}`;
+  }
+  if (resp.status >= 500) {
+    return `Couldn't create account. Please try again or contact support.${requestId}`;
+  }
+  return rawDetails || rawError || `Failed to start signup${requestId}`;
+}
+
 export default function SupplierJoinPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -49,8 +70,22 @@ export default function SupplierJoinPage() {
           website_url: form.website_url,
         }),
       });
-      const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to start signup");
+      const rawText = await resp.text();
+      let json = {};
+      try {
+        json = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        json = {};
+      }
+      if (import.meta.env.DEV) {
+        console.debug("[supplier-signup] response", {
+          status: resp.status,
+          ok: resp.ok,
+          json,
+          rawTextPreview: rawText?.slice?.(0, 300) || "",
+        });
+      }
+      if (!resp.ok) throw new Error(toSignupMessage(resp, json));
       setSuccess(json?.message || "Check your email to continue.");
     } catch (err) {
       setError(err?.message || "Failed to create account");
