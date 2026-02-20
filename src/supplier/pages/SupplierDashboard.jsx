@@ -39,6 +39,11 @@ export default function SupplierDashboard({ supplier }) {
   const supplierId = supplier?.id;
   const [searchParams, setSearchParams] = useSearchParams();
   const supplierLifecycleStatus = normalizeSupplierLifecycleStatus(supplier);
+  const [authEmail, setAuthEmail] = useState("");
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [verificationBusy, setVerificationBusy] = useState(false);
+  const [verificationMsg, setVerificationMsg] = useState("");
+  const [verificationErr, setVerificationErr] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -58,6 +63,64 @@ export default function SupplierDashboard({ supplier }) {
   const [performance, setPerformance] = useState(null);
   const [ranking, setRanking] = useState(null);
   const [rankingTips, setRankingTips] = useState([]);
+
+  async function refreshVerifiedState() {
+    try {
+      const userResp = await supabase.auth.getUser();
+      const user = userResp?.data?.user || null;
+      setAuthEmail(String(user?.email || ""));
+      setIsEmailVerified(!!user?.email_confirmed_at);
+      return !!user?.email_confirmed_at;
+    } catch {
+      return false;
+    }
+  }
+
+  async function resendVerificationEmail() {
+    setVerificationBusy(true);
+    setVerificationErr("");
+    setVerificationMsg("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const resendEmail = data?.session?.user?.email || authEmail;
+      if (!resendEmail) throw new Error("No email found for resend");
+      const resp = await supabase.auth.resend({
+        type: "signup",
+        email: resendEmail,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (resp.error) throw resp.error;
+      setVerificationMsg("Verification email sent - check your inbox and spam.");
+    } catch (err) {
+      setVerificationErr(err?.message || "Failed to resend verification email");
+    } finally {
+      setVerificationBusy(false);
+    }
+  }
+
+  async function checkVerificationNow() {
+    setVerificationBusy(true);
+    setVerificationErr("");
+    setVerificationMsg("");
+    try {
+      const refreshed = await supabase.auth.refreshSession();
+      if (refreshed?.error) throw refreshed.error;
+      const verified = await refreshVerifiedState();
+      if (verified) {
+        setVerificationMsg("Email verified. You're good to continue onboarding.");
+      } else {
+        setVerificationErr("Email is still unverified. Please click the verification link in your inbox.");
+      }
+    } catch (err) {
+      setVerificationErr(err?.message || "Could not refresh verification status");
+    } finally {
+      setVerificationBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    refreshVerifiedState();
+  }, []);
 
   async function startBundleCheckout(bundle) {
     if (bundleBusy) return;
@@ -232,9 +295,20 @@ export default function SupplierDashboard({ supplier }) {
         subtitle="Track requests, quote performance, credits and upcoming commitments."
       />
 
-      {supplierLifecycleStatus === "awaiting_email_verification" ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Please verify your email to continue onboarding.
+      {supplierLifecycleStatus === "awaiting_email_verification" && !isEmailVerified ? (
+        <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p>Please verify your email to continue onboarding.</p>
+          {authEmail ? <p className="text-xs text-amber-900">Current email: {authEmail}</p> : null}
+          {verificationMsg ? <p className="text-sm text-emerald-700">{verificationMsg}</p> : null}
+          {verificationErr ? <p className="text-sm text-rose-700">{verificationErr}</p> : null}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" onClick={resendVerificationEmail} disabled={verificationBusy}>
+              {verificationBusy ? "Sending..." : "Resend verification email"}
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={checkVerificationNow} disabled={verificationBusy}>
+              I've already verified
+            </Button>
+          </div>
         </div>
       ) : null}
       {supplierLifecycleStatus === "profile_incomplete" || supplierLifecycleStatus === "draft" ? (
