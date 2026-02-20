@@ -50,6 +50,10 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
 }
 
+function isValidPassword(value) {
+  return String(value || "").length >= 8;
+}
+
 function sanitizeText(value, max = 300) {
   const text = String(value || "").trim();
   if (!text) return null;
@@ -65,18 +69,6 @@ function toSlug(value) {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 80);
-}
-
-function randomHex(bytes = 24) {
-  const n = Math.max(8, Number(bytes || 24));
-  if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function") {
-    const arr = new Uint8Array(n);
-    globalThis.crypto.getRandomValues(arr);
-    return Array.from(arr).map((v) => v.toString(16).padStart(2, "0")).join("");
-  }
-  let out = "";
-  while (out.length < n * 2) out += Math.random().toString(16).slice(2);
-  return out.slice(0, n * 2);
 }
 
 function appOrigin(req) {
@@ -254,12 +246,16 @@ export default async function handler(req, res) {
     const locationLabel = sanitizeText(body.location_label || body.locationLabel, 120);
     const phone = sanitizeText(body.phone, 50);
     const websiteUrl = sanitizeText(body.website_url || body.websiteUrl, 300);
+    const password = String(body.password || "");
 
     if (!email || !isValidEmail(email)) {
       return res.status(400).json({ ok: false, error: "Valid email is required", request_id: rid });
     }
     if (!businessName) {
       return res.status(400).json({ ok: false, error: "Business name is required", request_id: rid });
+    }
+    if (!isValidPassword(password)) {
+      return res.status(400).json({ ok: false, error: "Password must be at least 8 characters", request_id: rid });
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
@@ -293,7 +289,7 @@ export default async function handler(req, res) {
     if (!userId) {
       const created = await admin.auth.admin.createUser({
         email,
-        password: randomHex(24),
+        password,
         email_confirm: false,
       });
       if (created.error || !created.data?.user?.id) {

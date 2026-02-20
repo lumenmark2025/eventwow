@@ -87,7 +87,7 @@ export default function SupplierDashboard({ supplier }) {
       const resp = await supabase.auth.resend({
         type: "signup",
         email: resendEmail,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/supplier/dashboard` },
       });
       if (resp.error) throw resp.error;
       setVerificationMsg("Verification email sent - check your inbox and spam.");

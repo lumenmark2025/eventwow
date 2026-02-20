@@ -5,10 +5,6 @@ function normalizeReturnTo(rawValue) {
   return raw;
 }
 
-function isSupplierEmailVerified(user) {
-  return !!user?.email_confirmed_at;
-}
-
 function normalizeSupplierOnboardingStatus(supplier) {
   if (!supplier) return "";
   if (supplier.is_published === true) return "approved";
@@ -23,11 +19,10 @@ function normalizeSupplierOnboardingStatus(supplier) {
 
 export function getSupplierStartRoute(user, supplier) {
   if (!supplier?.id) return "/supplier/signup";
-  const verified = isSupplierEmailVerified(user);
   const onboardingStatus = normalizeSupplierOnboardingStatus(supplier);
   if (supplier?.is_published === true) return "/supplier/dashboard";
   if (onboardingStatus === "approved") return "/supplier/dashboard";
-  if (onboardingStatus === "awaiting_email_verification" && !verified) return "/suppliers/verify";
+  if (onboardingStatus === "awaiting_email_verification") return "/supplier/dashboard";
   if (["draft", "profile_incomplete", "rejected"].includes(onboardingStatus)) return "/suppliers/onboarding";
   return "/supplier/dashboard";
 }

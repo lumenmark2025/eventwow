@@ -88,11 +88,6 @@ export default function SupplierOnboardingPage() {
           navigate("/supplier/dashboard", { replace: true });
           return;
         }
-        if (!user.email_confirmed_at && String(row.onboarding_status || "").toLowerCase() === "awaiting_email_verification") {
-          navigate("/suppliers/verify", { replace: true });
-          return;
-        }
-
         setSupplier(row);
         setForm({
           categories: Array.isArray(row.listing_categories) ? row.listing_categories : [],

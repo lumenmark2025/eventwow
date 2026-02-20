@@ -56,7 +56,7 @@ async function resolveSupplierStartRouteForVerify() {
     const onboarding = String(supplier.onboarding_status || "").trim().toLowerCase();
     if (!onboarding || onboarding === "approved") return "/supplier/dashboard";
     if (onboarding === "pending_review") return "/supplier/dashboard";
-    if (onboarding === "awaiting_email_verification") return "/suppliers/verify";
+    if (onboarding === "awaiting_email_verification") return "/supplier/dashboard";
     return "/suppliers/onboarding";
   } catch {
     return null;
@@ -122,7 +122,7 @@ export default function SupplierVerifyPage() {
       const resp = await supabase.auth.resend({
         type: "signup",
         email: resendEmail,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/supplier/dashboard` },
       });
       if (resp.error) throw resp.error;
     } catch (err) {
