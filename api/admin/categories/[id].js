@@ -144,6 +144,9 @@ export default async function handler(req, res) {
       if (!shortDescription) return res.status(400).json({ ok: false, error: "Bad request", details: "short_description cannot be empty" });
       patch.short_description = shortDescription;
     }
+    if (Object.prototype.hasOwnProperty.call(body, "image_url")) {
+      patch.image_url = String(body.image_url || "").trim() || null;
+    }
     if (Object.prototype.hasOwnProperty.call(body, "is_featured")) {
       patch.is_featured = !!body.is_featured;
     }

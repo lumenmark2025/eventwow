@@ -62,6 +62,7 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
   const [form, setForm] = useState({
     display_name: "",
     slug: "",
+    image_url: "",
     short_description: "",
     is_featured: false,
     featured_order: 0,
@@ -75,6 +76,7 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
     setForm({
       display_name: initial?.display_name || "",
       slug: initial?.slug || "",
+      image_url: initial?.image_url || "",
       short_description: initial?.short_description || "",
       is_featured: !!initial?.is_featured,
       featured_order: Number(initial?.featured_order || 0),
@@ -99,6 +101,7 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
       const payload = {
         display_name: form.display_name.trim(),
         slug: slugify(form.slug || form.display_name),
+        image_url: String(form.image_url || "").trim(),
         short_description: form.short_description.trim(),
         is_featured: !!form.is_featured,
         featured_order: Number.isFinite(Number(form.featured_order)) ? Math.trunc(Number(form.featured_order)) : 0,
@@ -145,6 +148,11 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
           value={form.slug}
           onChange={(e) => setForm((prev) => ({ ...prev, slug: slugify(e.target.value) }))}
           placeholder="Slug"
+        />
+        <Input
+          value={form.image_url}
+          onChange={(e) => setForm((prev) => ({ ...prev, image_url: e.target.value }))}
+          placeholder="Image URL (optional)"
         />
         <textarea
           value={form.short_description}

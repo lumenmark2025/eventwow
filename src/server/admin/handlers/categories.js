@@ -78,6 +78,7 @@ export async function handleAdminCategoriesIndex(req, res) {
     const body = parseBody(req);
     const displayName = String(body?.display_name || "").trim().slice(0, 80);
     const slugInput = String(body?.slug || "").trim();
+    const imageUrl = String(body?.image_url || "").trim() || null;
     const shortDescription = String(body?.short_description || "").trim().slice(0, 180);
     const isFeatured = !!body?.is_featured;
     const featuredOrder = Number.isFinite(Number(body?.featured_order)) ? Math.trunc(Number(body.featured_order)) : 0;
@@ -96,6 +97,7 @@ export async function handleAdminCategoriesIndex(req, res) {
         slug,
         label: displayName,
         display_name: displayName,
+        image_url: imageUrl,
         short_description: shortDescription,
         is_featured: isFeatured,
         featured_order: featuredOrder,
