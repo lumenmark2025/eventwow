@@ -40,6 +40,10 @@ async function apiFetch(path, options = {}) {
   return json;
 }
 
+function adminCatchAll(path) {
+  return `/api/admin/[...path]?path=${encodeURIComponent(path)}`;
+}
+
 function CategoryEditorModal({ open, onClose, initial, onSave }) {
   const isEdit = !!initial?.id;
   const [saving, setSaving] = useState(false);
@@ -90,7 +94,7 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
         is_active: !!form.is_active,
       };
 
-      const path = isEdit ? `/api/admin/categories/${encodeURIComponent(initial.id)}` : "/api/admin/categories";
+      const path = isEdit ? `/api/admin/categories/${encodeURIComponent(initial.id)}` : adminCatchAll("categories");
       const method = isEdit ? "PATCH" : "POST";
       const json = await apiFetch(path, {
         method,
@@ -186,7 +190,7 @@ export default function CategoriesPage() {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
       params.set("activeOnly", activeOnly ? "true" : "false");
-      const json = await apiFetch(`/api/admin/categories?${params.toString()}`);
+      const json = await apiFetch(`${adminCatchAll("categories")}&${params.toString()}`);
       setRows(Array.isArray(json?.rows) ? json.rows : []);
     } catch (err) {
       setRows([]);

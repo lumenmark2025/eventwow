@@ -26,6 +26,10 @@ async function fetchAdminJson(path, options = {}) {
   return json;
 }
 
+function adminCatchAll(path) {
+  return `/api/admin/[...path]?path=${encodeURIComponent(path)}`;
+}
+
 function statusVariant(status) {
   if (status === "accepted") return "success";
   if (status === "declined") return "danger";
@@ -691,7 +695,7 @@ function EnquiryDetail({ enquiryId, user, onBack }) {
     if (enquiry === null) setLoading(true);
 
     try {
-      const json = await fetchAdminJson(`/api/admin/enquiries/${encodeURIComponent(enquiryId)}`);
+      const json = await fetchAdminJson(adminCatchAll(`enquiries/${enquiryId}`));
       setEnquiry(json?.enquiry || null);
       setInvites(Array.isArray(json?.invites) ? json.invites : []);
     } catch (ex) {
@@ -804,10 +808,9 @@ export default function EnquiryList({ user }) {
   async function load() {
     setErr("");
     setLoading(true);
-    const endpoint = "/api/admin/enquiries";
-    const params = { status: "all", page: 1, pageSize: 100 };
-    const query = new URLSearchParams(params).toString();
-    const url = `${endpoint}?${query}`;
+    const params = new URLSearchParams({ status: "all", page: "1", pageSize: "100" });
+    params.set("path", "enquiries");
+    const url = `/api/admin/[...path]?${params.toString()}`;
 
     try {
       const json = await fetchAdminJson(url);

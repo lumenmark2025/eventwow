@@ -25,6 +25,10 @@ async function apiFetch(path, options = {}) {
   return json;
 }
 
+function adminCatchAll(path) {
+  return `/api/admin/[...path]?path=${encodeURIComponent(path)}`;
+}
+
 function snippet(text, maxLen = 120) {
   const raw = String(text || "").trim();
   if (!raw) return "-";
@@ -42,7 +46,7 @@ export default function ReviewsPage() {
     setLoading(true);
     setError("");
     try {
-      const json = await apiFetch("/api/admin/reviews?status=pending&limit=250");
+      const json = await apiFetch(`${adminCatchAll("reviews")}&status=pending&limit=250`);
       setRows(Array.isArray(json?.rows) ? json.rows : []);
     } catch (err) {
       setRows([]);
@@ -60,7 +64,7 @@ export default function ReviewsPage() {
     setBusyId(`${action}:${reviewId}`);
     setError("");
     try {
-      await apiFetch(`/api/admin/reviews/${encodeURIComponent(reviewId)}`, {
+      await apiFetch(adminCatchAll(`reviews/${reviewId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
