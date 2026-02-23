@@ -28,11 +28,12 @@ function normalizeSlug(value) {
 }
 
 function toDto(row) {
+  const imageUrl = String(row?.image_url || row?.imageUrl || "").trim();
   return {
     id: row.id,
     slug: row.slug,
     display_name: row.display_name || row.label || "",
-    image_url: row.image_url || "",
+    image_url: imageUrl,
     short_description: row.short_description || "",
     is_featured: !!row.is_featured,
     featured_order: Number(row.featured_order || 0),

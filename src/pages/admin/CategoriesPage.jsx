@@ -44,6 +44,14 @@ function adminCatchAll(path) {
   return `/api/admin/[...path]?path=${encodeURIComponent(path)}`;
 }
 
+function normalizeImageUrl(row) {
+  return String(row?.image_url || row?.imageUrl || "").trim();
+}
+
+function hasCategoryImage(row) {
+  return normalizeImageUrl(row).length > 0;
+}
+
 function CategoryEditorModal({ open, onClose, initial, onSave }) {
   const isEdit = !!initial?.id;
   const [saving, setSaving] = useState(false);
@@ -191,7 +199,13 @@ export default function CategoriesPage() {
       if (q.trim()) params.set("q", q.trim());
       params.set("activeOnly", activeOnly ? "true" : "false");
       const json = await apiFetch(`${adminCatchAll("categories")}&${params.toString()}`);
-      setRows(Array.isArray(json?.rows) ? json.rows : []);
+      const nextRows = Array.isArray(json?.rows) ? json.rows : [];
+      setRows(
+        nextRows.map((row) => ({
+          ...row,
+          image_url: normalizeImageUrl(row),
+        }))
+      );
     } catch (err) {
       setRows([]);
       setError(err?.message || "Failed to load categories");
@@ -282,7 +296,7 @@ export default function CategoriesPage() {
         body: JSON.stringify({ action: "generate_image" }),
       });
 
-      const imageUrl = String(json?.image_url || "").trim();
+      const imageUrl = String(json?.image_url || json?.imageUrl || "").trim();
       if (imageUrl) {
         setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, image_url: imageUrl } : r)));
       }
@@ -371,9 +385,9 @@ export default function CategoriesPage() {
                         <TD>{row.display_name}</TD>
                         <TD>{row.slug}</TD>
                         <TD>
-                          {row.image_url ? (
+                          {hasCategoryImage(row) ? (
                             <img
-                              src={row.image_url}
+                              src={normalizeImageUrl(row)}
                               alt={`${row.display_name} category`}
                               className="h-14 w-24 rounded-md border border-slate-200 object-cover"
                             />
@@ -435,10 +449,10 @@ export default function CategoriesPage() {
                               type="button"
                               size="sm"
                               variant="secondary"
-                              disabled={savingId === `image:${row.id}` || !!row.image_url}
+                              disabled={savingId === `image:${row.id}` || hasCategoryImage(row)}
                               onClick={() => generateCategoryImage(row)}
                             >
-                              {row.image_url ? "Image set" : savingId === `image:${row.id}` ? "Generating..." : "Generate image"}
+                              {hasCategoryImage(row) ? "Image set" : savingId === `image:${row.id}` ? "Generating..." : "Generate AI image"}
                             </Button>
                             <Button
                               type="button"
