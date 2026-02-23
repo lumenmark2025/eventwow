@@ -10,9 +10,9 @@ export default function PageHeader({ title, subtitle, actions = [] }) {
       {actions.length > 0 ? (
         <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
           {actions.map((a) => {
-            const { className, label, ...rest } = a;
+            const { key: actionKey, className, label, ...rest } = a;
             return (
-              <Button key={a.key || a.label} className={`w-full sm:w-auto ${className || ""}`} {...rest}>
+              <Button key={actionKey || label} className={`w-full sm:w-auto ${className || ""}`} {...rest}>
                 {label}
               </Button>
             );
