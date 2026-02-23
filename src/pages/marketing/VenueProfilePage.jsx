@@ -9,12 +9,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import SupplierCard from "../../components/marketing/SupplierCard";
 import { useMarketingMeta } from "../../lib/marketingMeta";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
-
-function guestRange(venue) {
-  const max = Number(venue?.guestMax);
-  if (Number.isFinite(max) && max > 0) return `Up to ${max} guests`;
-  return null;
-}
+import { formatVenueGuestCapacity, getVenueConfidenceLabels } from "../../lib/venueDisplay";
 
 export default function VenueProfilePage() {
   const { slug } = useParams();
@@ -60,7 +55,8 @@ export default function VenueProfilePage() {
   }, [slug]);
 
   const heroImageUrl = toPublicImageUrl(venue?.heroImageUrl);
-  const range = guestRange(venue);
+  const range = formatVenueGuestCapacity(venue?.guestMin, venue?.guestMax);
+  const labels = getVenueConfidenceLabels(venue, 2);
 
   return (
     <MarketingShell>
@@ -91,6 +87,13 @@ export default function VenueProfilePage() {
                 {range ? <Badge variant="brand">{range}</Badge> : null}
               </div>
               <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{venue.name}</h1>
+              {labels.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {labels.map((label) => (
+                    <Badge key={label} variant="neutral">{label}</Badge>
+                  ))}
+                </div>
+              ) : null}
               <p className="max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
                 {venue.shortDescription || "Premium venue listing on Eventwow."}
               </p>

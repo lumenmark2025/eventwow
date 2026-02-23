@@ -3,25 +3,16 @@ import { requireAdmin } from "../../_lib/adminAuth.js";
 import { makeUniqueVenueSlug, parseBody, slugifyVenue } from "../../_lib/venues.js";
 
 const FEATURE_KEY = "venue_ai_draft";
-const DAILY_LIMIT = 20;
-const ALLOWED_VENUE_TYPES = new Set([
-  "hotel",
-  "barn",
-  "country house",
-  "village hall",
-  "outdoor",
-  "restaurant",
-  "marquee site",
-  "other",
-]);
-
+const BULK_FEATURE_KEY = "venue_ai_draft_bulk";
+const DEFAULT_DAILY_LIMIT = 20;
+const DEFAULT_BULK_DAILY_LIMIT = 200;
 function asTrimmed(value, maxLen = 500) {
   return String(value || "").trim().slice(0, maxLen);
 }
 
 function normalizeVenueType(value) {
   const v = asTrimmed(value, 40).toLowerCase();
-  return ALLOWED_VENUE_TYPES.has(v) ? v : "other";
+  return v || "other";
 }
 
 function normalizeTextArray(value, maxItems, maxLen) {
@@ -50,6 +41,12 @@ function normalizeConfidence(value) {
   const v = String(value || "").trim().toLowerCase();
   if (v === "low" || v === "medium" || v === "high") return v;
   return "low";
+}
+
+function positiveIntOrDefault(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.round(n);
 }
 
 function buildLocationLabel(townOrCity, countyOrRegion) {
@@ -255,6 +252,11 @@ export default async function handler(req, res) {
     }
 
     const body = parseBody(req);
+    const isBulkMode = !!body?.bulk_mode;
+    const dailyLimit = isBulkMode
+      ? positiveIntOrDefault(process.env.AI_VENUE_BULK_DAILY_LIMIT, DEFAULT_BULK_DAILY_LIMIT)
+      : positiveIntOrDefault(process.env.AI_VENUE_DRAFT_DAILY_LIMIT, DEFAULT_DAILY_LIMIT);
+    const featureKey = isBulkMode ? BULK_FEATURE_KEY : FEATURE_KEY;
     const input = {
       venueName: asTrimmed(body?.venue_name, 180),
       townOrCity: asTrimmed(body?.town_or_city, 120),
@@ -275,18 +277,18 @@ export default async function handler(req, res) {
       .from("admin_ai_usage_logs")
       .select("id", { head: true, count: "exact" })
       .eq("user_id", auth.userId)
-      .eq("feature", FEATURE_KEY)
+      .eq("feature", featureKey)
       .gte("created_at", dayStart.toISOString());
     if (countErr) return res.status(500).json({ ok: false, error: "Failed to validate rate limit", details: countErr.message });
-    if (Number(count || 0) >= DAILY_LIMIT) {
+    if (Number(count || 0) >= dailyLimit) {
       return res.status(429).json({
         ok: false,
         error: "Daily limit reached",
-        details: `You have reached the ${DAILY_LIMIT} drafts/day limit for this tool.`,
+        details: `You have reached the ${dailyLimit} drafts/day limit for this tool.`,
       });
     }
 
-    const usageInsert = await admin.from("admin_ai_usage_logs").insert([{ user_id: auth.userId, feature: FEATURE_KEY }]);
+    const usageInsert = await admin.from("admin_ai_usage_logs").insert([{ user_id: auth.userId, feature: featureKey }]);
     if (usageInsert.error) {
       return res.status(500).json({ ok: false, error: "Failed to reserve draft quota", details: usageInsert.error.message });
     }

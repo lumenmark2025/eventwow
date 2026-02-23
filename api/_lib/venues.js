@@ -44,15 +44,22 @@ export async function makeUniqueVenueSlug(admin, nameOrSlug, excludeId = null) {
 }
 
 export function toVenueCardDto(venue, heroPath, supabaseUrl) {
+  const aiDraftMeta =
+    venue.ai_draft_meta && typeof venue.ai_draft_meta === "object" && !Array.isArray(venue.ai_draft_meta)
+      ? venue.ai_draft_meta
+      : null;
   return {
     id: venue.id,
     slug: venue.slug,
     name: venue.name,
+    type: venue.type || null,
     locationLabel: venue.location_label || venue.city || null,
     guestMin: venue.guest_min,
     guestMax: venue.guest_max,
     shortDescription: venue.short_description || venue.description || null,
     heroImageUrl: heroPath ? getPublicImageUrl(supabaseUrl, VENUE_IMAGES_BUCKET, heroPath) : null,
+    aiTags: Array.isArray(venue.ai_tags) ? venue.ai_tags : [],
+    venueType: aiDraftMeta?.modelInput?.venue_type || aiDraftMeta?.modelOutput?.venue_type || null,
     createdAt: venue.updated_at || venue.created_at || null,
   };
 }
@@ -62,10 +69,15 @@ export function toVenueProfileDto(venue, images, supabaseUrl) {
   const gallery = (images || [])
     .filter((img) => img.type === "gallery")
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+  const aiDraftMeta =
+    venue.ai_draft_meta && typeof venue.ai_draft_meta === "object" && !Array.isArray(venue.ai_draft_meta)
+      ? venue.ai_draft_meta
+      : null;
   return {
     id: venue.id,
     slug: venue.slug,
     name: venue.name,
+    type: venue.type || null,
     locationLabel: venue.location_label || venue.city || null,
     guestMin: venue.guest_min,
     guestMax: venue.guest_max,
@@ -74,6 +86,8 @@ export function toVenueProfileDto(venue, images, supabaseUrl) {
     websiteUrl: venue.website_url || null,
     heroImageUrl: hero ? getPublicImageUrl(supabaseUrl, VENUE_IMAGES_BUCKET, hero.path) : null,
     facilities: Array.isArray(venue.facilities) ? venue.facilities : [],
+    aiTags: Array.isArray(venue.ai_tags) ? venue.ai_tags : [],
+    venueType: aiDraftMeta?.modelInput?.venue_type || aiDraftMeta?.modelOutput?.venue_type || null,
     gallery: gallery.map((img) => ({
       id: img.id,
       path: img.path,

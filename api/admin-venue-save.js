@@ -51,6 +51,7 @@ export default async function handler(req, res) {
     const venueId = String(body?.venueId || "").trim() || null;
     const name = String(body?.name || "").trim();
     const locationLabel = String(body?.locationLabel || "").trim() || null;
+    const venueType = String(body?.type || "").trim() || null;
     const address = String(body?.address || "").trim() || null;
     const city = String(body?.city || "").trim() || null;
     const postcode = String(body?.postcode || "").trim() || null;
@@ -93,6 +94,7 @@ export default async function handler(req, res) {
       name,
       slug,
       location_label: locationLabel,
+      type: venueType,
       address,
       city,
       postcode,

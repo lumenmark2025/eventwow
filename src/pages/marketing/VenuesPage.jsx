@@ -10,6 +10,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import Skeleton from "../../components/ui/Skeleton";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
 import { useMarketingMeta } from "../../lib/marketingMeta";
+import { formatVenueGuestCapacity, getVenueConfidenceLabels } from "../../lib/venueDisplay";
 
 export default function VenuesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -72,13 +73,6 @@ export default function VenuesPage() {
     }, { replace: true });
   }
 
-  function guestRange(venue) {
-    const max = Number(venue?.guestMax);
-    // Listing cards should only show a maximum guest count (and only if present in the profile).
-    if (Number.isFinite(max) && max > 0) return `Up to ${max} guests`;
-    return null;
-  }
-
   return (
     <MarketingShell>
       <PageHeader
@@ -135,7 +129,8 @@ export default function VenuesPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {rows.map((venue) => {
               const hero = toPublicImageUrl(venue.heroImageUrl);
-              const guest = guestRange(venue);
+              const guest = formatVenueGuestCapacity(venue.guestMin, venue.guestMax);
+              const labels = getVenueConfidenceLabels(venue, 1);
               return (
                 <Card key={venue.id} className="overflow-hidden rounded-2xl">
                   {hero ? (
@@ -148,8 +143,9 @@ export default function VenuesPage() {
                       <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">{venue.name}</h3>
                       {venue.locationLabel ? <p className="mt-1 text-xs text-slate-500">{venue.locationLabel}</p> : null}
                     </div>
-                    <div className="flex min-h-[26px] flex-wrap gap-1.5">
+                    <div className="flex min-h-[26px] items-center gap-1.5">
                       {guest ? <Badge variant="neutral">{guest}</Badge> : null}
+                      {labels[0] ? <Badge variant="brand" className="max-w-[170px] truncate">{labels[0]}</Badge> : null}
                     </div>
                     <p className="line-clamp-2 text-sm text-slate-600">{venue.shortDescription || "Venue profile on Eventwow."}</p>
                     <Button as={Link} to={`/venues/${venue.slug}`} className="w-full">
