@@ -49,7 +49,10 @@ function normalizeImageUrl(row) {
 }
 
 function hasCategoryImage(row) {
-  return normalizeImageUrl(row).length > 0;
+  const url = normalizeImageUrl(row);
+  if (!url) return false;
+  if (url.startsWith("/assets/placeholders/")) return false;
+  return true;
 }
 
 function CategoryEditorModal({ open, onClose, initial, onSave }) {
@@ -452,7 +455,7 @@ export default function CategoriesPage() {
                               disabled={savingId === `image:${row.id}` || hasCategoryImage(row)}
                               onClick={() => generateCategoryImage(row)}
                             >
-                              {hasCategoryImage(row) ? "Image set" : savingId === `image:${row.id}` ? "Generating..." : "Generate AI image"}
+                              {hasCategoryImage(row) ? "Image set" : savingId === `image:${row.id}` ? "Generating..." : "Generate image"}
                             </Button>
                             <Button
                               type="button"

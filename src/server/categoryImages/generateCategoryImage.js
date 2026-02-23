@@ -18,6 +18,13 @@ function asText(value, fallback = "") {
   return v || fallback;
 }
 
+function hasRealCategoryImageUrl(value) {
+  const url = String(value || "").trim();
+  if (!url) return false;
+  if (url.startsWith("/assets/placeholders/")) return false;
+  return true;
+}
+
 async function fetchImageBytes(url) {
   const resp = await fetch(url);
   if (!resp.ok) {
@@ -87,7 +94,7 @@ export async function generateCategoryImage({ categoryId }) {
     return { ok: false, code: 404, error: "Category not found" };
   }
 
-  if (categoryResp.data.image_url) {
+  if (hasRealCategoryImageUrl(categoryResp.data.image_url)) {
     return {
       ok: true,
       skipped: true,
@@ -149,4 +156,3 @@ export async function generateCategoryImage({ categoryId }) {
     category: updateResp.data || null,
   };
 }
-
