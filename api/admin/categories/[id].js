@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "../../_lib/adminAuth.js";
+import { generateCategoryImage } from "../../../src/server/categoryImages/generateCategoryImage.js";
+
+function requestId() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 function parseBody(req) {
   if (typeof req.body === "string") {
@@ -27,6 +32,7 @@ function toDto(row) {
     id: row.id,
     slug: row.slug,
     display_name: row.display_name || row.label || "",
+    image_url: row.image_url || "",
     short_description: row.short_description || "",
     is_featured: !!row.is_featured,
     featured_order: Number(row.featured_order || 0),
@@ -37,8 +43,9 @@ function toDto(row) {
 }
 
 export default async function handler(req, res) {
+  const rid = requestId();
   try {
-    if (!["PATCH", "DELETE"].includes(req.method)) {
+    if (!["POST", "PATCH", "DELETE"].includes(req.method)) {
       return res.status(405).json({ ok: false, error: "Method Not Allowed" });
     }
 
@@ -47,6 +54,46 @@ export default async function handler(req, res) {
 
     const id = String(req.query?.id || "").trim();
     if (!id) return res.status(400).json({ ok: false, error: "Bad request", details: "Missing id" });
+
+    if (req.method === "POST") {
+      const body = parseBody(req);
+      const action = String(body?.action || "").trim().toLowerCase();
+      if (action !== "generate_image") {
+        return res.status(400).json({ ok: false, error: "Bad request", details: "Unsupported action", request_id: rid });
+      }
+
+      const result = await generateCategoryImage({ categoryId: id });
+      if (!result.ok) {
+        console.error("[category-image]", {
+          request_id: rid,
+          category_id: id,
+          skipped: false,
+          ok: false,
+          error_message: result.error,
+        });
+        return res.status(result.code || 500).json({
+          ok: false,
+          error: "Category image generation failed",
+          details: result.error,
+          request_id: rid,
+        });
+      }
+
+      console.info("[category-image]", {
+        request_id: rid,
+        category_id: id,
+        skipped: !!result.skipped,
+        ok: true,
+        error_message: null,
+      });
+
+      return res.status(200).json({
+        ok: true,
+        skipped: !!result.skipped,
+        image_url: result.image_url || "",
+        request_id: rid,
+      });
+    }
 
     const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -68,7 +115,7 @@ export default async function handler(req, res) {
         .from("supplier_category_options")
         .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq("id", id)
-        .select("id,slug,label,display_name,short_description,is_featured,featured_order,is_active,created_at,updated_at")
+        .select("id,slug,label,display_name,image_url,short_description,is_featured,featured_order,is_active,created_at,updated_at")
         .maybeSingle();
       if (softDeleteResp.error) {
         return res.status(500).json({ ok: false, error: "Failed to deactivate category", details: softDeleteResp.error.message });
@@ -110,7 +157,7 @@ export default async function handler(req, res) {
       .from("supplier_category_options")
       .update(patch)
       .eq("id", id)
-      .select("id,slug,label,display_name,short_description,is_featured,featured_order,is_active,created_at,updated_at")
+      .select("id,slug,label,display_name,image_url,short_description,is_featured,featured_order,is_active,created_at,updated_at")
       .maybeSingle();
 
     if (updateResp.error) {
@@ -125,7 +172,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, row: toDto(updateResp.data) });
   } catch (err) {
     console.error("admin/categories/[id] crashed:", err);
-    return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
+    return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err), request_id: rid });
   }
 }
 

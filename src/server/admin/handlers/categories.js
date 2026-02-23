@@ -34,6 +34,7 @@ function toDto(row) {
     id: row.id,
     slug: row.slug,
     display_name: row.display_name || row.label || "",
+    image_url: row.image_url || "",
     short_description: row.short_description || "",
     is_featured: !!row.is_featured,
     featured_order: Number(row.featured_order || 0),
@@ -56,7 +57,7 @@ export async function handleAdminCategoriesIndex(req, res) {
 
     let query = admin
       .from("supplier_category_options")
-      .select("id,slug,label,display_name,short_description,is_featured,featured_order,is_active,created_at,updated_at")
+      .select("id,slug,label,display_name,image_url,short_description,is_featured,featured_order,is_active,created_at,updated_at")
       .order("featured_order", { ascending: true })
       .order("display_name", { ascending: true })
       .order("label", { ascending: true });
@@ -100,7 +101,7 @@ export async function handleAdminCategoriesIndex(req, res) {
         is_active: isActive,
         updated_at: nowIso,
       })
-      .select("id,slug,label,display_name,short_description,is_featured,featured_order,is_active,created_at,updated_at")
+      .select("id,slug,label,display_name,image_url,short_description,is_featured,featured_order,is_active,created_at,updated_at")
       .single();
 
     if (insertResp.error) {
@@ -116,4 +117,3 @@ export async function handleAdminCategoriesIndex(req, res) {
 
   return res.status(405).json({ ok: false, error: "Method Not Allowed" });
 }
-
