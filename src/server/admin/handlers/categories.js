@@ -1,5 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import { requireAdmin } from "../../_lib/adminAuth.js";
+import { getAdminClient } from "./shared.js";
 
 function toBool(value, fallback = false) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -44,52 +43,36 @@ function toDto(row) {
   };
 }
 
-export default async function handler(req, res) {
-  try {
-    if (!["GET", "POST"].includes(req.method)) {
-      return res.status(405).json({ ok: false, error: "Method Not Allowed" });
+export async function handleAdminCategoriesIndex(req, res) {
+  const client = getAdminClient();
+  if (!client.ok) {
+    return res.status(client.code).json({ ok: false, error: client.error });
+  }
+
+  const { admin } = client;
+  if (req.method === "GET") {
+    const q = String(req.query?.q || "").trim().slice(0, 80);
+    const activeOnly = toBool(req.query?.activeOnly, false);
+
+    let query = admin
+      .from("supplier_category_options")
+      .select("id,slug,label,display_name,short_description,is_featured,featured_order,is_active,created_at,updated_at")
+      .order("featured_order", { ascending: true })
+      .order("display_name", { ascending: true })
+      .order("label", { ascending: true });
+
+    if (activeOnly) query = query.eq("is_active", true);
+    if (q) {
+      const like = `%${q.replace(/[%_]/g, " ").trim()}%`;
+      query = query.or(`display_name.ilike.${like},label.ilike.${like},slug.ilike.${like}`);
     }
 
-    const auth = await requireAdmin(req);
-    if (!auth.ok) return res.status(auth.code).json({ ok: false, error: auth.error, details: auth.details });
+    const { data, error } = await query.limit(500);
+    if (error) return res.status(500).json({ ok: false, error: "Failed to load categories", details: error.message });
+    return res.status(200).json({ ok: true, rows: (data || []).map(toDto) });
+  }
 
-    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!SUPABASE_URL || !SERVICE_KEY) {
-      return res.status(500).json({
-        ok: false,
-        error: "Missing server env vars",
-        details: {
-          SUPABASE_URL_or_VITE_SUPABASE_URL: !!SUPABASE_URL,
-          SUPABASE_SERVICE_ROLE_KEY: !!SERVICE_KEY,
-        },
-      });
-    }
-
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-    if (req.method === "GET") {
-      const q = String(req.query?.q || "").trim().slice(0, 80);
-      const activeOnly = toBool(req.query?.activeOnly, false);
-
-      let query = admin
-        .from("supplier_category_options")
-        .select("id,slug,label,display_name,short_description,is_featured,featured_order,is_active,created_at,updated_at")
-        .order("featured_order", { ascending: true })
-        .order("display_name", { ascending: true })
-        .order("label", { ascending: true });
-
-      if (activeOnly) query = query.eq("is_active", true);
-      if (q) {
-        const like = `%${q.replace(/[%_]/g, " ").trim()}%`;
-        query = query.or(`display_name.ilike.${like},label.ilike.${like},slug.ilike.${like}`);
-      }
-
-      const { data, error } = await query.limit(500);
-      if (error) return res.status(500).json({ ok: false, error: "Failed to load categories", details: error.message });
-      return res.status(200).json({ ok: true, rows: (data || []).map(toDto) });
-    }
-
+  if (req.method === "POST") {
     const body = parseBody(req);
     const displayName = String(body?.display_name || "").trim().slice(0, 80);
     const slugInput = String(body?.slug || "").trim();
@@ -129,9 +112,8 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ ok: true, row: toDto(insertResp.data) });
-  } catch (err) {
-    console.error("admin/categories crashed:", err);
-    return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
   }
+
+  return res.status(405).json({ ok: false, error: "Method Not Allowed" });
 }
 
