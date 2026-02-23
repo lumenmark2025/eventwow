@@ -32,7 +32,11 @@ async function apiFetch(path, options = {}) {
   };
   const resp = await fetch(path, { ...options, headers });
   const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(json?.details || json?.error || "Request failed");
+  if (!resp.ok) {
+    const err = new Error(json?.details || json?.error || "Request failed");
+    err.requestId = json?.request_id || "";
+    throw err;
+  }
   return json;
 }
 
@@ -263,6 +267,35 @@ export default function CategoriesPage() {
     }
   }
 
+  async function generateCategoryImage(row) {
+    setSavingId(`image:${row.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      const json = await apiFetch(`/api/admin/categories/${encodeURIComponent(row.id)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate_image" }),
+      });
+
+      const imageUrl = String(json?.image_url || "").trim();
+      if (imageUrl) {
+        setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, image_url: imageUrl } : r)));
+      }
+
+      if (json?.skipped) {
+        setSuccess(`Image already exists for ${row.display_name}.`);
+      } else {
+        setSuccess(`Image generated for ${row.display_name}.`);
+      }
+    } catch (err) {
+      const requestSuffix = err?.requestId ? ` (request_id: ${err.requestId})` : "";
+      setError(`${err?.message || "Failed to generate image"}${requestSuffix}`);
+    } finally {
+      setSavingId("");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -320,6 +353,7 @@ export default function CategoriesPage() {
                     <TR>
                       <TH>Name</TH>
                       <TH>Slug</TH>
+                      <TH>Image</TH>
                       <TH>Short description</TH>
                       <TH>Featured</TH>
                       <TH>Order</TH>
@@ -332,6 +366,17 @@ export default function CategoriesPage() {
                       <TR key={row.id}>
                         <TD>{row.display_name}</TD>
                         <TD>{row.slug}</TD>
+                        <TD>
+                          {row.image_url ? (
+                            <img
+                              src={row.image_url}
+                              alt={`${row.display_name} category`}
+                              className="h-14 w-24 rounded-md border border-slate-200 object-cover"
+                            />
+                          ) : (
+                            <div className="h-14 w-24 rounded-md border border-dashed border-slate-300 bg-slate-50" />
+                          )}
+                        </TD>
                         <TD className="max-w-[360px]">{row.short_description}</TD>
                         <TD>
                           <label className="inline-flex items-center gap-2 text-sm">
@@ -381,6 +426,15 @@ export default function CategoriesPage() {
                               }}
                             >
                               Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              disabled={savingId === `image:${row.id}` || !!row.image_url}
+                              onClick={() => generateCategoryImage(row)}
+                            >
+                              {row.image_url ? "Image set" : savingId === `image:${row.id}` ? "Generating..." : "Generate image"}
                             </Button>
                             <Button
                               type="button"
