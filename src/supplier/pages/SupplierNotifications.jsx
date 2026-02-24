@@ -139,7 +139,7 @@ export default function SupplierNotifications() {
                 key={row.id}
                 type="button"
                 onClick={() => openNotification(row)}
-                className={`w-full rounded-xl border p-3 text-left transition-shadow hover:shadow-sm ${row.read_at ? "border-slate-200 bg-white" : "border-brand/40 bg-teal-50/40"}`}
+                className={`w-full rounded-xl border p-3 text-left transition-shadow hover:shadow-sm ${row.read_at ? "border-slate-200 bg-white" : "border-brand/40 bg-blue-50/40"}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="font-medium text-slate-900">{row.title}</div>

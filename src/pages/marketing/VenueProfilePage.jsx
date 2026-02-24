@@ -101,7 +101,7 @@ export default function VenueProfilePage() {
             {heroImageUrl ? (
               <img src={heroImageUrl} alt={`${venue.name} hero`} className="h-56 w-full object-cover sm:h-72" loading="lazy" />
             ) : (
-              <div className="h-56 w-full bg-gradient-to-br from-slate-100 via-white to-teal-50 sm:h-72" />
+              <div className="h-56 w-full bg-gradient-to-br from-slate-100 via-white to-blue-50 sm:h-72" />
             )}
             <div className="space-y-4 p-5 sm:p-6">
               <div className="flex flex-wrap items-center gap-2">

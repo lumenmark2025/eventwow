@@ -11,7 +11,9 @@ export default function AdminMobileDrawer({ open, onClose }) {
   const previousActiveElementRef = useRef(null);
   const previousBodyOverflowRef = useRef("");
 
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   function getFocusableElements() {
     const panel = panelRef.current;
@@ -86,9 +88,9 @@ export default function AdminMobileDrawer({ open, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label="Admin navigation menu"
-        className="absolute inset-y-0 left-0 flex w-[86vw] max-w-xs flex-col border-r border-slate-200 bg-white p-4 shadow-xl focus:outline-none"
+        className="absolute inset-y-0 left-0 flex w-[86vw] max-w-xs flex-col border-r border-blue-200 bg-gradient-to-b from-blue-50/80 to-white p-4 shadow-xl focus:outline-none"
       >
-        <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div className="mb-4 flex items-center justify-between gap-3 border-b border-blue-100 pb-3">
           <div className="flex items-center gap-2">
             <img
               src={eventwowLogoMark}
@@ -99,7 +101,7 @@ export default function AdminMobileDrawer({ open, onClose }) {
               loading="eager"
               decoding="async"
             />
-            <p className="text-sm font-semibold text-slate-900">Menu</p>
+            <p className="text-sm font-semibold text-blue-900">Menu</p>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={() => onCloseRef.current?.()}>
             Close
@@ -116,8 +118,8 @@ export default function AdminMobileDrawer({ open, onClose }) {
                 [
                   "flex items-center rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-teal-50 text-teal-700"
-                    : "text-slate-700 hover:bg-slate-100 hover:text-slate-900",
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-700 hover:bg-blue-100 hover:text-blue-900",
                 ].join(" ")
               }
               end={item.to === "/admin/dashboard"}

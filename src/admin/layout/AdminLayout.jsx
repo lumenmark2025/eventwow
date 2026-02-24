@@ -1,23 +1,16 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useState } from "react";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import eventwowLogo from "../../assets/brand/eventwow-logo.svg";
 import AdminSidebar from "./AdminSidebar";
 import AdminMobileDrawer from "./AdminMobileDrawer";
 
 export default function AdminLayout({ user, onSignOut, children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const location = useLocation();
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-blue-700/40 bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_48%,#60a5fa_100%)] text-white shadow-sm backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <Button
@@ -33,21 +26,16 @@ export default function AdminLayout({ user, onSignOut, children }) {
               </svg>
             </Button>
 
-            <img
-              src={eventwowLogo}
-              alt="Eventwow"
-              width="170"
-              height="32"
-              className="h-7 w-auto sm:h-8"
-              loading="eager"
-              decoding="async"
-            />
+            <div className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5 ring-1 ring-white/20">
+              <span className="text-lg font-semibold tracking-tight sm:text-xl">eventwow</span>
+              <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Admin</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {user?.email ? <Badge variant="neutral" className="hidden sm:inline-flex">{user.email}</Badge> : null}
+            {user?.email ? <Badge variant="neutral" className="hidden border-white/25 bg-white/10 text-white sm:inline-flex">{user.email}</Badge> : null}
             {onSignOut ? (
-              <Button type="button" variant="secondary" size="sm" onClick={onSignOut}>
+              <Button type="button" variant="secondary" size="sm" className="border-white/40 bg-white/10 text-white hover:bg-white/20" onClick={onSignOut}>
                 Sign out
               </Button>
             ) : null}
@@ -59,7 +47,7 @@ export default function AdminLayout({ user, onSignOut, children }) {
         <AdminSidebar />
 
         <main className="min-w-0 flex-1 space-y-6">
-          <Card>
+          <Card className="border-blue-100">
             <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
               <div>
                 <p className="text-sm font-medium text-slate-900">Admin Control Panel</p>

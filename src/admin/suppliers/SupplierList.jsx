@@ -939,7 +939,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
             <div className="space-y-1">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Category context</label>
               <select
-                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
                 value={categorySlug}
                 onChange={(e) => setCategorySlug(e.target.value)}
               >
@@ -952,7 +952,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
             <div className="space-y-1">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Location context</label>
               <select
-                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
                 value={locationSlug}
                 onChange={(e) => setLocationSlug(e.target.value)}
               >

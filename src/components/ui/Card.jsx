@@ -1,7 +1,7 @@
 import { cn } from "./cn";
 
 export function Card({ className = "", ...props }) {
-  return <div className={cn("rounded-xl border border-slate-200 bg-white shadow-card", className)} {...props} />;
+  return <div className={cn("rounded-2xl border border-slate-200 bg-white shadow-card", className)} {...props} />;
 }
 
 export function CardHeader({ className = "", ...props }) {

@@ -77,6 +77,7 @@ export default function SupplierLayout({ user, supplier, onSignOut, children }) 
       user={user}
       supplier={supplier}
       showBrandMeta={false}
+      navTheme="blue"
       onSignOut={onSignOut}
       nav={nav}
       activeKey={tab}

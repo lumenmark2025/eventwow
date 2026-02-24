@@ -7,13 +7,13 @@ import { useMarketingMeta, useStructuredData } from "../../lib/marketingMeta";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
 import { formatVenueGuestCapacity, getVenueConfidenceLabels } from "../../lib/venueDisplay";
 
-const SERVICE_TILE_DEFAULTS = [
-  { name: "Venues", slug: "venues", href: "/venues", tint: "from-blue-500 to-indigo-500" },
-  { name: "Photographers", slug: "photographers", href: "/categories/photographers", tint: "from-rose-400 to-fuchsia-500" },
-  { name: "Catering", slug: "catering", href: "/categories/catering", tint: "from-amber-400 to-orange-500" },
-  { name: "Entertainment", slug: "entertainment", href: "/categories/entertainment", tint: "from-pink-400 to-rose-500" },
-  { name: "Weddings", slug: "weddings", href: "/categories/weddings", tint: "from-violet-400 to-purple-500" },
-  { name: "Corporate Events", slug: "corporate-events", href: "/category/corporate-events", tint: "from-cyan-400 to-blue-500" },
+const SERVICE_TILE_TINTS = [
+  "from-blue-500 to-indigo-500",
+  "from-rose-400 to-fuchsia-500",
+  "from-amber-400 to-orange-500",
+  "from-pink-400 to-rose-500",
+  "from-violet-400 to-purple-500",
+  "from-cyan-400 to-blue-500",
 ];
 
 const TRUST_ITEMS = ["Free to use", "No commission markups", "Direct communication"];
@@ -45,39 +45,15 @@ const FAQ_ITEMS = [
   },
 ];
 
-function normalize(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
 function selectServiceTiles(rows) {
   const categories = Array.isArray(rows) ? rows : [];
-  return SERVICE_TILE_DEFAULTS.map((preset) => {
-    const direct = categories.find((cat) => normalize(cat.display_name) === normalize(preset.name));
-    const loose =
-      direct ||
-      categories.find((cat) => {
-        const label = normalize(cat.display_name);
-        return label.includes(normalize(preset.name)) || normalize(preset.name).includes(label);
-      });
-
-    if (!loose) {
-      return {
-        key: preset.slug,
-        name: preset.name,
-        href: preset.href,
-        image: "",
-        tint: preset.tint,
-      };
-    }
-
-    return {
-      key: loose.id || loose.slug || preset.slug,
-      name: loose.display_name || preset.name,
-      href: loose.slug ? `/categories/${encodeURIComponent(loose.slug)}` : preset.href,
-      image: loose.hero_image_url || "",
-      tint: preset.tint,
-    };
-  });
+  return categories.slice(0, 6).map((row, index) => ({
+    key: row.id || row.slug || `category-${index}`,
+    name: row.display_name || row.label || "Category",
+    href: row.slug ? `/categories/${encodeURIComponent(row.slug)}` : "/categories",
+    image: row.hero_image_url || "",
+    tint: SERVICE_TILE_TINTS[index % SERVICE_TILE_TINTS.length],
+  }));
 }
 
 export default function HomePage() {
@@ -234,16 +210,20 @@ export default function HomePage() {
                   </div>
                 </div>
               ))
-            : serviceTiles.map((tile) => (
-                <Link key={tile.key} to={tile.href} className="group overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            : serviceTiles.length === 0 ? (
+                <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
+                  No featured categories are active. Enable featured categories in Admin to populate this section.
+                </div>
+              ) : serviceTiles.map((tile) => (
+                <Link key={tile.key} to={tile.href} className="group flex h-full flex-col overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                   {toPublicImageUrl(tile.image) ? (
                     <img src={toPublicImageUrl(tile.image)} alt={`${tile.name} services`} className="h-28 w-full object-cover" loading="lazy" />
                   ) : (
                     <div className={`h-28 w-full bg-gradient-to-br ${tile.tint}`} />
                   )}
-                  <div className={`bg-gradient-to-r ${tile.tint} p-4 text-white`}>
-                    <p className="text-2xl font-semibold leading-tight">{tile.name}</p>
-                    <p className="mt-1 inline-flex items-center gap-1 text-base font-medium text-white/95">
+                  <div className={`flex min-h-[120px] flex-1 flex-col bg-gradient-to-r ${tile.tint} p-4 text-white`}>
+                    <p className="line-clamp-2 min-h-[56px] text-2xl font-semibold leading-tight">{tile.name}</p>
+                    <p className="mt-auto inline-flex items-center gap-1 text-base font-medium text-white/95">
                       Explore
                       <span aria-hidden="true">›</span>
                     </p>
@@ -349,3 +329,4 @@ export default function HomePage() {
     </MarketingShell>
   );
 }
+

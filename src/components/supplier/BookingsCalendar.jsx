@@ -63,7 +63,7 @@ function CalendarEventPill({ event }) {
     "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium leading-4";
   const toneClass =
     origin === "eventwow"
-      ? "bg-teal-700 text-white"
+      ? "bg-blue-700 text-white"
       : "bg-slate-600 text-white";
   const cancelledClass = status === "cancelled" ? "opacity-60 line-through" : "";
 
@@ -183,7 +183,7 @@ export default function BookingsCalendar({
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1 text-slate-600">
-            <span className="h-2.5 w-2.5 rounded-full bg-teal-700" />
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-700" />
             Eventwow
           </span>
           <span className="inline-flex items-center gap-1 text-slate-600">

@@ -121,7 +121,7 @@ export default function Login() {
           />
         </div>
         <div className="text-right">
-          <Link to="/forgot-password" className="text-xs text-teal-700 underline underline-offset-2">
+          <Link to="/forgot-password" className="text-xs text-blue-700 underline underline-offset-2">
             Forgot password?
           </Link>
         </div>

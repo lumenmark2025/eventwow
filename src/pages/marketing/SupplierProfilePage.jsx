@@ -161,7 +161,7 @@ export default function SupplierProfilePage() {
             {heroImageUrl ? (
               <img src={heroImageUrl} alt={`${supplier.name} hero`} className="h-56 w-full object-cover sm:h-72" loading="lazy" />
             ) : (
-              <div className="h-56 w-full bg-gradient-to-br from-slate-100 via-white to-teal-50 sm:h-72" />
+              <div className="h-56 w-full bg-gradient-to-br from-slate-100 via-white to-blue-50 sm:h-72" />
             )}
             <div className="p-5 sm:p-6">
               <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">

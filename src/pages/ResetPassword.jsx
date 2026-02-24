@@ -104,7 +104,7 @@ export default function ResetPassword() {
       ) : !ready ? (
         <div className="space-y-3">
           <p className="text-sm text-rose-600">{error || "Reset link is invalid or expired."}</p>
-          <Link to="/forgot-password" className="text-sm text-teal-700 underline underline-offset-2">
+          <Link to="/forgot-password" className="text-sm text-blue-700 underline underline-offset-2">
             Request a new reset link
           </Link>
         </div>

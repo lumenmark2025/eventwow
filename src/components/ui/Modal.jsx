@@ -84,7 +84,7 @@ export default function Modal({ open, onClose, title, children, footer }) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-5 shadow-xl focus:outline-none"
+        className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-5 shadow-xl focus:outline-none"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h3 className="text-base font-semibold">{title}</h3>

@@ -75,7 +75,7 @@ export default function VenueDashboardPage() {
               {venue.hero_image?.signed_url || venue.hero_image?.public_url ? (
                 <img src={venue.hero_image?.signed_url || venue.hero_image?.public_url} alt={venue.name} className="h-36 w-full object-cover" loading="lazy" />
               ) : (
-                <div className="h-36 w-full bg-gradient-to-br from-slate-100 to-teal-50" />
+                <div className="h-36 w-full bg-gradient-to-br from-slate-100 to-blue-50" />
               )}
               <CardHeader>
                 <CardTitle className="text-xl">{venue.name || "Venue"}</CardTitle>

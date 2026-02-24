@@ -8,7 +8,6 @@ import Skeleton from "../../components/ui/Skeleton";
 import SupplierCard from "../../components/marketing/SupplierCard";
 import { useMarketingMeta } from "../../lib/marketingMeta";
 
-const CATEGORY_OPTIONS = ["All", "Event Supplier", "Pizza Catering", "Photographers", "DJs", "Venues", "Florists", "Bands"];
 const SORT_OPTIONS = [
   { value: "recommended", label: "Recommended" },
   { value: "newest", label: "Newest" },
@@ -21,6 +20,7 @@ export default function SuppliersPage() {
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [categories, setCategories] = useState([]);
 
   const q = String(searchParams.get("q") || "");
   const category = String(searchParams.get("category") || "All");
@@ -42,6 +42,15 @@ export default function SuppliersPage() {
     params.set("offset", "0");
     return params.toString();
   }, [q, category, sort]);
+
+  const categoryOptions = useMemo(() => {
+    const names = (Array.isArray(categories) ? categories : [])
+      .map((row) => String(row?.display_name || "").trim())
+      .filter(Boolean);
+    const unique = [...new Set(names)];
+    if (category && category !== "All" && !unique.includes(category)) unique.push(category);
+    return ["All", ...unique];
+  }, [categories, category]);
 
   useEffect(() => {
     let mounted = true;
@@ -69,6 +78,24 @@ export default function SuppliersPage() {
       mounted = false;
     };
   }, [queryString]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const resp = await fetch("/api/public/categories/options");
+        const json = await resp.json().catch(() => []);
+        if (!resp.ok) throw new Error("Failed to load category options");
+        if (!mounted) return;
+        setCategories(Array.isArray(json) ? json : []);
+      } catch {
+        if (mounted) setCategories([]);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   function setParam(key, value) {
     setSearchParams((prev) => {
@@ -106,7 +133,7 @@ export default function SuppliersPage() {
               className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
               aria-label="Filter by category"
             >
-              {CATEGORY_OPTIONS.map((option) => (
+              {categoryOptions.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
             </select>

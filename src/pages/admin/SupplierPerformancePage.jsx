@@ -92,7 +92,7 @@ export default function SupplierPerformancePage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
             >
               <option value="volume">Sort: Volume</option>
               <option value="rate">Sort: Acceptance rate</option>

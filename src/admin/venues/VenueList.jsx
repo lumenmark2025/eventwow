@@ -528,7 +528,7 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
             <select
               value={form.type}
               onChange={(e) => setField("type", e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
             >
               <option value="">Type (optional)</option>
               {aiTypeOptions.map((typeName) => (
@@ -715,7 +715,7 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
             <select
               value={aiInput.venue_type}
               onChange={(e) => setAiInput((prev) => ({ ...prev, venue_type: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
             >
               {aiTypeOptions.map((typeName) => (
                 <option key={`ai-type-${typeName}`} value={normalizeTypeForAi(typeName)}>{typeName}</option>
@@ -1453,7 +1453,7 @@ export default function VenueList() {
             <select
               value={defaultTypeName}
               onChange={(e) => setDefaultTypeName(e.target.value)}
-              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
             >
               <option value="">Default type (optional)</option>
               {venueTypes.map((type) => (

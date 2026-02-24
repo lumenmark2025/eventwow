@@ -5,7 +5,7 @@ export function Table({ className = "", ...props }) {
 }
 
 export function THead({ className = "", ...props }) {
-  return <thead className={cn("bg-slate-50 text-slate-600", className)} {...props} />;
+  return <thead className={cn("bg-blue-50/60 text-slate-700", className)} {...props} />;
 }
 
 export function TBody({ className = "", ...props }) {
@@ -15,7 +15,7 @@ export function TBody({ className = "", ...props }) {
 export function TR({ className = "", interactive = false, ...props }) {
   return (
     <tr
-      className={cn(interactive ? "transition-colors hover:bg-slate-50" : "", className)}
+      className={cn(interactive ? "transition-colors hover:bg-blue-50/40" : "", className)}
       {...props}
     />
   );

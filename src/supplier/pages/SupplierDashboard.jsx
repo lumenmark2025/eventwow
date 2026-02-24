@@ -346,7 +346,7 @@ export default function SupplierDashboard({ supplier }) {
             <CardTitle className="text-4xl">{creditsBalance}</CardTitle>
           </CardHeader>
           <CardContent>
-            {bundleMsg ? <div className="mb-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-700">{bundleMsg}</div> : null}
+            {bundleMsg ? <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">{bundleMsg}</div> : null}
             <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3">
               <div className="mb-2 text-sm font-medium text-slate-900">Buy credit bundles</div>
               <div className="flex flex-wrap gap-2">
