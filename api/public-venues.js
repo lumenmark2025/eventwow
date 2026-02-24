@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const { data: venues, error } = await admin
       .from("venues")
-      .select("id,name,slug,type,location_label,city,guest_min,guest_max,short_description,description,ai_tags,ai_draft_meta,is_published,created_at,updated_at")
+      .select("id,name,slug,type,location_label,city,guest_min,guest_max,short_description,description,hero_image_url,ai_tags,ai_draft_meta,is_published,created_at,updated_at")
       .eq("is_published", true)
       .order("created_at", { ascending: false })
       .limit(600);

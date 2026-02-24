@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
-import PageHeader from "../../components/layout/PageHeader";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
@@ -16,6 +15,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function SuppliersPage() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,9 +27,10 @@ export default function SuppliersPage() {
   const sort = String(searchParams.get("sort") || "recommended");
 
   useMarketingMeta({
-    title: "Browse suppliers",
-    description: "Find trusted event suppliers and request quotes fast.",
-    path: "/suppliers",
+    title: "Event suppliers near you | Eventwow",
+    description: "Find trusted event suppliers across the UK and request personalised quotes directly.",
+    path: `/suppliers${location.search || ""}`,
+    canonicalPath: "/suppliers",
   });
 
   const queryString = useMemo(() => {
@@ -83,12 +84,12 @@ export default function SuppliersPage() {
 
   return (
     <MarketingShell>
-      <PageHeader
-        title="Browse suppliers"
-        subtitle="Find trusted event suppliers and request quotes fast."
-      />
+      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
+        <h1 className="text-4xl font-semibold tracking-tight">Event suppliers near you</h1>
+        <p className="mt-3 text-base text-white/90">Find trusted event suppliers and request quotes fast.</p>
+      </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="mt-6 rounded-3xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
         <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
           <div className="md:col-span-6">
             <Input

@@ -3,6 +3,7 @@ export const adminNavItems = [
   { key: "credits-ledger", label: "Credits Ledger", to: "/admin/credits-ledger" },
   { key: "performance", label: "Performance", to: "/admin/performance" },
   { key: "venues", label: "Venues", to: "/admin/venues" },
+  { key: "venue-hero-images", label: "Venue Hero Images", to: "/admin/venues/hero-images" },
   { key: "categories", label: "Categories", to: "/admin/categories" },
   { key: "venue-claims", label: "Venue claims", to: "/admin/venue-claims" },
   { key: "reviews", label: "Reviews", to: "/admin/reviews" },

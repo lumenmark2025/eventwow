@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
-import PageHeader from "../../components/layout/PageHeader";
 import { Card, CardContent } from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
@@ -13,6 +12,7 @@ import { useMarketingMeta } from "../../lib/marketingMeta";
 import { formatVenueGuestCapacity, getVenueConfidenceLabels } from "../../lib/venueDisplay";
 
 export default function VenuesPage() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -23,9 +23,10 @@ export default function VenuesPage() {
   const sort = String(searchParams.get("sort") || "recommended");
 
   useMarketingMeta({
-    title: "Browse venues",
-    description: "Discover event venues and view trusted suppliers who work there.",
-    path: "/venues",
+    title: "Event venues near you | Eventwow",
+    description: "Discover event venues across the UK and compare options by location, style, and guest capacity.",
+    path: `/venues${location.search || ""}`,
+    canonicalPath: "/venues",
   });
 
   const queryString = useMemo(() => {
@@ -75,12 +76,12 @@ export default function VenuesPage() {
 
   return (
     <MarketingShell>
-      <PageHeader
-        title="Browse venues"
-        subtitle="Find venue spaces and supplier-ready locations for your event."
-      />
+      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
+        <h1 className="text-4xl font-semibold tracking-tight">Event venues near you</h1>
+        <p className="mt-3 text-base text-white/90">Find venue spaces and supplier-ready locations for your event.</p>
+      </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="mt-6 rounded-3xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
         <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
           <div className="md:col-span-8">
             <Input
@@ -136,11 +137,15 @@ export default function VenuesPage() {
                   {hero ? (
                     <img src={hero} alt={`${venue.name} cover`} className="h-36 w-full object-cover" loading="lazy" />
                   ) : (
-                    <div className="h-36 bg-gradient-to-br from-slate-100 via-slate-50 to-teal-50" />
+                    <div className="h-36 bg-gradient-to-br from-blue-100 via-indigo-50 to-sky-100" />
                   )}
                   <CardContent className="space-y-3 p-4">
                     <div>
-                      <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">{venue.name}</h3>
+                      <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">
+                        <Link to={`/venues/${venue.slug}`} className="hover:underline">
+                          {venue.name}
+                        </Link>
+                      </h3>
                       {venue.locationLabel ? <p className="mt-1 text-xs text-slate-500">{venue.locationLabel}</p> : null}
                     </div>
                     <div className="flex min-h-[26px] items-center gap-1.5">

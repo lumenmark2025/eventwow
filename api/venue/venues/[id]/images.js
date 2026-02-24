@@ -137,7 +137,7 @@ export default async function handler(req, res) {
 
       const imageResp = await admin
         .from("venue_images")
-        .select("id,path")
+        .select("id,path,type")
         .eq("id", imageId)
         .eq("venue_id", venueId)
         .maybeSingle();
@@ -147,6 +147,9 @@ export default async function handler(req, res) {
       await admin.storage.from(VENUE_IMAGES_BUCKET).remove([imageResp.data.path]);
       const deleteResp = await admin.from("venue_images").delete().eq("id", imageResp.data.id).eq("venue_id", venueId);
       if (deleteResp.error) return res.status(500).json({ ok: false, error: "Failed to delete image", details: deleteResp.error.message });
+      if (imageResp.data.type === "hero") {
+        await admin.from("venues").update({ hero_image_url: null, updated_at: new Date().toISOString() }).eq("id", venueId);
+      }
       return res.status(200).json({ ok: true, imageId: imageResp.data.id });
     }
 
@@ -229,6 +232,13 @@ export default async function handler(req, res) {
     }
 
     const image = insertResp.data;
+    if (type === "hero") {
+      const publicUrl = getPublicImageUrl(SUPABASE_URL, VENUE_IMAGES_BUCKET, image.path);
+      await admin
+        .from("venues")
+        .update({ hero_image_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", venueId);
+    }
     return res.status(200).json({
       ok: true,
       image: {

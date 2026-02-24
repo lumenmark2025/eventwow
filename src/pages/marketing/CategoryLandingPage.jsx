@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
-import PageHeader from "../../components/layout/PageHeader";
 import Button from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
@@ -47,12 +46,26 @@ export default function CategoryLandingPage() {
   const safePage = Math.min(page, totalPages);
 
   useMarketingMeta({
-    title: categoryName,
+    title: `${categoryName} in UK | Eventwow`,
     description:
       String(category?.short_description || "").trim() ||
       `Browse trusted ${categoryName.toLowerCase()} suppliers on Eventwow.`,
     path: `${location.pathname}${safePage > 1 ? `?page=${safePage}` : ""}`,
+    canonicalPath: location.pathname,
   });
+
+  const setPage = useCallback((nextPage) => {
+    const next = Math.max(1, Math.floor(Number(nextPage || 1)));
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (next <= 1) {
+        params.delete("page");
+      } else {
+        params.set("page", String(next));
+      }
+      return params;
+    });
+  }, [setSearchParams]);
 
   useEffect(() => {
     let mounted = true;
@@ -90,27 +103,21 @@ export default function CategoryLandingPage() {
     return () => {
       mounted = false;
     };
-  }, [slug, page]);
-
-  function setPage(nextPage) {
-    const next = Math.max(1, Math.floor(Number(nextPage || 1)));
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      if (next <= 1) {
-        params.delete("page");
-      } else {
-        params.set("page", String(next));
-      }
-      return params;
-    });
-  }
+  }, [slug, page, setPage]);
 
   return (
     <MarketingShell>
-      <PageHeader
-        title={categoryName}
-        subtitle={category?.short_description || `Discover trusted ${categoryName.toLowerCase()} suppliers ready to quote.`}
-      />
+      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
+        <h1 className="text-4xl font-semibold tracking-tight">{categoryName}</h1>
+        <p className="mt-3 text-base text-white/90">
+          {category?.short_description || `Discover trusted ${categoryName.toLowerCase()} suppliers ready to quote.`}
+        </p>
+      </section>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <Link to="/suppliers" className="text-blue-700 hover:underline">All suppliers</Link>
+        <span className="text-slate-300">/</span>
+        <span className="text-slate-500">{categoryName}</span>
+      </div>
 
       <div className="mt-2">
         <p className="text-sm text-slate-600">{Number(pagination.total || 0)} suppliers</p>

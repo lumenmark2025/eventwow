@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const venueResp = await admin
       .from("venues")
-      .select("id,name,slug,type,location_label,city,guest_min,guest_max,short_description,description,about,website_url,facilities,ai_tags,ai_draft_meta,is_published")
+      .select("id,name,slug,type,location_label,city,guest_min,guest_max,short_description,description,about,website_url,facilities,hero_image_url,ai_tags,ai_draft_meta,is_published")
       .eq("slug", slug)
       .eq("is_published", true)
       .maybeSingle();

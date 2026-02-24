@@ -55,11 +55,15 @@ export default function SupplierCard({ supplier, showFsa = true }) {
           loading="lazy"
         />
       ) : (
-        <div className="h-32 bg-gradient-to-br from-slate-100 via-slate-50 to-teal-50" />
+        <div className="h-32 bg-gradient-to-br from-blue-100 via-indigo-50 to-sky-100" />
       )}
       <CardContent className="space-y-3">
         <div>
-          <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">{supplier.name}</h3>
+          <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">
+            <Link to={`/suppliers/${supplier.slug}`} className="hover:underline">
+              {supplier.name}
+            </Link>
+          </h3>
           {supplier.locationLabel ? <p className="mt-1 text-xs text-slate-500">{supplier.locationLabel}</p> : null}
         </div>
         {primaryCategory ? <Badge variant="neutral">{primaryCategory}</Badge> : null}

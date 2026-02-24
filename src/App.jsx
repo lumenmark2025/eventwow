@@ -19,6 +19,7 @@ import ReviewsPage from "./pages/admin/ReviewsPage";
 import VenueClaimsPage from "./pages/admin/VenueClaimsPage";
 import CategoriesPage from "./pages/admin/CategoriesPage";
 import SupplierApplicationsPage from "./pages/admin/SupplierApplicationsPage";
+import VenueHeroImagesPage from "./pages/admin/VenueHeroImagesPage";
 
 import DashboardPage from "./pages/supplier/DashboardPage";
 import SupplierEnquiriesPage from "./pages/supplier/EnquiriesPage";
@@ -477,6 +478,14 @@ export default function App() {
         element={adminGuard(
           <AdminLayout user={user} onSignOut={signOut}>
             <AdminVenuesPage user={user} />
+          </AdminLayout>
+        )}
+      />
+      <Route
+        path="/admin/venues/hero-images"
+        element={adminGuard(
+          <AdminLayout user={user} onSignOut={signOut}>
+            <VenueHeroImagesPage user={user} />
           </AdminLayout>
         )}
       />

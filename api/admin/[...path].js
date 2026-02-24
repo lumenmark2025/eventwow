@@ -3,6 +3,7 @@ import { handleAdminCategoriesIndex } from "../../src/server/admin/handlers/cate
 import { getAdminEnquiryById, listAdminEnquiries } from "../../src/server/admin/handlers/enquiries.js";
 import { ensureAdminStorageBuckets, listAdminRankingContexts } from "../../src/server/admin/handlers/misc.js";
 import { patchAdminReviewById, listAdminReviews } from "../../src/server/admin/handlers/reviews.js";
+import { getVenueHeroImageJobPreview, runVenueHeroImageGenerationJob } from "../../src/server/admin/handlers/venueHeroImages.js";
 
 function getPathString(req) {
   const parts = Array.isArray(req.query?.path) ? req.query.path : req.query?.path ? [req.query.path] : [];
@@ -45,6 +46,12 @@ export default async function handler(req, res) {
 
     if (method === "POST" && path === "storage/ensure-buckets") {
       return ensureAdminStorageBuckets(req, res);
+    }
+    if (method === "GET" && path === "venues/generate-hero-images") {
+      return getVenueHeroImageJobPreview(req, res);
+    }
+    if (method === "POST" && path === "venues/generate-hero-images") {
+      return runVenueHeroImageGenerationJob(req, res);
     }
 
     return res.status(404).json({ ok: false, error: "Not Found" });

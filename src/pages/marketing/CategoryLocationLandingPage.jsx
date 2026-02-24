@@ -59,9 +59,10 @@ export default function CategoryLocationLandingPage() {
   }, [categoryName, locationName]);
 
   useMarketingMeta({
-    title: pageTitle,
+    title: `${pageTitle} | Eventwow`,
     description: pageDescription,
     path: location.pathname,
+    canonicalPath: location.pathname,
   });
 
   useEffect(() => {
@@ -106,6 +107,17 @@ export default function CategoryLocationLandingPage() {
         title={finalCategory && finalLocation ? `${finalCategory} in ${finalLocation}` : pageTitle}
         subtitle={finalCategory && finalLocation ? `Find local ${finalCategory.toLowerCase()} suppliers near you and request quotes.` : "Find trusted suppliers and request quotes fast."}
       />
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <Link to="/suppliers" className="text-blue-700 hover:underline">All suppliers</Link>
+        {categorySlug ? (
+          <>
+            <span className="text-slate-300">/</span>
+            <Link to={`/category/${encodeURIComponent(categorySlug)}`} className="text-blue-700 hover:underline">
+              {finalCategory || "Category"}
+            </Link>
+          </>
+        ) : null}
+      </div>
 
       <div className="mt-2 flex items-center justify-between">
         <p className="text-sm text-slate-600">{totalCount} suppliers</p>

@@ -215,9 +215,14 @@ export default function RequestPage() {
   return (
     <MarketingShell>
       <section className="mx-auto max-w-4xl space-y-5">
-        <Card className="rounded-3xl">
+        <div className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg">
+          <h1 className="text-4xl font-semibold tracking-tight">Post your enquiry</h1>
+          <p className="mt-3 text-sm text-white/90">Tell us what you need and receive tailored quotes from trusted suppliers.</p>
+        </div>
+
+        <Card className="rounded-3xl border-blue-100 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-2xl tracking-tight">Request quotes from trusted suppliers</CardTitle>
+            <CardTitle className="text-2xl tracking-tight text-blue-900">Request quotes from trusted suppliers</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">

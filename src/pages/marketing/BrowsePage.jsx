@@ -20,8 +20,8 @@ export default function BrowsePage() {
   const [categories, setCategories] = useState([]);
 
   useMarketingMeta({
-    title: "Browse suppliers",
-    description: "Explore supplier categories and start your event request.",
+    title: "Browse event categories | Eventwow",
+    description: "Explore event service categories and discover trusted suppliers across the UK.",
     path: "/categories",
   });
 
@@ -96,9 +96,9 @@ export default function BrowsePage() {
 
   return (
     <MarketingShell>
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Browse suppliers</h1>
-        <p className="mt-2 text-sm text-slate-600">Search trusted suppliers or jump into a category.</p>
+      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
+        <h1 className="text-4xl font-semibold tracking-tight">Browse event categories</h1>
+        <p className="mt-3 text-base text-white/90">Search trusted suppliers or jump into a category.</p>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Input
             value={q}
@@ -156,7 +156,7 @@ export default function BrowsePage() {
           ))
         ) : (
           categories.map((cat) => (
-            <Card key={cat.slug}>
+            <Card key={cat.slug} className="rounded-2xl border-blue-100 shadow-sm">
               <img
                 src={cat.hero_image_url || "/assets/placeholders/category-default.svg"}
                 alt={`${cat.display_name} suppliers`}

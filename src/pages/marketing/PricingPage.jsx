@@ -18,16 +18,18 @@ export default function PricingPage() {
 
   return (
     <MarketingShell>
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Simple pricing</h1>
-        <p className="mt-2 text-sm text-slate-600">Eventwow is free for customers and fair for suppliers — no inflated fees, no high percentage commissions.</p>
+      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
+        <h1 className="text-4xl font-semibold tracking-tight">Simple pricing</h1>
+        <p className="mt-3 text-base text-white/90">
+          Eventwow is free for customers and fair for suppliers - no inflated fees, no high percentage commissions.
+        </p>
       </section>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-3">
         {tiers.map((tier) => (
-          <Card key={tier.name}>
+          <Card key={tier.name} className="rounded-3xl border-blue-100 shadow-sm">
             <CardHeader>
-              <CardTitle>{tier.name}</CardTitle>
+              <CardTitle className="text-blue-900">{tier.name}</CardTitle>
               <div className="mt-1 text-2xl font-semibold">{tier.price}</div>
               <div className="mt-1 text-sm text-slate-500">{tier.note}</div>
             </CardHeader>
@@ -42,7 +44,7 @@ export default function PricingPage() {
         ))}
       </section>
 
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mt-8 rounded-3xl border border-blue-100 bg-white p-6 shadow-sm">
         <div className="mb-3"><Badge variant="neutral">FAQ</Badge></div>
         <div className="space-y-3 text-sm text-slate-700">
           <p><span className="font-medium">Do customers pay?</span> No, customers can request and compare quotes for free.</p>

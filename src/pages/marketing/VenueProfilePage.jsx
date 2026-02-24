@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -7,7 +7,7 @@ import Badge from "../../components/ui/Badge";
 import Skeleton from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import SupplierCard from "../../components/marketing/SupplierCard";
-import { useMarketingMeta } from "../../lib/marketingMeta";
+import { buildCanonicalUrl, useMarketingMeta, useStructuredData } from "../../lib/marketingMeta";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
 import { formatVenueGuestCapacity, getVenueConfidenceLabels } from "../../lib/venueDisplay";
 
@@ -19,11 +19,33 @@ export default function VenueProfilePage() {
   const [venue, setVenue] = useState(null);
   const [linkedSuppliers, setLinkedSuppliers] = useState([]);
 
+  const town = String(venue?.locationLabel || "").split(",")[0]?.trim() || "";
+
   useMarketingMeta({
-    title: venue?.name ? venue.name : "Venue profile",
+    title: venue?.name ? `${venue.name}${town ? ` (${town})` : ""} | Eventwow` : "Venue profile | Eventwow",
     description: venue?.shortDescription || "Venue profile on Eventwow.",
     path: `/venues/${slug || ""}`,
+    image: toPublicImageUrl(venue?.heroImageUrl) || undefined,
   });
+
+  const venueSchema = useMemo(() => {
+    if (!venue?.name) return null;
+    const imageUrl = toPublicImageUrl(venue?.heroImageUrl);
+    const address = {};
+    if (town) address.addressLocality = town;
+    address.addressCountry = "GB";
+    return {
+      "@context": "https://schema.org",
+      "@type": "EventVenue",
+      name: venue.name,
+      url: buildCanonicalUrl(`/venues/${venue.slug || slug || ""}`),
+      description: venue.shortDescription || venue.about || undefined,
+      image: imageUrl || undefined,
+      address,
+    };
+  }, [venue, town, slug]);
+
+  useStructuredData(venueSchema, "venue-profile-jsonld");
 
   useEffect(() => {
     let mounted = true;
@@ -86,7 +108,7 @@ export default function VenueProfilePage() {
                 {venue.locationLabel ? <Badge variant="neutral">{venue.locationLabel}</Badge> : null}
                 {range ? <Badge variant="brand">{range}</Badge> : null}
               </div>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{venue.name}</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-blue-900 sm:text-4xl">{venue.name}</h1>
               {labels.length ? (
                 <div className="flex flex-wrap gap-2">
                   {labels.map((label) => (
@@ -109,7 +131,7 @@ export default function VenueProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-3xl">
+              <Card className="rounded-3xl border-blue-100">
                 <CardHeader><CardTitle className="text-xl">Gallery</CardTitle></CardHeader>
                 <CardContent className="pt-2">
                   {Array.isArray(venue.gallery) && venue.gallery.length > 0 ? (
@@ -133,7 +155,7 @@ export default function VenueProfilePage() {
               </Card>
 
               {linkedSuppliers.length > 0 ? (
-                <Card className="rounded-3xl">
+                <Card className="rounded-3xl border-blue-100">
                   <CardHeader>
                     <CardTitle className="text-xl">Suppliers who work well at this venue</CardTitle>
                   </CardHeader>
@@ -163,7 +185,7 @@ export default function VenueProfilePage() {
             </div>
 
             <div>
-              <Card className="sticky top-24 rounded-3xl">
+              <Card className="sticky top-24 rounded-3xl border-blue-100">
                 <CardHeader><CardTitle className="text-xl">Request quotes for this venue</CardTitle></CardHeader>
                 <CardContent className="space-y-4 pt-2">
                   <p className="text-sm text-slate-600">
@@ -172,9 +194,17 @@ export default function VenueProfilePage() {
                   <Button as={Link} to={`/request?venue=${encodeURIComponent(String(venue.slug || ""))}`} className="w-full">
                     Request quotes
                   </Button>
+                  <div className="space-y-1 text-xs text-slate-500">
+                    <p>
+                      <Link to="/venues" className="text-blue-700 hover:underline">Browse all venues</Link>
+                    </p>
+                    <p>
+                      <Link to="/categories" className="text-blue-700 hover:underline">Explore event services</Link>
+                    </p>
+                  </div>
                   <p className="text-center text-xs text-slate-500">
                     Manage this listing?{" "}
-                    <Link to={`/venues/${encodeURIComponent(String(venue.slug || ""))}/claim`} className="font-medium text-teal-700 hover:underline">
+                    <Link to={`/venues/${encodeURIComponent(String(venue.slug || ""))}/claim`} className="font-medium text-blue-700 hover:underline">
                       Claim this venue
                     </Link>
                   </p>

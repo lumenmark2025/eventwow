@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "./_lib/adminAuth.js";
 import { parseBody } from "./_lib/venues.js";
+import { getPublicImageUrl } from "./_lib/publicImage.js";
 import { VENUE_IMAGES_BUCKET, ensureBucketExists } from "./_lib/storageBuckets.js";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
@@ -169,6 +170,14 @@ export default async function handler(req, res) {
     if (insertResp.error) {
       await admin.storage.from(VENUE_IMAGES_BUCKET).remove([objectPath]);
       return res.status(500).json({ ok: false, error: "Failed to save image metadata", details: insertResp.error.message });
+    }
+
+    if (type === "hero") {
+      const publicUrl = getPublicImageUrl(SUPABASE_URL, VENUE_IMAGES_BUCKET, objectPath);
+      await admin
+        .from("venues")
+        .update({ hero_image_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", venueId);
     }
 
     return res.status(200).json({ ok: true });

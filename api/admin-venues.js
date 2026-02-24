@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "./_lib/adminAuth.js";
 import { parseBody, toVenueProfileDto } from "./_lib/venues.js";
+import { getVenueHeroImageJobPreview, runVenueHeroImageGenerationJob } from "../src/server/admin/handlers/venueHeroImages.js";
 
 function normalizeText(value, maxLen = 120) {
   return String(value || "").trim().slice(0, maxLen);
@@ -49,9 +50,19 @@ export default async function handler(req, res) {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
+    if (req.method === "GET") {
+      const action = String(req.query?.action || "").trim().toLowerCase();
+      if (action === "hero_images_preview") {
+        return getVenueHeroImageJobPreview(req, res);
+      }
+    }
+
     if (req.method === "POST") {
       const body = parseBody(req);
       const action = String(body?.action || "").trim().toLowerCase();
+      if (action === "generate_hero_images") {
+        return runVenueHeroImageGenerationJob(req, res);
+      }
       if (action !== "create_venue_type") {
         return res.status(400).json({ ok: false, error: "Bad request", details: "Unsupported action" });
       }
@@ -99,7 +110,7 @@ export default async function handler(req, res) {
     if (!venueId) {
       const { data: venues, error } = await admin
         .from("venues")
-        .select("id,name,slug,type,is_published,listed_publicly,guest_min,guest_max,location_label,city,short_description,about,updated_at,created_at")
+        .select("id,name,slug,type,is_published,listed_publicly,guest_min,guest_max,location_label,city,short_description,about,hero_image_url,updated_at,created_at")
         .order("updated_at", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(500);
@@ -121,7 +132,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         rows: rows.map((row) => ({
           ...row,
-          has_hero: hasHero.has(row.id),
+          has_hero: hasHero.has(row.id) || !!String(row.hero_image_url || "").trim(),
         })),
         venueTypes: venueTypeList.rows,
       });
@@ -129,7 +140,7 @@ export default async function handler(req, res) {
 
     const venueResp = await admin
       .from("venues")
-      .select("id,name,slug,type,location_label,address,city,postcode,guest_min,guest_max,short_description,description,about,website_url,facilities,is_published,listed_publicly,ai_tags,ai_suggested_search_terms,ai_draft_meta,ai_generated_at,created_at,updated_at")
+      .select("id,name,slug,type,location_label,address,city,postcode,guest_min,guest_max,short_description,description,about,website_url,facilities,hero_image_url,is_published,listed_publicly,ai_tags,ai_suggested_search_terms,ai_draft_meta,ai_generated_at,created_at,updated_at")
       .eq("id", venueId)
       .maybeSingle();
     if (venueResp.error) return res.status(500).json({ ok: false, error: "Failed to load venue", details: venueResp.error.message });

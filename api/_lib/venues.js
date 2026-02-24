@@ -48,6 +48,8 @@ export function toVenueCardDto(venue, heroPath, supabaseUrl) {
     venue.ai_draft_meta && typeof venue.ai_draft_meta === "object" && !Array.isArray(venue.ai_draft_meta)
       ? venue.ai_draft_meta
       : null;
+  const directHero = typeof venue.hero_image_url === "string" ? venue.hero_image_url.trim() : "";
+  const mappedHero = heroPath ? getPublicImageUrl(supabaseUrl, VENUE_IMAGES_BUCKET, heroPath) : null;
   return {
     id: venue.id,
     slug: venue.slug,
@@ -57,7 +59,7 @@ export function toVenueCardDto(venue, heroPath, supabaseUrl) {
     guestMin: venue.guest_min,
     guestMax: venue.guest_max,
     shortDescription: venue.short_description || venue.description || null,
-    heroImageUrl: heroPath ? getPublicImageUrl(supabaseUrl, VENUE_IMAGES_BUCKET, heroPath) : null,
+    heroImageUrl: mappedHero || directHero || null,
     aiTags: Array.isArray(venue.ai_tags) ? venue.ai_tags : [],
     venueType: aiDraftMeta?.modelInput?.venue_type || aiDraftMeta?.modelOutput?.venue_type || null,
     createdAt: venue.updated_at || venue.created_at || null,
@@ -73,6 +75,8 @@ export function toVenueProfileDto(venue, images, supabaseUrl) {
     venue.ai_draft_meta && typeof venue.ai_draft_meta === "object" && !Array.isArray(venue.ai_draft_meta)
       ? venue.ai_draft_meta
       : null;
+  const directHero = typeof venue.hero_image_url === "string" ? venue.hero_image_url.trim() : "";
+  const mappedHero = hero ? getPublicImageUrl(supabaseUrl, VENUE_IMAGES_BUCKET, hero.path) : null;
   return {
     id: venue.id,
     slug: venue.slug,
@@ -84,7 +88,7 @@ export function toVenueProfileDto(venue, images, supabaseUrl) {
     shortDescription: venue.short_description || venue.description || null,
     about: venue.about || venue.description || null,
     websiteUrl: venue.website_url || null,
-    heroImageUrl: hero ? getPublicImageUrl(supabaseUrl, VENUE_IMAGES_BUCKET, hero.path) : null,
+    heroImageUrl: mappedHero || directHero || null,
     facilities: Array.isArray(venue.facilities) ? venue.facilities : [],
     aiTags: Array.isArray(venue.ai_tags) ? venue.ai_tags : [],
     venueType: aiDraftMeta?.modelInput?.venue_type || aiDraftMeta?.modelOutput?.venue_type || null,

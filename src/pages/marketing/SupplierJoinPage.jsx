@@ -174,14 +174,14 @@ export default function SupplierJoinPage() {
   return (
     <MarketingShell>
       <section className="mx-auto max-w-3xl space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Join Eventwow as a supplier</h1>
-          <p className="text-sm text-slate-600">Create your supplier account and get 25 free credits to start quoting.</p>
+        <div className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-center text-white shadow-lg">
+          <h1 className="text-4xl font-semibold tracking-tight">Join Eventwow as a supplier</h1>
+          <p className="mt-3 text-sm text-white/90">Create your supplier account and get 25 free credits to start quoting.</p>
         </div>
 
-        <Card>
+        <Card className="rounded-3xl border-blue-100 shadow-sm">
           <CardHeader>
-            <CardTitle>Create supplier account</CardTitle>
+            <CardTitle className="text-blue-900">Create supplier account</CardTitle>
           </CardHeader>
           <CardContent>
             {success ? (

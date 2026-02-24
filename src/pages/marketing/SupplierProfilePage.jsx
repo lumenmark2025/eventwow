@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -6,7 +6,7 @@ import Button from "../../components/ui/Button";
 import Skeleton from "../../components/ui/Skeleton";
 import EmptyState from "../../components/ui/EmptyState";
 import Badge from "../../components/ui/Badge";
-import { useMarketingMeta } from "../../lib/marketingMeta";
+import { buildCanonicalUrl, useMarketingMeta, useStructuredData } from "../../lib/marketingMeta";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
 import { getFsaBadgeLabel, getFsaBadgePath } from "../../lib/fsaBadge";
 
@@ -55,12 +55,35 @@ export default function SupplierProfilePage() {
   const [notFound, setNotFound] = useState(false);
   const [supplier, setSupplier] = useState(null);
   const [showPerformance, setShowPerformance] = useState(false);
+  const town = String(supplier?.locationLabel || "").split(",")[0]?.trim() || "";
+  const primaryCategoryObj = Array.isArray(supplier?.categories) ? supplier.categories[0] : null;
 
   useMarketingMeta({
-    title: supplier?.name ? `${supplier.name}` : "Supplier profile",
+    title: supplier?.name ? `${supplier.name}${town ? ` (${town})` : ""} | Eventwow` : "Supplier profile | Eventwow",
     description: supplier?.shortDescription || "Supplier profile on Eventwow.",
     path: `/suppliers/${slug || ""}`,
+    image: toPublicImageUrl(supplier?.heroImageUrl) || undefined,
   });
+
+  const supplierSchema = useMemo(() => {
+    if (!supplier?.name) return null;
+    const imageUrl = toPublicImageUrl(supplier?.heroImageUrl);
+    const address = {};
+    if (town) address.addressLocality = town;
+    address.addressCountry = "GB";
+    return {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      name: supplier.name,
+      url: buildCanonicalUrl(`/suppliers/${supplier.slug || slug || ""}`),
+      description: supplier.shortDescription || supplier.about || undefined,
+      image: imageUrl || undefined,
+      areaServed: supplier.locationLabel || undefined,
+      address,
+    };
+  }, [supplier, town, slug]);
+
+  useStructuredData(supplierSchema, "supplier-profile-jsonld");
 
   useEffect(() => {
     let mounted = true;
@@ -155,11 +178,11 @@ export default function SupplierProfilePage() {
                           <span>{ratingSignal}</span>
                         </span>
                       ) : null}
-                      {ratingSignal && replySignal ? <span aria-hidden="true">•</span> : null}
+                      {ratingSignal && replySignal ? <span aria-hidden="true">â€¢</span> : null}
                       {replySignal ? <span>{replySignal}</span> : null}
                     </div>
                   ) : null}
-                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{supplier.name}</h1>
+                  <h1 className="text-3xl font-semibold tracking-tight text-blue-900 sm:text-4xl">{supplier.name}</h1>
                   <p className="max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
                     {supplier.shortDescription || "Trusted event supplier on Eventwow."}
                   </p>
@@ -190,7 +213,7 @@ export default function SupplierProfilePage() {
 
           <section className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">
-              <Card className="rounded-3xl">
+              <Card className="rounded-3xl border-blue-100">
                 <CardHeader>
                   <CardTitle className="text-xl">About</CardTitle>
                 </CardHeader>
@@ -199,7 +222,7 @@ export default function SupplierProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-3xl">
+              <Card className="rounded-3xl border-blue-100">
                 <CardHeader>
                   <CardTitle className="text-xl">Reviews</CardTitle>
                 </CardHeader>
@@ -237,7 +260,7 @@ export default function SupplierProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-3xl">
+              <Card className="rounded-3xl border-blue-100">
                 <CardHeader>
                   <CardTitle className="text-xl">Services</CardTitle>
                 </CardHeader>
@@ -257,7 +280,7 @@ export default function SupplierProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-3xl">
+              <Card className="rounded-3xl border-blue-100">
                 <CardHeader>
                   <CardTitle className="text-xl">Gallery</CardTitle>
                 </CardHeader>
@@ -284,7 +307,7 @@ export default function SupplierProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-3xl">
+              <Card className="rounded-3xl border-blue-100">
                 <CardHeader className={showPerformance ? "pb-3" : "pb-6"}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle className="text-xl">Performance</CardTitle>
@@ -326,7 +349,7 @@ export default function SupplierProfilePage() {
             </div>
 
             <div>
-              <Card className="sticky top-24 rounded-3xl">
+              <Card className="sticky top-24 rounded-3xl border-blue-100">
                 <CardHeader>
                   <CardTitle className="text-xl">Request a quote</CardTitle>
                 </CardHeader>
@@ -337,6 +360,14 @@ export default function SupplierProfilePage() {
                   <Button as={Link} to={requestPath} className="w-full">
                     Request a quote
                   </Button>
+                  {primaryCategoryObj?.slug ? (
+                    <Button as={Link} to={`/categories/${encodeURIComponent(primaryCategoryObj.slug)}`} variant="secondary" className="w-full">
+                      More {primaryCategoryObj.name}
+                    </Button>
+                  ) : null}
+                  <p className="text-center text-xs text-slate-500">
+                    <Link to="/venues" className="text-blue-700 hover:underline">Looking for a venue?</Link>
+                  </p>
                   <Button as={Link} to="/suppliers" variant="secondary" className="w-full">
                     Back to suppliers
                   </Button>
@@ -349,6 +380,8 @@ export default function SupplierProfilePage() {
     </MarketingShell>
   );
 }
+
+
 
 
 

@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const imageResp = await admin
       .from("venue_images")
-      .select("id,path")
+      .select("id,path,type,venue_id")
       .eq("id", imageId)
       .maybeSingle();
     if (imageResp.error) return res.status(500).json({ ok: false, error: "Failed to load image", details: imageResp.error.message });
@@ -41,6 +41,12 @@ export default async function handler(req, res) {
     await admin.storage.from(VENUE_IMAGES_BUCKET).remove([imageResp.data.path]);
     const deleteResp = await admin.from("venue_images").delete().eq("id", imageId);
     if (deleteResp.error) return res.status(500).json({ ok: false, error: "Failed to delete image", details: deleteResp.error.message });
+    if (imageResp.data.type === "hero" && imageResp.data.venue_id) {
+      await admin
+        .from("venues")
+        .update({ hero_image_url: null, updated_at: new Date().toISOString() })
+        .eq("id", imageResp.data.venue_id);
+    }
 
     return res.status(200).json({ ok: true });
   } catch (err) {
