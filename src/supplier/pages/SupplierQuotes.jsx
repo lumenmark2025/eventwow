@@ -35,6 +35,15 @@ function calcLineTotal(qty, unit) {
   return Number.isFinite(total) ? total : 0;
 }
 
+function isReacceptRequired(quoteLike) {
+  return String(quoteLike?.status || "").toLowerCase() === "sent" && !!quoteLike?.reaccept_required;
+}
+
+function statusText(quoteLike) {
+  if (isReacceptRequired(quoteLike)) return "updated_awaiting_acceptance";
+  return String(quoteLike?.status || "draft");
+}
+
 export default function SupplierQuotes({ supplierId }) {
   if (!supplierId) {
     return (
@@ -232,7 +241,8 @@ export default function SupplierQuotes({ supplierId }) {
 
       if (itErr) throw itErr;
 
-      setQuote(q);
+      const sourceRow = (rows || []).find((row) => row.id === quoteId) || null;
+      setQuote({ ...q, reaccept_required: !!sourceRow?.reaccept_required });
       setQuoteText(String(q?.quote_text || ""));
       setPublicQuoteUrl("");
       setItems(
@@ -407,17 +417,6 @@ export default function SupplierQuotes({ supplierId }) {
   async function saveDraft() {
     if (!quote?.id) return;
     if (saving) return;
-    const status = String(quote.status).toLowerCase();
-    if (status !== "draft") {
-      if (["accepted", "declined", "closed"].includes(status)) {
-        setQuoteErr("Quote is locked.");
-        setSaveStatus("error");
-        return;
-      }
-      setQuoteErr("Only draft quotes can be edited.");
-      setSaveStatus("error");
-      return;
-    }
 
     if (hasItemValidationError) {
       setQuoteErr("Fix item fields before saving.");
@@ -488,7 +487,7 @@ export default function SupplierQuotes({ supplierId }) {
 
       setItems(freshItems);
       setIsDirty(false);
-      setQuoteOk("Draft saved.");
+      setQuoteOk(json?.reacceptRequired ? "Quote updated - customer has been notified and must re-accept." : "Quote updated.");
       setSaveStatus("saved");
 
       setTimeout(() => {
@@ -937,7 +936,7 @@ export default function SupplierQuotes({ supplierId }) {
                         {(q.enquiry?.startTime || q.enquiries?.start_time) ? ` · Time: ${q.enquiry?.startTime || q.enquiries?.start_time}` : ""}
                       </div>
                     </div>
-                    <div className="text-sm">status: {q.status}</div>
+                    <div className="text-sm">status: {statusText(q)}</div>
                   </div>
 
                   <div className="text-sm text-gray-600">
@@ -960,7 +959,7 @@ export default function SupplierQuotes({ supplierId }) {
         )}
 
         <div className="text-xs text-gray-500">
-          Draft quotes can be edited here. Sending a quote uses 1 credit and locks it.
+          Quotes can be edited at any stage. Sending a quote uses 1 credit.
         </div>
       </div>
 
@@ -979,17 +978,22 @@ export default function SupplierQuotes({ supplierId }) {
           <div className="space-y-4">
             {String(quote?.status || "").toLowerCase() === "accepted" ? (
               <div className="text-sm rounded-lg border border-green-200 bg-green-50 text-green-800 p-3">
-                Accepted on {fmtDateTime(quote?.accepted_at)}. This quote is locked.
+                Accepted on {fmtDateTime(quote?.accepted_at)}. If you edit and save this quote, customer acceptance will reset.
+              </div>
+            ) : null}
+            {isReacceptRequired(quote) ? (
+              <div className="text-sm rounded-lg border border-amber-200 bg-amber-50 text-amber-800 p-3">
+                Updated - awaiting acceptance. Customer re-acceptance is required.
               </div>
             ) : null}
             {String(quote?.status || "").toLowerCase() === "declined" ? (
               <div className="text-sm rounded-lg border border-red-200 bg-red-50 text-red-800 p-3">
-                Declined on {fmtDateTime(quote?.declined_at)}. This quote is locked.
+                Declined on {fmtDateTime(quote?.declined_at)}. You can edit and save to issue an updated quote.
               </div>
             ) : null}
             {String(quote?.status || "").toLowerCase() === "closed" ? (
               <div className="text-sm rounded-lg border border-gray-300 bg-gray-50 text-gray-800 p-3">
-                Closed on {fmtDateTime(quote?.closed_at)}. Customer actions are disabled.
+                Closed on {fmtDateTime(quote?.closed_at)}. You can edit and save to reopen as sent.
               </div>
             ) : null}
 
@@ -1000,7 +1004,7 @@ export default function SupplierQuotes({ supplierId }) {
                 <div className="text-sm text-gray-600">Quote</div>
                 <div className="text-lg font-semibold">{quote.id.slice(0, 8)}…</div>
                 <div className="text-xs text-gray-500">
-                  Status: <span className="font-medium">{quote.status}</span> · Created:{" "}
+                  Status: <span className="font-medium">{statusText(quote)}</span> · Created:{" "}
                   {fmtDateTime(quote.created_at)}
                 </div>
               </div>
@@ -1095,7 +1099,7 @@ export default function SupplierQuotes({ supplierId }) {
 
             {isDirty ? (
               <div className="text-sm text-amber-700">
-                Unsaved changes — click “Save draft” before sending.
+                Unsaved changes — click “Save changes” before sending.
               </div>
             ) : null}
 
@@ -1117,7 +1121,7 @@ export default function SupplierQuotes({ supplierId }) {
                     type="button"
                     className="border rounded-md px-3 py-1.5 bg-white text-xs disabled:opacity-50"
                     onClick={generateDraftText}
-                    disabled={draftBusy || String(quote.status).toLowerCase() !== "draft"}
+                    disabled={draftBusy}
                   >
                     {draftBusy ? "Generating..." : "Generate draft reply (coming soon)"}
                   </button>
@@ -1131,7 +1135,7 @@ export default function SupplierQuotes({ supplierId }) {
                   onChange={(e) => updateQuoteText(e.target.value)}
                   rows={5}
                   maxLength={4000}
-                  disabled={String(quote.status).toLowerCase() !== "draft" || saving || sending}
+                  disabled={saving || sending}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                   placeholder="Write a message to the customer..."
                 />
@@ -1143,7 +1147,7 @@ export default function SupplierQuotes({ supplierId }) {
                 <button
                   className="w-full sm:w-auto border rounded-lg px-4 py-2.5 bg-white text-sm disabled:opacity-50"
                   onClick={addItem}
-                  disabled={String(quote.status).toLowerCase() !== "draft" || saving || sending}
+                  disabled={saving || sending}
                   type="button"
                 >
                   + Add item
@@ -1162,7 +1166,7 @@ export default function SupplierQuotes({ supplierId }) {
                           <input
                             className="w-full border rounded-lg px-3 py-2"
                             value={it.title || ""}
-                            disabled={String(quote.status).toLowerCase() !== "draft" || saving || sending}
+                            disabled={saving || sending}
                             onChange={(e) => updateItem(it.id, { title: e.target.value })}
                           />
                         </div>
@@ -1175,7 +1179,7 @@ export default function SupplierQuotes({ supplierId }) {
                             className="w-full border rounded-lg px-3 py-2"
                             min={1}
                             value={it.qty ?? 1}
-                            disabled={String(quote.status).toLowerCase() !== "draft" || saving || sending}
+                            disabled={saving || sending}
                             onChange={(e) => updateItem(it.id, { qty: Number(e.target.value) })}
                           />
                         </div>
@@ -1188,7 +1192,7 @@ export default function SupplierQuotes({ supplierId }) {
                             className="w-full border rounded-lg px-3 py-2"
                             min={0}
                             value={it.unit_price ?? 0}
-                            disabled={String(quote.status).toLowerCase() !== "draft" || saving || sending}
+                            disabled={saving || sending}
                             onChange={(e) =>
                               updateItem(it.id, { unit_price: Number(e.target.value) })
                             }
@@ -1207,9 +1211,7 @@ export default function SupplierQuotes({ supplierId }) {
                           <button
                             type="button"
                             className="border rounded-md px-3 py-2 bg-white text-sm disabled:opacity-50"
-                            disabled={
-                              String(quote.status).toLowerCase() !== "draft" || saving || sending
-                            }
+                            disabled={saving || sending}
                             onClick={() => moveItem(it.id, "up")}
                           >
                             ↑
@@ -1217,9 +1219,7 @@ export default function SupplierQuotes({ supplierId }) {
                           <button
                             type="button"
                             className="border rounded-md px-3 py-2 bg-white text-sm disabled:opacity-50"
-                            disabled={
-                              String(quote.status).toLowerCase() !== "draft" || saving || sending
-                            }
+                            disabled={saving || sending}
                             onClick={() => moveItem(it.id, "down")}
                           >
                             ↓
@@ -1227,9 +1227,7 @@ export default function SupplierQuotes({ supplierId }) {
                           <button
                             type="button"
                             className="border rounded-lg px-4 py-2 bg-white text-sm disabled:opacity-50"
-                            disabled={
-                              String(quote.status).toLowerCase() !== "draft" || saving || sending
-                            }
+                            disabled={saving || sending}
                             onClick={() => removeItem(it.id)}
                           >
                             Remove
@@ -1252,7 +1250,6 @@ export default function SupplierQuotes({ supplierId }) {
                 type="button"
                 className="w-full border rounded-lg px-4 py-2.5 bg-black text-white disabled:opacity-50"
                 disabled={
-                  String(quote.status).toLowerCase() !== "draft" ||
                   saving ||
                   sending ||
                   closing ||
@@ -1261,7 +1258,7 @@ export default function SupplierQuotes({ supplierId }) {
                 }
                 onClick={saveDraft}
               >
-                {saving ? "Saving…" : "Save draft"}
+                {saving ? "Saving…" : "Save changes"}
               </button>
 
               <button
@@ -1328,7 +1325,7 @@ export default function SupplierQuotes({ supplierId }) {
             </div>
 
             <div className="text-xs text-gray-500">
-              Sent quotes are locked. If a supplier has 0 credits, sending will be blocked server-side.
+              If this quote was previously accepted, saving changes resets acceptance and requires customer re-acceptance.
             </div>
           </div>
         )}

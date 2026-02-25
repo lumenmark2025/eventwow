@@ -1,11 +1,100 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "./_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
-import { buildPerformanceSignals } from "./_lib/performanceSignals.js";
+import {
+  buildPerformanceSignals,
+  computeDeterministicSupplierScore,
+  tokenizeKeywords,
+} from "./_lib/performanceSignals.js";
+import {
+  filterSuppliersByTravelRadius,
+  geocodeUkPostcodeWithCache,
+  getPostcodeFromQuery,
+  stripUkPostcode,
+} from "./_lib/postcodeGeocode.js";
+
+const INTENT_CATEGORY_HINTS = {
+  wedding: ["wedding", "venue", "venues", "photographer", "photographers", "catering", "florist", "florists", "dj", "djs", "band", "bands", "decor", "cake", "cakes", "entertainment"],
+  corporate: ["corporate", "conference", "meeting", "venue", "venues", "catering", "entertainment", "photographer", "photographers"],
+  birthday: ["birthday", "party", "catering", "cakes", "entertainment", "dj", "djs", "bands", "decor"],
+  party: ["party", "entertainment", "dj", "djs", "bands", "catering", "cakes", "decor"],
+};
+
+const TERM_CATEGORY_HINTS = {
+  photographer: ["photographer", "photographers"],
+  photographers: ["photographer", "photographers"],
+  dj: ["dj", "djs", "entertainment"],
+  djs: ["dj", "djs", "entertainment"],
+  catering: ["catering"],
+  caterer: ["catering"],
+  florists: ["florists", "flowers"],
+  florist: ["florists", "flowers"],
+  bands: ["bands", "entertainment"],
+  band: ["bands", "entertainment"],
+  cake: ["cakes", "cake"],
+  cakes: ["cakes", "cake"],
+};
 
 function normalizeSort(value) {
   const v = String(value || "").trim().toLowerCase();
   return v === "newest" ? "newest" : "recommended";
+}
+
+function normalizeText(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function tokenize(value) {
+  return normalizeText(value).split(" ").filter(Boolean);
+}
+
+function buildSearchIntent(rawQuery) {
+  const terms = tokenize(rawQuery);
+  const intentTokens = terms.filter((term) => Object.prototype.hasOwnProperty.call(INTENT_CATEGORY_HINTS, term));
+  const keywordTokens = terms.filter((term) => !intentTokens.includes(term));
+  const categoryHints = new Set();
+  for (const token of intentTokens) {
+    for (const hint of INTENT_CATEGORY_HINTS[token] || []) categoryHints.add(hint);
+  }
+  for (const token of keywordTokens) {
+    for (const hint of TERM_CATEGORY_HINTS[token] || []) categoryHints.add(hint);
+  }
+  return {
+    terms,
+    intentTokens,
+    keywordTokens,
+    categoryHints: [...categoryHints],
+  };
+}
+
+function matchesLocation(row, locationValue) {
+  const needle = normalizeText(locationValue);
+  if (!needle) return true;
+  const fields = [
+    row.locationLabel,
+    row.name,
+    row.shortDescription,
+  ]
+    .map((value) => normalizeText(value))
+    .filter(Boolean);
+  return fields.some((field) => field.includes(needle) || needle.includes(field));
+}
+
+function matchesText(row, tokens) {
+  if (!Array.isArray(tokens) || tokens.length === 0) return false;
+  const haystack = normalizeText([row.name, row.shortDescription, row.locationLabel, ...(row.categoryBadges || [])].join(" "));
+  return tokens.some((token) => haystack.includes(token));
+}
+
+function matchesIntentOrKeyword(row, searchIntent) {
+  const hasTokens = searchIntent.intentTokens.length > 0 || searchIntent.keywordTokens.length > 0;
+  if (!hasTokens) return true;
+  const categoryText = normalizeText((row.categoryBadges || []).join(" "));
+  const contentText = normalizeText([row.name, row.shortDescription].join(" "));
+  const hintMatch = searchIntent.categoryHints.some((hint) => categoryText.includes(hint) || contentText.includes(hint));
+  const keywordMatch = searchIntent.keywordTokens.length > 0 && matchesText(row, searchIntent.keywordTokens);
+  const genericMatch = searchIntent.terms.length > 0 && matchesText(row, searchIntent.terms);
+  return hintMatch || keywordMatch || genericMatch;
 }
 
 function toCardRow(supplier, supabaseUrl, performance) {
@@ -34,7 +123,9 @@ function toCardRow(supplier, supabaseUrl, performance) {
     fsa_rating_badge_key: profile.fsaRatingBadgeKey,
     fsaRatingBadgeUrl: profile.fsaRatingBadgeUrl,
     fsa_rating_badge_url: profile.fsaRatingBadgeUrl,
-    recommendedScore: supplier.is_verified ? 2 : 1,
+    services: Array.isArray(supplier.services) ? supplier.services : [],
+    travel_radius_miles: Number.isFinite(Number(supplier.travel_radius_miles)) ? Number(supplier.travel_radius_miles) : 30,
+    _distanceMiles: Number.isFinite(Number(supplier._distance_miles)) ? Number(supplier._distance_miles) : null,
   };
 }
 
@@ -57,9 +148,16 @@ export default async function handler(req, res) {
       });
     }
 
-    const q = String(req.query?.q || "").trim().toLowerCase();
+    const qRaw = String(req.query?.q || "").trim();
+    const q = stripUkPostcode(qRaw).toLowerCase();
+    const queryTokens = tokenizeKeywords(q);
+    const searchIntent = buildSearchIntent(q);
+    const locationFilter = String(req.query?.location || "").trim();
     const category = String(req.query?.category || "").trim().toLowerCase();
     const sort = normalizeSort(req.query?.sort);
+    const host = String(req.headers?.host || "").toLowerCase();
+    const debugScore = String(req.query?.debugScore || "") === "1"
+      && (host.includes("localhost") || host.includes("127.0.0.1"));
     const limitRaw = Number(req.query?.limit ?? 24);
     const offsetRaw = Number(req.query?.offset ?? 0);
     const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(60, limitRaw)) : 24;
@@ -69,7 +167,7 @@ export default async function handler(req, res) {
     const { data: suppliers, error } = await admin
       .from("suppliers")
       .select(
-        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
+        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,base_lat,base_lng,travel_radius_miles,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false })
@@ -79,7 +177,15 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Failed to load suppliers", details: error.message });
     }
 
-    const supplierRows = suppliers || [];
+    let supplierRows = suppliers || [];
+    const eventPostcode = getPostcodeFromQuery(req.query);
+    if (eventPostcode) {
+      const eventCoords = await geocodeUkPostcodeWithCache(admin, eventPostcode);
+      if (eventCoords) {
+        supplierRows = await filterSuppliersByTravelRadius(admin, supplierRows, eventCoords);
+      }
+    }
+
     const supplierIds = supplierRows.map((s) => s.id);
     const imagesResp =
       supplierIds.length > 0
@@ -154,31 +260,77 @@ export default async function handler(req, res) {
       .map((s) => toCardRow(s, SUPABASE_URL, perfBySupplier.get(s.id) || buildPerformanceSignals(null)));
 
     let rows = baseRows;
-    if (q) {
-      rows = rows.filter((r) =>
-        [r.name, r.shortDescription, r.locationLabel, ...(r.categoryBadges || [])]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(q)
-      );
-    }
-
     if (category && category !== "all") {
       rows = rows.filter((r) => (r.categoryBadges || []).some((c) => c.toLowerCase() === category));
+    }
+
+    const intentRows = rows.filter((row) => matchesIntentOrKeyword(row, searchIntent));
+    if (locationFilter) {
+      const locationRows = intentRows.filter((row) => matchesLocation(row, locationFilter));
+      if (locationRows.length > 0) {
+        rows = locationRows;
+      } else if (intentRows.length > 0) {
+        rows = intentRows;
+      } else {
+        const fallbackTextRows = rows.filter((row) => matchesText(row, searchIntent.terms));
+        rows = fallbackTextRows.length > 0 ? fallbackTextRows : rows;
+      }
+    } else if (intentRows.length > 0) {
+      rows = intentRows;
+    } else if (q) {
+      const fallbackTextRows = rows.filter((row) => matchesText(row, searchIntent.terms));
+      if (fallbackTextRows.length > 0) rows = fallbackTextRows;
     }
 
     if (sort === "newest") {
       rows = [...rows].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     } else {
+      rows = rows.map((row) => {
+        const rank = computeDeterministicSupplierScore({
+          supplier: row,
+          queryTokens,
+          distanceMiles: row._distanceMiles,
+          reviewRating: row.reviewRating,
+          reviewCount: row.reviewCount,
+          performance: row.performance,
+        });
+        return {
+          ...row,
+          _score: rank.score,
+          _scoreBreakdown: rank.breakdown,
+        };
+      });
       rows = [...rows].sort((a, b) => {
-        if (b.recommendedScore !== a.recommendedScore) return b.recommendedScore - a.recommendedScore;
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        if (b._score !== a._score) return b._score - a._score;
+        const aDistance = Number.isFinite(Number(a._distanceMiles)) ? Number(a._distanceMiles) : Number.POSITIVE_INFINITY;
+        const bDistance = Number.isFinite(Number(b._distanceMiles)) ? Number(b._distanceMiles) : Number.POSITIVE_INFINITY;
+        if (aDistance !== bDistance) return aDistance - bDistance;
+        return String(a.name || "").localeCompare(String(b.name || ""));
       });
     }
 
     const totalCount = rows.length;
-    const paged = rows.slice(offset, offset + limit).map(({ recommendedScore, ...rest }) => rest);
+    const paged = rows.slice(offset, offset + limit).map((row) => {
+      const {
+        _score,
+        _scoreBreakdown,
+        _distanceMiles,
+        _services,
+        _travel_radius_miles,
+        ...rest
+      } = row;
+      if (debugScore) {
+        return {
+          ...rest,
+          debugScore: {
+            score: _score ?? null,
+            breakdown: _scoreBreakdown || null,
+            distanceMiles: _distanceMiles ?? null,
+          },
+        };
+      }
+      return rest;
+    });
 
     return res.status(200).json({
       ok: true,

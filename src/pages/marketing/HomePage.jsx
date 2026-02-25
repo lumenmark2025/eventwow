@@ -133,7 +133,7 @@ export default function HomePage() {
     event.preventDefault();
     const params = new URLSearchParams();
     if (searchPlan.trim()) params.set("q", searchPlan.trim());
-    if (searchLocation.trim()) params.set("q", [params.get("q"), searchLocation.trim()].filter(Boolean).join(" "));
+    if (searchLocation.trim()) params.set("location", searchLocation.trim());
     navigate(`/suppliers${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
@@ -305,12 +305,9 @@ export default function HomePage() {
         <p className="mx-auto mt-3 max-w-3xl text-base text-white/90">
           Join Eventwow and receive direct enquiries from customers planning real events. No high commission percentages.
         </p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-6 flex items-center justify-center">
           <Button as={Link} to="/supplier/signup" variant="secondary" className="border-white/45 bg-white/10 text-white hover:bg-white/20">
             Become a supplier
-          </Button>
-          <Button as={Link} to="/request" className="bg-blue-800 text-white hover:bg-blue-900">
-            Post an enquiry
           </Button>
         </div>
       </section>

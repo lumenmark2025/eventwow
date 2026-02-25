@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { notifyQuoteUpdated, notifyQuoteUpdatedRequiresReaccept } from "./_lib/notifications.js";
 
 /**
  * POST /api/supplier-save-draft-quote
@@ -110,7 +111,7 @@ export default async function handler(req, res) {
     const { data: quote, error: quoteErr } = await supabaseAdmin
       .from("quotes")
       .select(
-        "id,status,supplier_id,total_amount,total_price_gbp,currency_code,enquiry_id,message,notes,quote_text,created_at,sent_at,accepted_at,declined_at"
+        "id,status,supplier_id,total_amount,total_price_gbp,currency_code,enquiry_id,message,notes,quote_text,created_at,sent_at,accepted_at,declined_at,closed_at"
       )
       .eq("id", quote_id)
       .maybeSingle();
@@ -123,12 +124,8 @@ export default async function handler(req, res) {
     }
 
     const status = String(quote.status || "").toLowerCase();
-    if (status !== "draft") {
-      if (["accepted", "declined", "closed"].includes(status)) {
-        return res.status(409).json({ ok: false, error: "Quote is locked." });
-      }
-      return res.status(409).json({ ok: false, error: "Quote not draft" });
-    }
+    const wasAccepted = status === "accepted" || !!quote.accepted_at;
+    const shouldMoveToSent = ["accepted", "declined", "closed"].includes(status);
 
     const normalizedItems = items.map((raw, idx) => {
       const obj = raw && typeof raw === "object" ? raw : {};
@@ -252,21 +249,98 @@ export default async function handler(req, res) {
       0
     );
 
-    const { data: updatedQuote, error: updateErr } = await supabaseAdmin
+    const updatePatch = {
+      total_amount: total,
+      total_price_gbp: total,
+      quote_text,
+      updated_at: nowIso,
+      updated_by_user: userId,
+    };
+    if (shouldMoveToSent) {
+      updatePatch.status = "sent";
+      updatePatch.sent_at = nowIso;
+      updatePatch.accepted_at = null;
+      updatePatch.declined_at = null;
+      updatePatch.closed_at = null;
+    }
+
+    let updateResp = await supabaseAdmin
       .from("quotes")
-      .update({
-        total_amount: total,
-        total_price_gbp: total,
-        quote_text,
-        updated_at: nowIso,
-        updated_by_user: userId,
-      })
+      .update(updatePatch)
       .eq("id", quote_id)
       .select("*")
       .single();
 
+    const closedColumnMissing =
+      updateResp.error &&
+      updateResp.error.code === "PGRST204" &&
+      String(updateResp.error.message || "").toLowerCase().includes("closed_at");
+
+    if (closedColumnMissing) {
+      const fallbackPatch = { ...updatePatch };
+      delete fallbackPatch.closed_at;
+      updateResp = await supabaseAdmin
+        .from("quotes")
+        .update(fallbackPatch)
+        .eq("id", quote_id)
+        .select("*")
+        .single();
+    }
+
+    const updatedQuote = updateResp.data;
+    const updateErr = updateResp.error;
+
     if (updateErr) {
       return res.status(500).json({ ok: false, error: "Failed to update quote", details: updateErr.message });
+    }
+
+    if (wasAccepted) {
+      try {
+        await supabaseAdmin.from("quote_events").insert([
+          {
+            quote_id,
+            event_type: "reaccept_required",
+            actor_type: "supplier",
+            actor_user_id: userId,
+            meta: { source: "supplier-save-draft-quote" },
+          },
+        ]);
+      } catch (eventErr) {
+        console.error("quote_events reaccept_required insert failed:", eventErr);
+      }
+
+      try {
+        await supabaseAdmin
+          .from("supplier_bookings")
+          .update({ status: "draft", updated_at: nowIso })
+          .eq("quote_id", quote_id);
+      } catch (bookingErr) {
+        console.error("supplier booking status reset failed:", bookingErr);
+      }
+
+      try {
+        await notifyQuoteUpdatedRequiresReaccept({
+          admin: supabaseAdmin,
+          req,
+          quoteId: quote_id,
+          supplierId: supplier.id,
+        });
+      } catch (notifyErr) {
+        console.error("quote reaccept notification failed:", notifyErr);
+      }
+    } else if (status !== "draft") {
+      try {
+        await notifyQuoteUpdated({
+          admin: supabaseAdmin,
+          req,
+          quoteId: quote_id,
+          supplierId: supplier.id,
+          requiresReacceptance: false,
+          revisionKey: nowIso,
+        });
+      } catch (notifyErr) {
+        console.error("quote updated notification failed:", notifyErr);
+      }
     }
 
     await supabaseAdmin
@@ -276,9 +350,10 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      quote: updatedQuote,
+      quote: { ...updatedQuote, reaccept_required: wasAccepted },
       items: freshItems || [],
       total,
+      reacceptRequired: wasAccepted,
     });
   } catch (err) {
     console.error("supplier-save-draft-quote crashed:", err);

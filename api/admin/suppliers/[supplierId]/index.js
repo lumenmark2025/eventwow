@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "../../../_lib/adminAuth.js";
 import { UUID_RE, parseBody } from "../../../message-utils.js";
 import { fetchFhrsEstablishment, parseFsaUrl } from "../../../_lib/fsa.js";
+import { normalizeUkPostcode } from "../../../_lib/postcodeGeocode.js";
 
 function trimText(value, max = 4000) {
   const text = String(value ?? "").trim();
@@ -18,6 +19,18 @@ function toBool(value) {
   return null;
 }
 
+function toInt(value, min = 1, max = 500) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const rounded = Math.trunc(n);
+  return Math.max(min, Math.min(max, rounded));
+}
+
+function toFloat(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 async function refreshFsaRating(admin, supplierId, establishmentId) {
   const fetched = await fetchFhrsEstablishment(establishmentId);
   const update = await admin
@@ -30,7 +43,7 @@ async function refreshFsaRating(admin, supplierId, establishmentId) {
     })
     .eq("id", supplierId)
     .select(
-      "id,business_name,slug,base_city,base_postcode,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,is_insured,fsa_rating_url,fsa_establishment_id,fsa_rating_value,fsa_rating_date,fsa_rating_last_fetched_at,credits_balance,short_description,about,services,location_label,listing_categories,created_at,updated_at"
+      "id,business_name,slug,base_city,base_postcode,base_lat,base_lng,travel_radius_miles,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,is_insured,fsa_rating_url,fsa_establishment_id,fsa_rating_value,fsa_rating_date,fsa_rating_last_fetched_at,credits_balance,short_description,about,services,location_label,listing_categories,created_at,updated_at"
     )
     .maybeSingle();
 
@@ -71,7 +84,16 @@ export default async function handler(req, res) {
     if (Object.prototype.hasOwnProperty.call(body, "business_name")) patch.business_name = trimText(body.business_name, 180);
     if (Object.prototype.hasOwnProperty.call(body, "slug")) patch.slug = trimText(body.slug, 160);
     if (Object.prototype.hasOwnProperty.call(body, "base_city")) patch.base_city = trimText(body.base_city, 120);
-    if (Object.prototype.hasOwnProperty.call(body, "base_postcode")) patch.base_postcode = trimText(body.base_postcode, 24);
+    if (Object.prototype.hasOwnProperty.call(body, "base_postcode")) {
+      const postcode = normalizeUkPostcode(body.base_postcode);
+      patch.base_postcode = postcode || null;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "base_lat")) patch.base_lat = toFloat(body.base_lat);
+    if (Object.prototype.hasOwnProperty.call(body, "base_lng")) patch.base_lng = toFloat(body.base_lng);
+    if (Object.prototype.hasOwnProperty.call(body, "travel_radius_miles")) {
+      const radius = toInt(body.travel_radius_miles, 1, 500);
+      if (radius !== null) patch.travel_radius_miles = radius;
+    }
     if (Object.prototype.hasOwnProperty.call(body, "description")) patch.description = trimText(body.description, 4000);
     if (Object.prototype.hasOwnProperty.call(body, "website_url")) patch.website_url = trimText(body.website_url, 300);
     if (Object.prototype.hasOwnProperty.call(body, "instagram_url")) patch.instagram_url = trimText(body.instagram_url, 300);
@@ -125,7 +147,7 @@ export default async function handler(req, res) {
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq("id", supplierId)
       .select(
-        "id,business_name,slug,base_city,base_postcode,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,is_insured,fsa_rating_url,fsa_establishment_id,fsa_rating_value,fsa_rating_date,fsa_rating_last_fetched_at,credits_balance,short_description,about,services,location_label,listing_categories,created_at,updated_at"
+        "id,business_name,slug,base_city,base_postcode,base_lat,base_lng,travel_radius_miles,description,website_url,instagram_url,public_email,public_phone,is_published,is_verified,is_insured,fsa_rating_url,fsa_establishment_id,fsa_rating_value,fsa_rating_date,fsa_rating_last_fetched_at,credits_balance,short_description,about,services,location_label,listing_categories,created_at,updated_at"
       )
       .maybeSingle();
 

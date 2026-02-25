@@ -1,7 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "./_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
-import { buildPerformanceSignals } from "./_lib/performanceSignals.js";
+import {
+  buildPerformanceSignals,
+  computeDeterministicSupplierScore,
+  tokenizeKeywords,
+} from "./_lib/performanceSignals.js";
+import {
+  filterSuppliersByTravelRadius,
+  geocodeUkPostcodeWithCache,
+  getPostcodeFromQuery,
+  stripUkPostcode,
+} from "./_lib/postcodeGeocode.js";
 
 function normalizeSlug(value) {
   return String(value || "")
@@ -42,7 +52,9 @@ function toCardRow(supplier, supabaseUrl, performance) {
     performance,
     reviewRating: Number.isFinite(Number(supplier._reviewAverage)) ? Number(supplier._reviewAverage) : null,
     reviewCount: Number.isFinite(Number(supplier._reviewCount)) ? Number(supplier._reviewCount) : 0,
-    recommendedScore: supplier.is_verified ? 2 : 1,
+    services: Array.isArray(supplier.services) ? supplier.services : [],
+    travel_radius_miles: Number.isFinite(Number(supplier.travel_radius_miles)) ? Number(supplier.travel_radius_miles) : 30,
+    _distanceMiles: Number.isFinite(Number(supplier._distance_miles)) ? Number(supplier._distance_miles) : null,
   };
 }
 
@@ -86,6 +98,10 @@ export default async function handler(req, res) {
     const sort = normalizeSort(req.query?.sort);
     const limitRaw = Number(req.query?.limit ?? 48);
     const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(120, limitRaw)) : 48;
+    const queryTokens = tokenizeKeywords(stripUkPostcode(String(req.query?.q || "")));
+    const host = String(req.headers?.host || "").toLowerCase();
+    const debugScore = String(req.query?.debugScore || "") === "1"
+      && (host.includes("localhost") || host.includes("127.0.0.1"));
 
     if (!categorySlug && !locationSlug) {
       return res.status(400).json({ ok: false, error: "Bad request", details: "categorySlug or locationSlug is required" });
@@ -95,7 +111,7 @@ export default async function handler(req, res) {
     const { data: suppliers, error } = await admin
       .from("suppliers")
       .select(
-        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,is_published,is_verified,created_at,updated_at"
+        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,base_lat,base_lng,travel_radius_miles,is_published,is_verified,created_at,updated_at"
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false })
@@ -105,9 +121,17 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Failed to load suppliers", details: error.message });
     }
 
-    const supplierRows = (suppliers || [])
+    let supplierRows = (suppliers || [])
       .filter((s) => includesCategory(s, categorySlug))
       .filter((s) => includesLocation(s, locationSlug));
+
+    const eventPostcode = getPostcodeFromQuery(req.query);
+    if (eventPostcode) {
+      const eventCoords = await geocodeUkPostcodeWithCache(admin, eventPostcode);
+      if (eventCoords) {
+        supplierRows = await filterSuppliersByTravelRadius(admin, supplierRows, eventCoords);
+      }
+    }
 
     const supplierIds = supplierRows.map((s) => s.id);
     const [imagesResp, perfResp, reviewStatsResp] = await Promise.all([
@@ -178,11 +202,44 @@ export default async function handler(req, res) {
     if (sort === "newest") {
       rows = [...rows].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     } else {
+      rows = rows.map((row) => {
+        const rank = computeDeterministicSupplierScore({
+          supplier: row,
+          queryTokens,
+          distanceMiles: row._distanceMiles,
+          reviewRating: row.reviewRating,
+          reviewCount: row.reviewCount,
+          performance: row.performance,
+        });
+        return {
+          ...row,
+          _score: rank.score,
+          _scoreBreakdown: rank.breakdown,
+        };
+      });
       rows = [...rows].sort((a, b) => {
-        if (b.recommendedScore !== a.recommendedScore) return b.recommendedScore - a.recommendedScore;
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        if (b._score !== a._score) return b._score - a._score;
+        const aDistance = Number.isFinite(Number(a._distanceMiles)) ? Number(a._distanceMiles) : Number.POSITIVE_INFINITY;
+        const bDistance = Number.isFinite(Number(b._distanceMiles)) ? Number(b._distanceMiles) : Number.POSITIVE_INFINITY;
+        if (aDistance !== bDistance) return aDistance - bDistance;
+        return String(a.name || "").localeCompare(String(b.name || ""));
       });
     }
+
+    const responseRows = rows.slice(0, limit).map((row) => {
+      const { _score, _scoreBreakdown, _distanceMiles, _services, _travel_radius_miles, ...rest } = row;
+      if (debugScore) {
+        return {
+          ...rest,
+          debugScore: {
+            score: _score ?? null,
+            breakdown: _scoreBreakdown || null,
+            distanceMiles: _distanceMiles ?? null,
+          },
+        };
+      }
+      return rest;
+    });
 
     return res.status(200).json({
       ok: true,
@@ -190,7 +247,7 @@ export default async function handler(req, res) {
       categoryName: categorySlug ? toTitleCaseFromSlug(categorySlug) : null,
       locationSlug: locationSlug || null,
       locationName: locationSlug ? toTitleCaseFromSlug(locationSlug) : null,
-      rows: rows.slice(0, limit).map(({ recommendedScore, ...rest }) => rest),
+      rows: responseRows,
       totalCount: rows.length,
     });
   } catch (err) {

@@ -4,6 +4,7 @@ import {
   validateListingPayload,
 } from "./_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "./_lib/supplierGate.js";
+import { geocodeUkPostcodeWithCache, isValidUkPostcode } from "./_lib/postcodeGeocode.js";
 import {
   createAdminClient,
   getAuthUserId,
@@ -16,7 +17,7 @@ async function loadSupplierByAuthUser(admin, userId) {
   return admin
     .from("suppliers")
     .select(
-      "id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,status,created_at,updated_at"
+      "id,slug,business_name,short_description,about,services,location_label,base_postcode,base_lat,base_lng,travel_radius_miles,listing_categories,is_published,status,created_at,updated_at"
     )
     .eq("auth_user_id", userId)
     .maybeSingle();
@@ -79,6 +80,17 @@ export default async function handler(req, res) {
     }
 
     const next = validated.value;
+    const geocodeWarning = { message: "" };
+    if (next.basePostcode && !isValidUkPostcode(next.basePostcode)) {
+      return res.status(400).json({ ok: false, error: "Bad request", details: "basePostcode must be a valid UK postcode" });
+    }
+    const eventCoords = next.basePostcode
+      ? await geocodeUkPostcodeWithCache(admin, next.basePostcode)
+      : null;
+    if (next.basePostcode && !eventCoords) {
+      geocodeWarning.message = "We couldn't verify that postcode yet.";
+    }
+
     const { data: updatedSupplier, error: updateErr } = await admin
       .from("suppliers")
       .update({
@@ -86,6 +98,10 @@ export default async function handler(req, res) {
         about: next.about,
         services: next.services,
         location_label: next.locationLabel,
+        base_postcode: next.basePostcode,
+        travel_radius_miles: next.travelRadiusMiles,
+        base_lat: eventCoords?.lat ?? null,
+        base_lng: eventCoords?.lng ?? null,
         listing_categories: next.categories,
         is_published: false,
         updated_at: new Date().toISOString(),
@@ -93,7 +109,7 @@ export default async function handler(req, res) {
       })
       .eq("id", supplierLookup.data.id)
       .select(
-        "id,slug,business_name,short_description,about,services,location_label,listing_categories,is_published,status,created_at,updated_at,last_active_at"
+        "id,slug,business_name,short_description,about,services,location_label,base_postcode,base_lat,base_lng,travel_radius_miles,listing_categories,is_published,status,created_at,updated_at,last_active_at"
       )
       .single();
 
@@ -134,6 +150,7 @@ export default async function handler(req, res) {
         canPublish: gate.canPublish,
       },
       gate,
+      warning: geocodeWarning.message || null,
     });
   } catch (err) {
     console.error("supplier-public-profile-save crashed:", err);

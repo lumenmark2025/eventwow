@@ -1,5 +1,6 @@
 import { getPublicImageUrl } from "./publicImage.js";
 import { getFsaBadgeKey, toPublicFsaBadgeUrl } from "./fsa.js";
+import { isValidUkPostcode, normalizeUkPostcode } from "./postcodeGeocode.js";
 
 export const SUPPLIER_CATEGORY_OPTIONS = [
   "Pizza Catering",
@@ -90,6 +91,10 @@ export function validateListingPayload(body, options = {}) {
   const services = normalizeServices(body?.services);
   const categories = normalizeCategories(body?.categories, allowedSet);
   const isPublished = !!body?.isPublished;
+  const basePostcodeRaw = normalizeText(body?.basePostcode, 24);
+  const basePostcode = basePostcodeRaw ? normalizeUkPostcode(basePostcodeRaw) : null;
+  const radiusRaw = Number(body?.travelRadiusMiles ?? body?.travel_radius_miles ?? 30);
+  const travelRadiusMiles = Number.isFinite(radiusRaw) ? Math.trunc(radiusRaw) : 30;
 
   if (String(body?.shortDescription || "").trim().length > 160) {
     return { ok: false, error: "shortDescription must be 160 characters or less" };
@@ -109,6 +114,12 @@ export function validateListingPayload(body, options = {}) {
       return { ok: false, error: `categories contain invalid values: ${invalid.slice(0, 3).join(", ")}` };
     }
   }
+  if (basePostcode && !isValidUkPostcode(basePostcode)) {
+    return { ok: false, error: "basePostcode must be a valid UK postcode" };
+  }
+  if (!Number.isFinite(travelRadiusMiles) || travelRadiusMiles < 10 || travelRadiusMiles > 200) {
+    return { ok: false, error: "travelRadiusMiles must be between 10 and 200" };
+  }
 
   return {
     ok: true,
@@ -119,6 +130,8 @@ export function validateListingPayload(body, options = {}) {
       services,
       categories,
       isPublished,
+      basePostcode,
+      travelRadiusMiles,
     },
   };
 }
@@ -138,6 +151,10 @@ export function buildEditableListingDto(supplier, images, categoryOptions = SUPP
       about: supplier.about || null,
       services: Array.isArray(supplier.services) ? supplier.services : [],
       locationLabel: supplier.location_label || null,
+      basePostcode: supplier.base_postcode || null,
+      travelRadiusMiles: Number.isFinite(Number(supplier.travel_radius_miles))
+        ? Math.trunc(Number(supplier.travel_radius_miles))
+        : 30,
       isPublished: !!supplier.is_published,
       categories: Array.isArray(supplier.listing_categories) ? supplier.listing_categories : [],
       updatedAt: supplier.updated_at || supplier.created_at || null,

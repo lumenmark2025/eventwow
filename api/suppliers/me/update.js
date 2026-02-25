@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "../../_lib/requireUser.js";
+import { normalizeUkPostcode } from "../../_lib/postcodeGeocode.js";
 
 function trimText(value, max = 4000) {
   const text = String(value ?? "").trim();
@@ -28,6 +29,13 @@ function normalizeCategories(values, allowed) {
     if (out.length >= 12) break;
   }
   return out;
+}
+
+function toInt(value, min = 1, max = 500) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const rounded = Math.trunc(n);
+  return Math.max(min, Math.min(max, rounded));
 }
 
 export default async function handler(req, res) {
@@ -98,6 +106,14 @@ export default async function handler(req, res) {
     if (Object.prototype.hasOwnProperty.call(body, "location") || Object.prototype.hasOwnProperty.call(body, "service_area") || Object.prototype.hasOwnProperty.call(body, "serviceArea")) {
       patch.location_label = trimText(body.location ?? body.service_area ?? body.serviceArea, 120);
     }
+    if (Object.prototype.hasOwnProperty.call(body, "base_postcode") || Object.prototype.hasOwnProperty.call(body, "basePostcode")) {
+      const postcode = normalizeUkPostcode(body.base_postcode ?? body.basePostcode);
+      patch.base_postcode = postcode || null;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "travel_radius_miles") || Object.prototype.hasOwnProperty.call(body, "travelRadiusMiles")) {
+      const radius = toInt(body.travel_radius_miles ?? body.travelRadiusMiles, 1, 500);
+      if (radius !== null) patch.travel_radius_miles = radius;
+    }
     if (Object.prototype.hasOwnProperty.call(body, "short_description") || Object.prototype.hasOwnProperty.call(body, "shortDescription")) {
       patch.short_description = trimText(body.short_description ?? body.shortDescription, 160);
     }
@@ -130,7 +146,7 @@ export default async function handler(req, res) {
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq("id", supplierResp.data.id)
       .eq("auth_user_id", auth.userId)
-      .select("id,slug,business_name,public_email,public_phone,location_label,listing_categories,short_description,about,description,website_url,instagram_url,onboarding_status,status,submitted_at,approved_at,rejected_at,admin_notes,is_published,credits_balance,created_at,updated_at")
+      .select("id,slug,business_name,public_email,public_phone,location_label,base_postcode,base_lat,base_lng,travel_radius_miles,listing_categories,short_description,about,description,website_url,instagram_url,onboarding_status,status,submitted_at,approved_at,rejected_at,admin_notes,is_published,credits_balance,created_at,updated_at")
       .single();
 
     if (updateResp.error) {

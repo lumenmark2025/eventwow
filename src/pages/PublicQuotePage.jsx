@@ -139,6 +139,7 @@ export default function PublicQuotePage() {
   }, [token]);
 
   const status = String(data?.quote?.status || "").toLowerCase();
+  const reacceptRequired = !!data?.quote?.reaccept_required && status === "sent";
   const canAct = useMemo(() => status === "sent", [status]);
 
   useEffect(() => {
@@ -323,7 +324,7 @@ export default function PublicQuotePage() {
                 <div className="text-sm text-slate-600">{data?.enquiry?.location_summary || "-"}</div>
               </div>
               <Badge variant={status === "accepted" ? "success" : status === "declined" ? "danger" : status === "closed" ? "neutral" : "brand"}>
-                {quote?.status || "-"}
+                {reacceptRequired ? "Updated - awaiting acceptance" : (quote?.status || "-")}
               </Badge>
             </div>
           </CardContent>
@@ -336,6 +337,11 @@ export default function PublicQuotePage() {
         {!canAct ? (
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
             This quote is {quote?.status || "unavailable"}. Customer actions are disabled.
+          </div>
+        ) : null}
+        {reacceptRequired ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            This quote has been updated since you accepted it. Please review and accept again to confirm.
           </div>
         ) : null}
 

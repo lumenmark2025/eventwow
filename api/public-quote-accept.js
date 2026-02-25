@@ -10,6 +10,7 @@ function toPublicDto(quote, items) {
     quote: {
       id: quote.id,
       status: quote.status,
+      reaccept_required: false,
       sent_at: quote.sent_at,
       accepted_at: quote.accepted_at,
       declined_at: quote.declined_at,

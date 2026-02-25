@@ -1,12 +1,18 @@
 import { sendEmail } from "./email.js";
 import {
+  customerEnquiryCreatedEmail,
+  customerQuoteMadeEmail,
+  customerQuoteUpdatedEmail,
   customerAcceptedConfirmationEmail,
   customerDeclinedConfirmationEmail,
   messageReceivedEmailToCustomer,
   messageReceivedEmailToSupplier,
+  supplierNewEnquiryEmail,
   quoteAcceptedEmailToSupplier,
   quoteDeclinedEmailToSupplier,
   quoteSentEmail,
+  supplierQuoteUpdatedConfirmationEmail,
+  supplierQuoteViewedEmail,
 } from "./emailTemplates.js";
 
 function trimPreview(text, max = 140) {
@@ -17,7 +23,7 @@ function trimPreview(text, max = 140) {
 
 export function buildAbsoluteUrl(req, path = "") {
   const cleanedPath = path.startsWith("/") ? path : `/${path}`;
-  const explicit = process.env.PUBLIC_APP_URL;
+  const explicit = process.env.PUBLIC_SITE_URL || process.env.PUBLIC_APP_URL;
   if (explicit) return `${String(explicit).replace(/\/$/, "")}${cleanedPath}`;
 
   const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
@@ -159,8 +165,30 @@ export async function notifyQuoteSent({ admin, req, quoteId, supplierId }) {
       to: supplierResp.supplier.email,
       subject: email.subject,
       html: email.html,
+      text: email.text,
       eventKey,
     });
+  }
+
+  const customerEvent = `quote_made_customer:${quoteId}`;
+  const customerLock = await reserveEvent(admin, customerEvent, { quoteId });
+  if (customerLock.ok && customerLock.reserved) {
+    const customerResp = await getQuoteCustomerContact(admin, quoteId);
+    if (customerResp.customer?.email) {
+      const token = await getQuoteToken(admin, quoteId);
+      const quoteUrl = token ? buildAbsoluteUrl(req, `/quote/${token}`) : null;
+      const tpl = customerQuoteMadeEmail({
+        supplierName: supplierResp.supplier.name,
+        quoteUrl,
+      });
+      await sendEmail({
+        to: customerResp.customer.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+        eventKey: customerEvent,
+      });
+    }
   }
 
   return { ok: true, reserved: true };
@@ -168,10 +196,12 @@ export async function notifyQuoteSent({ admin, req, quoteId, supplierId }) {
 
 export async function notifyQuoteAccepted({ admin, req, quoteId, supplierId, customerName, customerEmail }) {
   const supplierEvent = `quote_accepted_supplier:${quoteId}`;
+  let supplierNameForCustomer = null;
   const supplierLock = await reserveEvent(admin, supplierEvent, { quoteId, supplierId });
   if (supplierLock.ok && supplierLock.reserved) {
     const supplierResp = await getSupplierContact(admin, supplierId);
     if (supplierResp.supplier) {
+      supplierNameForCustomer = supplierResp.supplier.name;
       await createSupplierNotification(admin, {
         supplier_id: supplierId,
         type: "quote_accepted",
@@ -192,7 +222,7 @@ export async function notifyQuoteAccepted({ admin, req, quoteId, supplierId, cus
       });
 
       if (supplierResp.supplier.email) {
-        await sendEmail({ to: supplierResp.supplier.email, subject: tpl.subject, html: tpl.html, eventKey: supplierEvent });
+        await sendEmail({ to: supplierResp.supplier.email, subject: tpl.subject, html: tpl.html, text: tpl.text, eventKey: supplierEvent });
       }
     }
   }
@@ -202,14 +232,17 @@ export async function notifyQuoteAccepted({ admin, req, quoteId, supplierId, cus
   if (customerLock.ok && customerLock.reserved) {
     const targetEmail = customerEmail || null;
     if (targetEmail) {
+      if (!supplierNameForCustomer) {
+        const supplierResp = await getSupplierContact(admin, supplierId);
+        supplierNameForCustomer = supplierResp?.supplier?.name || null;
+      }
       const token = await getQuoteToken(admin, quoteId);
       const publicQuoteUrl = token ? buildAbsoluteUrl(req, `/quote/${token}`) : null;
       const tpl = customerAcceptedConfirmationEmail({
-        customerName,
-        quoteSummary: `Quote ID: ${quoteId}`,
-        publicQuoteUrl,
+        supplierName: supplierNameForCustomer,
+        quoteUrl: publicQuoteUrl,
       });
-      await sendEmail({ to: targetEmail, subject: tpl.subject, html: tpl.html, eventKey: customerEvent });
+      await sendEmail({ to: targetEmail, subject: tpl.subject, html: tpl.html, text: tpl.text, eventKey: customerEvent });
     }
   }
 
@@ -242,7 +275,7 @@ export async function notifyQuoteDeclined({ admin, req, quoteId, supplierId, cus
       });
 
       if (supplierResp.supplier.email) {
-        await sendEmail({ to: supplierResp.supplier.email, subject: tpl.subject, html: tpl.html, eventKey: supplierEvent });
+        await sendEmail({ to: supplierResp.supplier.email, subject: tpl.subject, html: tpl.html, text: tpl.text, eventKey: supplierEvent });
       }
     }
   }
@@ -259,10 +292,132 @@ export async function notifyQuoteDeclined({ admin, req, quoteId, supplierId, cus
         quoteSummary: `Quote ID: ${quoteId}`,
         publicQuoteUrl,
       });
-      await sendEmail({ to: targetEmail, subject: tpl.subject, html: tpl.html, eventKey: customerEvent });
+      await sendEmail({ to: targetEmail, subject: tpl.subject, html: tpl.html, text: tpl.text, eventKey: customerEvent });
     }
   }
 
+  return { ok: true };
+}
+
+export async function notifyQuoteUpdatedRequiresReaccept({ admin, req, quoteId, supplierId }) {
+  const eventKey = `quote_reaccept_customer:${quoteId}`;
+  const customerResp = await getQuoteCustomerContact(admin, quoteId);
+  const targetEmail = customerResp?.customer?.email || null;
+  if (!targetEmail) return { ok: true, skipped: true };
+
+  const [supplierResp, quoteResp] = await Promise.all([
+    getSupplierContact(admin, supplierId),
+    admin
+      .from("quotes")
+      .select("id,enquiry_id,enquiries(event_date,venue_name,event_postcode,venues(name))")
+      .eq("id", quoteId)
+      .maybeSingle(),
+  ]);
+
+  const supplierName = supplierResp?.supplier?.name || "Your supplier";
+  const enquiry = quoteResp?.data?.enquiries || null;
+  const venueLabel = enquiry?.venues?.name || enquiry?.venue_name || enquiry?.event_postcode || "your event";
+  const eventDate = enquiry?.event_date || "your date";
+  const token = await getQuoteToken(admin, quoteId);
+  const publicQuoteUrl = token ? buildAbsoluteUrl(req, `/quote/${token}`) : null;
+
+  const tpl = customerQuoteUpdatedEmail({
+    supplierName,
+    eventSummary: `${venueLabel} on ${eventDate}`,
+    quoteUrl: publicQuoteUrl,
+    requiresReacceptance: true,
+  });
+
+  await sendEmail({
+    to: targetEmail,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    eventKey,
+  });
+
+  const supplierTpl = supplierQuoteUpdatedConfirmationEmail({
+    customerName: customerResp?.customer?.name || null,
+    quoteUrl: buildAbsoluteUrl(req, `/supplier/quotes?open=${quoteId}`),
+    requiresReacceptance: true,
+  });
+  const supplierEvent = `quote_updated_supplier:${quoteId}`;
+  const supplierLock = await reserveEvent(admin, supplierEvent, { quoteId, supplierId });
+  if (supplierLock.ok && supplierLock.reserved && supplierResp?.supplier?.email) {
+    await sendEmail({
+      to: supplierResp.supplier.email,
+      subject: supplierTpl.subject,
+      html: supplierTpl.html,
+      text: supplierTpl.text,
+      eventKey: supplierEvent,
+    });
+  }
+
+  return { ok: true };
+}
+
+export async function notifyQuoteUpdated({ admin, req, quoteId, supplierId, requiresReacceptance = false, revisionKey = "" }) {
+  if (requiresReacceptance) {
+    return notifyQuoteUpdatedRequiresReaccept({ admin, req, quoteId, supplierId });
+  }
+
+  const suffix = String(revisionKey || Date.now());
+  const customerEvent = `quote_updated_customer:${quoteId}:${suffix}`;
+  const customerLock = await reserveEvent(admin, customerEvent, { quoteId, supplierId });
+  if (customerLock.ok && customerLock.reserved) {
+    const [customerResp, supplierResp, quoteResp, token] = await Promise.all([
+      getQuoteCustomerContact(admin, quoteId),
+      getSupplierContact(admin, supplierId),
+      admin
+        .from("quotes")
+        .select("id,enquiries(event_date,venue_name,event_postcode,venues(name))")
+        .eq("id", quoteId)
+        .maybeSingle(),
+      getQuoteToken(admin, quoteId),
+    ]);
+
+    if (customerResp?.customer?.email) {
+      const enquiry = quoteResp?.data?.enquiries || null;
+      const eventSummary = `${enquiry?.venues?.name || enquiry?.venue_name || enquiry?.event_postcode || "your event"} on ${enquiry?.event_date || "your date"}`;
+      const quoteUrl = token ? buildAbsoluteUrl(req, `/quote/${token}`) : null;
+      const tpl = customerQuoteUpdatedEmail({
+        supplierName: supplierResp?.supplier?.name || null,
+        eventSummary,
+        quoteUrl,
+        requiresReacceptance: false,
+      });
+      await sendEmail({
+        to: customerResp.customer.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+        eventKey: customerEvent,
+      });
+    }
+  }
+
+  const supplierEvent = `quote_updated_supplier:${quoteId}:${suffix}`;
+  const supplierLock = await reserveEvent(admin, supplierEvent, { quoteId, supplierId });
+  if (supplierLock.ok && supplierLock.reserved) {
+    const [supplierResp, customerResp] = await Promise.all([
+      getSupplierContact(admin, supplierId),
+      getQuoteCustomerContact(admin, quoteId),
+    ]);
+    if (supplierResp?.supplier?.email) {
+      const tpl = supplierQuoteUpdatedConfirmationEmail({
+        customerName: customerResp?.customer?.name || null,
+        quoteUrl: buildAbsoluteUrl(req, `/supplier/quotes?open=${quoteId}`),
+        requiresReacceptance: false,
+      });
+      await sendEmail({
+        to: supplierResp.supplier.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+        eventKey: supplierEvent,
+      });
+    }
+  }
   return { ok: true };
 }
 
@@ -285,14 +440,22 @@ export async function notifyMessageToSupplier({ admin, req, messageId, supplierI
   });
 
   const threadUrl = buildAbsoluteUrl(req, `/supplier/messages?thread=${threadId}`);
+  let customerName = null;
+  if (threadId) {
+    const threadResp = await admin.from("message_threads").select("quote_id").eq("id", threadId).maybeSingle();
+    if (!threadResp.error && threadResp.data?.quote_id) {
+      const customerResp = await getQuoteCustomerContact(admin, threadResp.data.quote_id);
+      customerName = customerResp?.customer?.name || null;
+    }
+  }
   const tpl = messageReceivedEmailToSupplier({
-    supplierName: supplierResp.supplier.name,
+    customerName,
     preview: trimPreview(preview, 180),
     threadUrl,
   });
 
   if (supplierResp.supplier.email) {
-    await sendEmail({ to: supplierResp.supplier.email, subject: tpl.subject, html: tpl.html, eventKey });
+    await sendEmail({ to: supplierResp.supplier.email, subject: tpl.subject, html: tpl.html, text: tpl.text, eventKey });
   }
 
   return { ok: true };
@@ -308,15 +471,80 @@ export async function notifyMessageToCustomer({ admin, req, messageId, quoteId, 
 
   const token = await getQuoteToken(admin, quoteId);
   const publicQuoteUrl = token ? buildAbsoluteUrl(req, `/quote/${token}`) : null;
-  const tpl = messageReceivedEmailToCustomer({ preview: trimPreview(preview, 180), publicQuoteUrl });
+  const quoteResp = await admin.from("quotes").select("supplier_id").eq("id", quoteId).maybeSingle();
+  const supplierName = quoteResp?.data?.supplier_id
+    ? (await getSupplierContact(admin, quoteResp.data.supplier_id))?.supplier?.name || null
+    : null;
+  const tpl = messageReceivedEmailToCustomer({
+    supplierName,
+    preview: trimPreview(preview, 180),
+    quoteUrl: publicQuoteUrl,
+  });
 
   await sendEmail({
     to: customerResp.customer.email,
     subject: tpl.subject,
     html: tpl.html,
+    text: tpl.text,
     eventKey,
   });
 
+  return { ok: true };
+}
+
+export async function notifyCustomerEnquiryCreated({ admin, req, enquiryId, customerEmail, customerName, publicToken }) {
+  if (!customerEmail || !publicToken) return { ok: true, skipped: true };
+  const eventKey = `enquiry_created_customer:${enquiryId}`;
+  const lock = await reserveEvent(admin, eventKey, { enquiryId });
+  if (!lock.ok || !lock.reserved) return lock;
+  const enquiryUrl = buildAbsoluteUrl(req, `/enquiry/${publicToken}`);
+  const tpl = customerEnquiryCreatedEmail({ customerName, enquiryUrl });
+  await sendEmail({
+    to: customerEmail,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    eventKey,
+  });
+  return { ok: true };
+}
+
+export async function notifySupplierEnquiryRouted({ admin, req, enquiryId, supplierId, customerName, town }) {
+  const supplierResp = await getSupplierContact(admin, supplierId);
+  if (!supplierResp?.supplier?.email) return { ok: true, skipped: true };
+  const eventKey = `enquiry_routed_supplier:${enquiryId}:${supplierId}`;
+  const lock = await reserveEvent(admin, eventKey, { enquiryId, supplierId });
+  if (!lock.ok || !lock.reserved) return lock;
+  const enquiryUrl = buildAbsoluteUrl(req, "/supplier/enquiries");
+  const tpl = supplierNewEnquiryEmail({ customerName, town, enquiryUrl });
+  await sendEmail({
+    to: supplierResp.supplier.email,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    eventKey,
+  });
+  return { ok: true };
+}
+
+export async function notifySupplierQuoteViewed({ admin, req, quoteId, supplierId }) {
+  const eventKey = `quote_viewed_supplier:${quoteId}`;
+  const lock = await reserveEvent(admin, eventKey, { quoteId, supplierId });
+  if (!lock.ok || !lock.reserved) return lock;
+  const supplierResp = await getSupplierContact(admin, supplierId);
+  if (!supplierResp?.supplier?.email) return { ok: true, skipped: true };
+  const customerResp = await getQuoteCustomerContact(admin, quoteId);
+  const tpl = supplierQuoteViewedEmail({
+    customerName: customerResp?.customer?.name || null,
+    quoteUrl: buildAbsoluteUrl(req, `/supplier/quotes?open=${quoteId}`),
+  });
+  await sendEmail({
+    to: supplierResp.supplier.email,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    eventKey,
+  });
   return { ok: true };
 }
 

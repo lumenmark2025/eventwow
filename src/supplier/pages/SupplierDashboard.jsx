@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
 import Section from "../../components/layout/Section";
@@ -9,15 +9,18 @@ import EmptyState from "../../components/ui/EmptyState";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 
-function StatCard({ label, value, hint }) {
+function StatCard({ label, value, hint, to }) {
+  const classes = "block rounded-2xl transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 hover:shadow-md";
   return (
-    <Card>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-3xl">{value}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0 text-xs text-slate-500">{hint}</CardContent>
-    </Card>
+    <Link to={to} className={classes} aria-label={`${label} - open`}>
+      <Card>
+        <CardHeader>
+          <CardDescription>{label}</CardDescription>
+          <CardTitle className="text-3xl">{value}</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 text-xs text-slate-500">{hint}</CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -333,9 +336,9 @@ export default function SupplierDashboard({ supplier }) {
 
       <Section title="Snapshot" right={<Badge variant="brand">Live</Badge>}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <StatCard label="Open requests" value={stats.activeEnquiriesCount} hint={`Linked total: ${stats.invitedCount}`} />
-          <StatCard label="My quotes" value={stats.quotesSentCount} hint={`Accepted: ${stats.acceptedCount}`} />
-          <StatCard label="My bookings" value={stats.upcomingBookingsCount} hint="Upcoming draft + confirmed" />
+          <StatCard to="/supplier/enquiries" label="Open requests" value={stats.activeEnquiriesCount} hint={`Linked total: ${stats.invitedCount}`} />
+          <StatCard to="/supplier/quotes" label="My quotes" value={stats.quotesSentCount} hint={`Accepted: ${stats.acceptedCount}`} />
+          <StatCard to="/supplier/bookings" label="My bookings" value={stats.upcomingBookingsCount} hint="Upcoming draft + confirmed" />
         </div>
       </Section>
 

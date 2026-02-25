@@ -7,7 +7,7 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildQuoteDto(row, supplier, heroPath, quoteToken, items, supabaseUrl) {
+function buildQuoteDto(row, supplier, heroPath, quoteToken, items, supabaseUrl, reacceptRequired = false) {
   const safeBase = String(supabaseUrl || "").replace(/\/+$/, "");
   const heroImageUrl = heroPath
     ? `${safeBase}/storage/v1/object/public/supplier-gallery/${heroPath}`
@@ -17,6 +17,7 @@ function buildQuoteDto(row, supplier, heroPath, quoteToken, items, supabaseUrl) 
     quoteId: row.id,
     quoteToken: quoteToken || null,
     quoteStatus: row.status,
+    reacceptRequired: !!reacceptRequired,
     quoteText: row.quote_text || null,
     sentAt: row.sent_at,
     acceptedAt: row.accepted_at,
@@ -192,7 +193,7 @@ export default async function handler(req, res) {
     const quotes = Array.from(latestBySupplier.values());
     const quoteIds = quotes.map((q) => q.id);
 
-    const [itemsResp, linkResp] = await Promise.all([
+    const [itemsResp, linkResp, eventsResp] = await Promise.all([
       quoteIds.length > 0
         ? admin
             .from("quote_items")
@@ -206,6 +207,14 @@ export default async function handler(req, res) {
             .from("quote_public_links")
             .select("quote_id,token,revoked_at")
             .in("quote_id", quoteIds)
+        : { data: [], error: null },
+      quoteIds.length > 0
+        ? admin
+            .from("quote_events")
+            .select("quote_id,event_type,created_at")
+            .in("quote_id", quoteIds)
+            .in("event_type", ["accepted", "reaccept_required"])
+            .order("created_at", { ascending: false })
         : { data: [], error: null },
     ]);
 
@@ -223,6 +232,13 @@ export default async function handler(req, res) {
         details: linkResp.error.message,
       });
     }
+    if (eventsResp.error) {
+      return res.status(500).json({
+        ok: false,
+        error: "Failed to load quote events",
+        details: eventsResp.error.message,
+      });
+    }
 
     const itemsByQuote = new Map();
     for (const item of itemsResp.data || []) {
@@ -234,6 +250,12 @@ export default async function handler(req, res) {
     for (const link of linkResp.data || []) {
       if (!link.revoked_at) tokenByQuote.set(link.quote_id, link.token);
     }
+    const reacceptByQuote = new Map();
+    for (const evt of eventsResp.data || []) {
+      if (!reacceptByQuote.has(evt.quote_id)) {
+        reacceptByQuote.set(evt.quote_id, String(evt.event_type || "").toLowerCase() === "reaccept_required");
+      }
+    }
 
     const quoteDtos = quotes.map((quote) =>
       buildQuoteDto(
@@ -242,7 +264,8 @@ export default async function handler(req, res) {
         heroBySupplier.get(quote.supplier_id),
         tokenByQuote.get(quote.id),
         itemsByQuote.get(quote.id) || [],
-        SUPABASE_URL
+        SUPABASE_URL,
+        String(quote.status || "").toLowerCase() === "sent" && !quote.accepted_at && !!reacceptByQuote.get(quote.id)
       )
     );
 

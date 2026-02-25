@@ -1,8 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "../../../_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "../../../_lib/supplierGate.js";
-import { buildPerformanceSignals } from "../../../_lib/performanceSignals.js";
+import {
+  buildPerformanceSignals,
+  computeDeterministicSupplierScore,
+  tokenizeKeywords,
+} from "../../../_lib/performanceSignals.js";
 import { toSlug } from "../../../_lib/ranking.js";
+import {
+  stripUkPostcode,
+  filterSuppliersByTravelRadius,
+  geocodeUkPostcodeWithCache,
+  getPostcodeFromQuery,
+} from "../../../_lib/postcodeGeocode.js";
 
 function clampInt(value, fallback, min, max) {
   const n = Number(value);
@@ -36,7 +46,9 @@ function toCardRow(supplier, supabaseUrl, performance) {
     fsa_rating_badge_key: profile.fsaRatingBadgeKey,
     fsaRatingBadgeUrl: profile.fsaRatingBadgeUrl,
     fsa_rating_badge_url: profile.fsaRatingBadgeUrl,
-    recommendedScore: supplier.is_verified ? 2 : 1,
+    services: Array.isArray(supplier.services) ? supplier.services : [],
+    travel_radius_miles: Number.isFinite(Number(supplier.travel_radius_miles)) ? Number(supplier.travel_radius_miles) : 30,
+    _distanceMiles: Number.isFinite(Number(supplier._distance_miles)) ? Number(supplier._distance_miles) : null,
   };
 }
 
@@ -66,6 +78,10 @@ export default async function handler(req, res) {
 
     const page = clampInt(req.query?.page, 1, 1, 2000);
     const pageSize = clampInt(req.query?.pageSize, 24, 1, 60);
+    const queryTokens = tokenizeKeywords(stripUkPostcode(String(req.query?.q || "")));
+    const host = String(req.headers?.host || "").toLowerCase();
+    const debugScore = String(req.query?.debugScore || "") === "1"
+      && (host.includes("localhost") || host.includes("127.0.0.1"));
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const categoryResp = await admin
@@ -90,7 +106,7 @@ export default async function handler(req, res) {
     const suppliersResp = await admin
       .from("suppliers")
       .select(
-        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
+        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,base_lat,base_lng,travel_radius_miles,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
       )
       .eq("is_published", true)
       .contains("listing_categories", [categoryName])
@@ -104,9 +120,17 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Failed to load suppliers", details: suppliersResp.error.message });
     }
 
-    const filteredSuppliers = (suppliersResp.data || [])
+    let filteredSuppliers = (suppliersResp.data || [])
       .filter((supplier) => matchesCategorySlug(supplier.listing_categories, categorySlug))
       .filter((supplier) => String(supplier.slug || "").trim().length > 0 && String(supplier.business_name || "").trim().length > 0);
+
+    const eventPostcode = getPostcodeFromQuery(req.query);
+    if (eventPostcode) {
+      const eventCoords = await geocodeUkPostcodeWithCache(admin, eventPostcode);
+      if (eventCoords) {
+        filteredSuppliers = await filterSuppliersByTravelRadius(admin, filteredSuppliers, eventCoords);
+      }
+    }
 
     const supplierIds = filteredSuppliers.map((supplier) => supplier.id);
     const [imagesResp, perfResp, reviewStatsResp] = await Promise.all([
@@ -164,19 +188,45 @@ export default async function handler(req, res) {
       })
       .filter((supplier) => computeSupplierGateFromData({ supplier, images: supplier._images }).canPublish)
       .map((supplier) => toCardRow(supplier, SUPABASE_URL, perfBySupplier.get(supplier.id) || buildPerformanceSignals(null)))
+      .map((row) => {
+        const rank = computeDeterministicSupplierScore({
+          supplier: row,
+          queryTokens,
+          distanceMiles: row._distanceMiles,
+          reviewRating: row.reviewRating,
+          reviewCount: row.reviewCount,
+          performance: row.performance,
+        });
+        return {
+          ...row,
+          _score: rank.score,
+          _scoreBreakdown: rank.breakdown,
+        };
+      })
       .sort((a, b) => {
-        if (b.recommendedScore !== a.recommendedScore) return b.recommendedScore - a.recommendedScore;
-        const aTime = new Date(a.createdAt || 0).getTime();
-        const bTime = new Date(b.createdAt || 0).getTime();
-        if (bTime !== aTime) return bTime - aTime;
-        const nameCmp = String(a.name || "").localeCompare(String(b.name || ""));
-        if (nameCmp !== 0) return nameCmp;
-        return String(a.id || "").localeCompare(String(b.id || ""));
+        if (b._score !== a._score) return b._score - a._score;
+        const aDistance = Number.isFinite(Number(a._distanceMiles)) ? Number(a._distanceMiles) : Number.POSITIVE_INFINITY;
+        const bDistance = Number.isFinite(Number(b._distanceMiles)) ? Number(b._distanceMiles) : Number.POSITIVE_INFINITY;
+        if (aDistance !== bDistance) return aDistance - bDistance;
+        return String(a.name || "").localeCompare(String(b.name || ""));
       });
 
     const total = ordered.length;
     const offset = (page - 1) * pageSize;
-    const paged = ordered.slice(offset, offset + pageSize).map(({ recommendedScore, ...dto }) => dto);
+    const paged = ordered.slice(offset, offset + pageSize).map((row) => {
+      const { _score, _scoreBreakdown, _distanceMiles, _services, _travel_radius_miles, ...rest } = row;
+      if (debugScore) {
+        return {
+          ...rest,
+          debugScore: {
+            score: _score ?? null,
+            breakdown: _scoreBreakdown || null,
+            distanceMiles: _distanceMiles ?? null,
+          },
+        };
+      }
+      return rest;
+    });
 
     return res.status(200).json({
       category: {

@@ -24,7 +24,7 @@ function buildLocation(enquiry) {
   return "Location not provided";
 }
 
-function toQuoteListDto(row) {
+function toQuoteListDto(row, reacceptRequired) {
   const enquiry = row?.enquiries || {};
   const customerName =
     safe(enquiry?.customers?.full_name) || safe(enquiry?.customer_name) || "Unknown customer";
@@ -33,6 +33,7 @@ function toQuoteListDto(row) {
     const quote = {
       id: row.id,
       status: row.status || "draft",
+      reaccept_required: !!reacceptRequired,
       total: Number(row.total_amount || 0),
       currencyCode: String(row.currency_code || "GBP").toUpperCase(),
       createdAt: row.created_at || null,
@@ -73,6 +74,7 @@ function toQuoteListDto(row) {
     // Backward-compatible top-level fields used by legacy SupplierQuotes list UI.
     id: quote.id,
     status: quote.status,
+    reaccept_required: quote.reaccept_required,
     total_amount: quote.total,
     currency_code: quote.currencyCode,
     enquiry_id: enquirySummary.id,
@@ -152,9 +154,28 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Failed to load quotes", details: quotesResp.error.message });
     }
 
+    const quoteIds = (quotesResp.data || []).map((row) => row.id).filter(Boolean);
+    const reacceptByQuoteId = new Map();
+    if (quoteIds.length > 0) {
+      const eventsResp = await admin
+        .from("quote_events")
+        .select("quote_id,event_type,created_at")
+        .in("quote_id", quoteIds)
+        .in("event_type", ["accepted", "reaccept_required"])
+        .order("created_at", { ascending: false });
+
+      if (!eventsResp.error) {
+        for (const evt of eventsResp.data || []) {
+          if (!reacceptByQuoteId.has(evt.quote_id)) {
+            reacceptByQuoteId.set(evt.quote_id, String(evt.event_type || "").toLowerCase() === "reaccept_required");
+          }
+        }
+      }
+    }
+
     return res.status(200).json({
       ok: true,
-      rows: (quotesResp.data || []).map(toQuoteListDto),
+      rows: (quotesResp.data || []).map((row) => toQuoteListDto(row, reacceptByQuoteId.get(row.id))),
     });
   } catch (err) {
     console.error("supplier/quotes crashed:", err);

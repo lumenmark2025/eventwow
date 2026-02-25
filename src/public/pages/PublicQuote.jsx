@@ -56,6 +56,7 @@ export default function PublicQuote() {
     const status = String(data?.quote?.status || "").toLowerCase();
     return status === "sent";
   }, [data?.quote?.status]);
+  const reacceptRequired = String(data?.quote?.status || "").toLowerCase() === "sent" && !!data?.quote?.reaccept_required;
 
   async function submitAction(action) {
     if (!token || !canDecide || saving) return;
@@ -118,11 +119,16 @@ export default function PublicQuote() {
         </div>
 
         <div className="rounded-xl border p-4 bg-gray-50">
-          <div className="text-sm">Status: <span className="font-medium">{quote?.status || "-"}</span></div>
+          <div className="text-sm">Status: <span className="font-medium">{reacceptRequired ? "Updated - awaiting acceptance" : (quote?.status || "-")}</span></div>
           <div className="text-sm text-gray-600">Sent: {fmtDate(quote?.sent_at)}</div>
           {quote?.accepted_at ? <div className="text-sm text-green-700">Accepted: {fmtDate(quote.accepted_at)}</div> : null}
           {quote?.declined_at ? <div className="text-sm text-red-700">Declined: {fmtDate(quote.declined_at)}</div> : null}
         </div>
+        {reacceptRequired ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            This quote has been updated since you accepted it. Please review and accept again to confirm.
+          </div>
+        ) : null}
 
         {quote?.quote_text ? (
           <div className="rounded-xl border p-4 bg-white">

@@ -39,7 +39,8 @@ function statusVariant(status) {
   return "neutral";
 }
 
-function statusLabel(status) {
+function statusLabel(status, reacceptRequired = false) {
+  if (reacceptRequired && String(status || "").toLowerCase() === "sent") return "Updated - awaiting acceptance";
   const normalized = String(status || "").toLowerCase();
   if (!normalized) return "Unknown";
   return normalized.slice(0, 1).toUpperCase() + normalized.slice(1);
@@ -370,7 +371,7 @@ export default function EnquiryQuotesPage() {
                           <th key={`head-${q.quoteId}`} className="px-3 py-2">
                             <div className="space-y-1">
                               <p className="font-semibold text-slate-900">{q.supplier?.name}</p>
-                              <Badge variant={statusVariant(q.quoteStatus)}>{statusLabel(q.quoteStatus)}</Badge>
+                              <Badge variant={statusVariant(q.quoteStatus)}>{statusLabel(q.quoteStatus, q.reacceptRequired)}</Badge>
                             </div>
                           </th>
                         ))}
@@ -441,7 +442,7 @@ export default function EnquiryQuotesPage() {
                         <div>
                           <p className="text-lg font-semibold text-slate-900">{quote.supplier?.name}</p>
                           <div className="mt-1 flex flex-wrap gap-2">
-                            <Badge variant={statusVariant(quote.quoteStatus)}>{statusLabel(quote.quoteStatus)}</Badge>
+                            <Badge variant={statusVariant(quote.quoteStatus)}>{statusLabel(quote.quoteStatus, quote.reacceptRequired)}</Badge>
                             {shortlisted ? <Badge variant="warning">Shortlisted</Badge> : null}
                             {quote.supplier?.locationLabel ? <Badge variant="neutral">{quote.supplier.locationLabel}</Badge> : null}
                           </div>
@@ -453,6 +454,11 @@ export default function EnquiryQuotesPage() {
                           </p>
                         </div>
                       </div>
+                      {quote.reacceptRequired ? (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                          This quote has been updated since you accepted it. Please review and accept again to confirm.
+                        </div>
+                      ) : null}
 
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                         <p className="font-medium text-slate-900">Breakdown</p>

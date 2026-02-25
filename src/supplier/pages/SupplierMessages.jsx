@@ -23,6 +23,24 @@ function threadTitle(thread) {
   return `${venue}${eventDate}`;
 }
 
+function customerNameFromThread(thread) {
+  const explicit = String(thread?.quote?.customerName || thread?.thread?.quote?.customerName || "").trim();
+  if (explicit) return explicit;
+
+  const email = String(thread?.quote?.customerEmail || thread?.thread?.quote?.customerEmail || "").trim().toLowerCase();
+  if (!email.includes("@")) return "Customer";
+  const localPart = email.split("@")[0] || "";
+  if (!localPart) return "Customer";
+  const cleaned = localPart.replace(/[._-]+/g, " ").trim();
+  if (!cleaned) return "Customer";
+  return cleaned
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function messageBadgeVariant(senderType) {
   if (senderType === "supplier") return "brand";
   if (senderType === "customer") return "neutral";
@@ -131,6 +149,7 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
 
     return threads.filter((t) => {
       const haystack = [
+        customerNameFromThread(t),
         t?.quote?.venueName,
         t?.quote?.eventDate,
         t?.quote?.eventPostcode,
@@ -248,6 +267,7 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
               <div className="max-h-[560px] space-y-2 overflow-auto">
                 {filteredThreads.map((thread) => {
                   const active = selectedThreadId === thread.id;
+                  const customerName = customerNameFromThread(thread);
                   return (
                     <button
                       type="button"
@@ -259,8 +279,11 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
                       }}
                       className={`w-full rounded-xl border p-3 text-left transition-shadow hover:shadow-sm ${active ? "border-brand" : "border-slate-200"}`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-sm font-medium text-slate-900">{threadTitle(thread)}</div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-slate-900">{customerName}</div>
+                          <div className="truncate text-xs text-slate-600">{threadTitle(thread)}</div>
+                        </div>
                         {thread.unread ? <Badge variant="brand">Unread</Badge> : null}
                       </div>
                       <div className="mt-1 text-xs text-slate-600">
@@ -292,10 +315,17 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
               <EmptyState title="Thread unavailable" description="This thread could not be loaded." />
             ) : (
               <>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                  {selectedThreadRow?.quote?.venueName || "Quote thread"}
-                  {selectedThreadRow?.quote?.eventDate ? ` - ${selectedThreadRow.quote.eventDate}` : ""}
-                  {selectedThreadRow?.quote?.eventPostcode ? ` - ${selectedThreadRow.quote.eventPostcode}` : ""}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="truncate text-sm font-semibold text-slate-900">{customerNameFromThread(selectedThreadRow || threadData)}</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {selectedThreadRow?.quote?.venueName || threadData?.thread?.quote?.venueName || "Quote thread"}
+                    {selectedThreadRow?.quote?.eventDate || threadData?.thread?.quote?.eventDate
+                      ? ` - ${selectedThreadRow?.quote?.eventDate || threadData?.thread?.quote?.eventDate}`
+                      : ""}
+                    {selectedThreadRow?.quote?.eventPostcode || threadData?.thread?.quote?.eventPostcode
+                      ? ` - ${selectedThreadRow?.quote?.eventPostcode || threadData?.thread?.quote?.eventPostcode}`
+                      : ""}
+                  </p>
                 </div>
 
                 <div className="max-h-[420px] space-y-2 overflow-auto rounded-xl border border-slate-200 bg-white p-3">

@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     const supplierById = new Map((suppliersResp.data || []).map((s) => [s.id, s]));
 
     const quoteIds = (quoteResp.data || []).map((q) => q.id);
-    const [itemsResp, linksResp, threadsResp] = await Promise.all([
+    const [itemsResp, linksResp, threadsResp, eventsResp] = await Promise.all([
       quoteIds.length > 0
         ? admin.from("quote_items").select("id,quote_id,title,qty,unit_price,sort_order,created_at").in("quote_id", quoteIds)
         : { data: [], error: null },
@@ -70,10 +70,19 @@ export default async function handler(req, res) {
       quoteIds.length > 0
         ? admin.from("message_threads").select("id,quote_id,updated_at,status").in("quote_id", quoteIds)
         : { data: [], error: null },
+      quoteIds.length > 0
+        ? admin
+            .from("quote_events")
+            .select("quote_id,event_type,created_at")
+            .in("quote_id", quoteIds)
+            .in("event_type", ["accepted", "reaccept_required"])
+            .order("created_at", { ascending: false })
+        : { data: [], error: null },
     ]);
     if (itemsResp.error) return res.status(500).json({ ok: false, error: "Failed to load quote items", details: itemsResp.error.message });
     if (linksResp.error) return res.status(500).json({ ok: false, error: "Failed to load quote links", details: linksResp.error.message });
     if (threadsResp.error) return res.status(500).json({ ok: false, error: "Failed to load message threads", details: threadsResp.error.message });
+    if (eventsResp.error) return res.status(500).json({ ok: false, error: "Failed to load quote events", details: eventsResp.error.message });
 
     const threadIds = (threadsResp.data || []).map((t) => t.id);
     const messagesResp =
@@ -96,6 +105,12 @@ export default async function handler(req, res) {
       if (!link.revoked_at) tokenByQuote.set(link.quote_id, link.token);
     }
     const threadByQuote = new Map((threadsResp.data || []).map((t) => [t.quote_id, t]));
+    const reacceptByQuote = new Map();
+    for (const evt of eventsResp.data || []) {
+      if (!reacceptByQuote.has(evt.quote_id)) {
+        reacceptByQuote.set(evt.quote_id, String(evt.event_type || "").toLowerCase() === "reaccept_required");
+      }
+    }
     const messagesByThread = new Map();
     for (const msg of messagesResp.data || []) {
       if (!messagesByThread.has(msg.thread_id)) messagesByThread.set(msg.thread_id, []);
@@ -129,6 +144,7 @@ export default async function handler(req, res) {
         supplierId: row.supplier_id,
         supplierName: supplier?.business_name || "Supplier",
         status: row.status,
+        reacceptRequired: String(row.status || "").toLowerCase() === "sent" && !row.accepted_at && !!reacceptByQuote.get(row.id),
         totalAmount: toNumber(row.total_amount),
         currencyCode: String(row.currency_code || "GBP").toUpperCase(),
         quoteText: row.quote_text || null,

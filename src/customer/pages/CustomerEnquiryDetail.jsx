@@ -35,6 +35,13 @@ function statusVariant(status) {
   return "neutral";
 }
 
+function quoteStatusLabel(quote) {
+  if (String(quote?.status || "").toLowerCase() === "sent" && quote?.reacceptRequired) {
+    return "Updated - awaiting acceptance";
+  }
+  return String(quote?.status || "unknown");
+}
+
 export default function CustomerEnquiryDetail() {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -293,10 +300,15 @@ export default function CustomerEnquiryDetail() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium text-slate-900">{quote.supplierName}</p>
-                    <Badge variant={statusVariant(quote.status)}>{quote.status}</Badge>
+                    <Badge variant={statusVariant(quote.status)}>{quoteStatusLabel(quote)}</Badge>
                   </div>
                   <p className="text-lg font-semibold text-slate-900">{money(quote.totalAmount, quote.currencyCode)}</p>
                 </div>
+                {quote.reacceptRequired ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    This quote has been updated since you accepted it. Please review and accept again to confirm.
+                  </div>
+                ) : null}
                 {quote.quoteText ? (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Message from supplier</p>

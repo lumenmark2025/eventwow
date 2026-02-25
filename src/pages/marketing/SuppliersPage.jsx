@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
@@ -23,6 +23,7 @@ export default function SuppliersPage() {
   const [categories, setCategories] = useState([]);
 
   const q = String(searchParams.get("q") || "");
+  const locationFilter = String(searchParams.get("location") || "");
   const category = String(searchParams.get("category") || "All");
   const sort = String(searchParams.get("sort") || "recommended");
 
@@ -36,12 +37,13 @@ export default function SuppliersPage() {
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
+    if (locationFilter.trim()) params.set("location", locationFilter.trim());
     if (category && category !== "All") params.set("category", category);
     params.set("sort", sort === "newest" ? "newest" : "recommended");
     params.set("limit", "24");
     params.set("offset", "0");
     return params.toString();
-  }, [q, category, sort]);
+  }, [q, locationFilter, category, sort]);
 
   const categoryOptions = useMemo(() => {
     const names = (Array.isArray(categories) ? categories : [])
@@ -182,6 +184,18 @@ export default function SuppliersPage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="mt-12 rounded-3xl bg-[radial-gradient(circle_at_top_right,#60a5fa_0%,#2563eb_40%,#1d4ed8_100%)] p-8 text-center text-white shadow-lg">
+        <h2 className="text-4xl font-semibold tracking-tight">Are you an event supplier?</h2>
+        <p className="mx-auto mt-3 max-w-3xl text-base text-white/90">
+          Join Eventwow and receive direct enquiries from customers planning real events. No high commission percentages.
+        </p>
+        <div className="mt-6 flex items-center justify-center">
+          <Button as={Link} to="/supplier/signup" variant="secondary" className="border-white/45 bg-white/10 text-white hover:bg-white/20">
+            Become a supplier
+          </Button>
+        </div>
       </section>
     </MarketingShell>
   );

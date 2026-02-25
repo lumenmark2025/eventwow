@@ -1,13 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
+import { notifySupplierQuoteViewed } from "./_lib/notifications.js";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function toPublicDto(quote, items) {
+function toPublicDto(quote, items, reacceptRequired = false) {
   return {
     quote: {
       id: quote.id,
       status: quote.status,
+      reaccept_required: !!reacceptRequired,
       sent_at: quote.sent_at,
       accepted_at: quote.accepted_at,
       declined_at: quote.declined_at,
@@ -86,7 +88,7 @@ export default async function handler(req, res) {
     const { data: quote, error: quoteErr } = await supabaseAdmin
       .from("quotes")
       .select(
-        "id,status,total_amount,currency_code,quote_text,sent_at,accepted_at,declined_at,closed_at,suppliers(business_name),enquiries(event_date,event_postcode,venues(name))"
+        "id,status,supplier_id,total_amount,currency_code,quote_text,sent_at,accepted_at,declined_at,closed_at,suppliers(business_name),enquiries(event_date,event_postcode,venues(name))"
       )
       .eq("id", link.quote_id)
       .maybeSingle();
@@ -114,6 +116,22 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Failed to load items", details: itemErr.message });
     }
 
+    let reacceptRequired = false;
+    const eventResp = await supabaseAdmin
+      .from("quote_events")
+      .select("event_type,created_at")
+      .eq("quote_id", quote.id)
+      .in("event_type", ["accepted", "reaccept_required"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!eventResp.error && eventResp.data) {
+      reacceptRequired =
+        String(quote.status || "").toLowerCase() === "sent" &&
+        !quote.accepted_at &&
+        String(eventResp.data.event_type || "").toLowerCase() === "reaccept_required";
+    }
+
     const nowIso = new Date().toISOString();
     await supabaseAdmin
       .from("quote_public_links")
@@ -123,9 +141,22 @@ export default async function handler(req, res) {
       })
       .eq("id", link.id);
 
+    if (Number(link.view_count || 0) < 1 && quote?.supplier_id) {
+      try {
+        await notifySupplierQuoteViewed({
+          admin: supabaseAdmin,
+          req,
+          quoteId: quote.id,
+          supplierId: quote.supplier_id,
+        });
+      } catch (notifyErr) {
+        console.error("quote viewed notification failed:", notifyErr);
+      }
+    }
+
     return res.status(200).json({
       ok: true,
-      ...toPublicDto(quote, items || []),
+      ...toPublicDto(quote, items || [], reacceptRequired),
     });
   } catch (err) {
     console.error("public-quote crashed:", err);

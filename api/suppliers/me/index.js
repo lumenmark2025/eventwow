@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const resp = await admin
       .from("suppliers")
-      .select("id,auth_user_id,slug,business_name,public_email,public_phone,location_label,listing_categories,short_description,about,description,website_url,instagram_url,onboarding_status,status,submitted_at,approved_at,rejected_at,admin_notes,is_published,credits_balance,created_at,updated_at")
+      .select("id,auth_user_id,slug,business_name,public_email,public_phone,location_label,base_postcode,base_lat,base_lng,travel_radius_miles,listing_categories,short_description,about,description,website_url,instagram_url,onboarding_status,status,submitted_at,approved_at,rejected_at,admin_notes,is_published,credits_balance,created_at,updated_at")
       .eq("auth_user_id", auth.userId)
       .maybeSingle();
 
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
         .from("suppliers")
         .update({ onboarding_status: "profile_incomplete", updated_at: new Date().toISOString() })
         .eq("id", supplier.id)
-        .select("id,auth_user_id,slug,business_name,public_email,public_phone,location_label,listing_categories,short_description,about,description,website_url,instagram_url,onboarding_status,status,submitted_at,approved_at,rejected_at,admin_notes,is_published,credits_balance,created_at,updated_at")
+        .select("id,auth_user_id,slug,business_name,public_email,public_phone,location_label,base_postcode,base_lat,base_lng,travel_radius_miles,listing_categories,short_description,about,description,website_url,instagram_url,onboarding_status,status,submitted_at,approved_at,rejected_at,admin_notes,is_published,credits_balance,created_at,updated_at")
         .single();
       if (!update.error && update.data) supplier = update.data;
     }

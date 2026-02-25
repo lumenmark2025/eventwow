@@ -1,6 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 import { buildPublicSupplierDto } from "../../_lib/supplierListing.js";
 import { computeSupplierGateFromData } from "../../_lib/supplierGate.js";
+import {
+  buildPerformanceSignals,
+  computeDeterministicSupplierScore,
+  tokenizeKeywords,
+} from "../../_lib/performanceSignals.js";
+import {
+  filterSuppliersByTravelRadius,
+  geocodeUkPostcodeWithCache,
+  getPostcodeFromQuery,
+  stripUkPostcode,
+} from "../../_lib/postcodeGeocode.js";
 
 function clampInt(value, fallback, min, max) {
   const n = Number(value);
@@ -45,46 +56,61 @@ export default async function handler(req, res) {
       });
     }
 
-    const q = normalizeQuery(req.query?.q);
+    const qRaw = normalizeQuery(req.query?.q);
+    const q = normalizeQuery(stripUkPostcode(qRaw));
+    const queryTokens = tokenizeKeywords(q);
+    const eventPostcode = getPostcodeFromQuery(req.query);
+    const host = String(req.headers?.host || "").toLowerCase();
+    const debugScore = String(req.query?.debugScore || "") === "1"
+      && (host.includes("localhost") || host.includes("127.0.0.1"));
     const page = clampInt(req.query?.page, 1, 1, 2000);
     const pageSize = clampInt(req.query?.pageSize, 12, 1, 24);
 
-    if (!q) {
+    if (!q && !eventPostcode) {
       return res.status(200).json({
         ok: true,
-        q: "",
+        q: qRaw,
         suppliers: [],
         pagination: { page, pageSize, total: 0 },
       });
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-    const ilike = `%${q.replace(/[%_]/g, " ").trim()}%`;
-
-    const suppliersResp = await admin
+    let suppliersQuery = admin
       .from("suppliers")
       .select(
-        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
+        "id,slug,business_name,description,short_description,about,services,location_label,listing_categories,base_city,base_postcode,base_lat,base_lng,travel_radius_miles,is_published,is_verified,is_insured,fsa_rating_url,fsa_rating_value,fsa_rating_date,created_at,updated_at"
       )
       .eq("is_published", true)
-      .or(`business_name.ilike.${ilike},location_label.ilike.${ilike},base_city.ilike.${ilike},short_description.ilike.${ilike},description.ilike.${ilike}`)
       .order("is_verified", { ascending: false })
       .order("updated_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false, nullsFirst: false })
       .order("id", { ascending: true })
       .limit(500);
+    if (q) {
+      const ilike = `%${q.replace(/[%_]/g, " ").trim()}%`;
+      suppliersQuery = suppliersQuery.or(`business_name.ilike.${ilike},location_label.ilike.${ilike},base_city.ilike.${ilike},short_description.ilike.${ilike},description.ilike.${ilike}`);
+    }
+    const suppliersResp = await suppliersQuery;
 
     if (suppliersResp.error) {
       return res.status(500).json({ ok: false, error: "Failed to load suppliers", details: suppliersResp.error.message });
     }
 
     const qLower = q.toLowerCase();
-    const filtered = (suppliersResp.data || [])
+    let filtered = (suppliersResp.data || [])
       .filter((row) => String(row.slug || "").trim() && String(row.business_name || "").trim())
-      .filter((row) => toSearchableText(row).includes(qLower));
+      .filter((row) => (qLower ? toSearchableText(row).includes(qLower) : true));
+
+    if (eventPostcode) {
+      const eventCoords = await geocodeUkPostcodeWithCache(admin, eventPostcode);
+      if (eventCoords) {
+        filtered = await filterSuppliersByTravelRadius(admin, filtered, eventCoords);
+      }
+    }
 
     const supplierIds = filtered.map((s) => s.id);
-    const [imagesResp, reviewStatsResp] = await Promise.all([
+    const [imagesResp, reviewStatsResp, perfResp] = await Promise.all([
       supplierIds.length > 0
         ? admin
             .from("supplier_images")
@@ -93,6 +119,14 @@ export default async function handler(req, res) {
         : { data: [], error: null },
       supplierIds.length > 0
         ? admin.from("supplier_review_stats").select("supplier_id,average_rating,review_count").in("supplier_id", supplierIds)
+        : { data: [], error: null },
+      supplierIds.length > 0
+        ? admin
+            .from("supplier_performance_30d")
+            .select(
+              "supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at"
+            )
+            .in("supplier_id", supplierIds)
         : { data: [], error: null },
     ]);
 
@@ -106,6 +140,18 @@ export default async function handler(req, res) {
         details: reviewStatsResp.error.message,
       });
     }
+    if (perfResp.error) {
+      const code = String(perfResp.error.code || "");
+      const message = String(perfResp.error.message || "").toLowerCase();
+      const missingView = code === "42P01" || message.includes("supplier_performance_30d");
+      if (!missingView) {
+        return res.status(500).json({
+          ok: false,
+          error: "Failed to load supplier performance",
+          details: perfResp.error.message,
+        });
+      }
+    }
 
     const imagesBySupplier = new Map();
     for (const img of imagesResp.data || []) {
@@ -113,6 +159,7 @@ export default async function handler(req, res) {
       imagesBySupplier.get(img.supplier_id).push(img);
     }
     const reviewBySupplier = new Map((reviewStatsResp.data || []).map((row) => [row.supplier_id, row]));
+    const perfBySupplier = new Map(((perfResp.data || [])).map((row) => [row.supplier_id, buildPerformanceSignals(row)]));
 
     const rows = filtered
       .map((supplier) => {
@@ -120,6 +167,23 @@ export default async function handler(req, res) {
         if (!computeSupplierGateFromData({ supplier, images }).canPublish) return null;
         const profile = buildPublicSupplierDto(supplier, images, SUPABASE_URL);
         const review = reviewBySupplier.get(supplier.id);
+        const performance = perfBySupplier.get(supplier.id) || buildPerformanceSignals(null);
+        const distanceMiles = Number.isFinite(Number(supplier?._distance_miles))
+          ? Number(supplier._distance_miles)
+          : null;
+        const rank = computeDeterministicSupplierScore({
+          supplier: {
+            ...supplier,
+            services: Array.isArray(supplier.services) ? supplier.services : [],
+            travel_radius_miles: Number.isFinite(Number(supplier.travel_radius_miles)) ? Number(supplier.travel_radius_miles) : 30,
+            shortDescription: profile.shortDescription,
+          },
+          queryTokens,
+          distanceMiles,
+          reviewRating: review?.average_rating,
+          reviewCount: review?.review_count,
+          performance,
+        });
         return {
           id: profile.id,
           slug: profile.slug,
@@ -148,27 +212,42 @@ export default async function handler(req, res) {
           fsa_rating_badge_key: profile.fsaRatingBadgeKey,
           fsaRatingBadgeUrl: profile.fsaRatingBadgeUrl,
           fsa_rating_badge_url: profile.fsaRatingBadgeUrl,
-          performance: {},
+          performance,
           createdAt: profile.lastUpdatedAt || supplier.created_at || null,
-          _isVerified: !!supplier.is_verified,
+          _score: rank.score,
+          _scoreBreakdown: rank.breakdown,
+          _distanceMiles: distanceMiles,
         };
       })
       .filter(Boolean)
       .sort((a, b) => {
-        if (Number(b._isVerified) !== Number(a._isVerified)) return Number(b._isVerified) - Number(a._isVerified);
-        const aTime = new Date(a.createdAt || 0).getTime();
-        const bTime = new Date(b.createdAt || 0).getTime();
-        if (bTime !== aTime) return bTime - aTime;
-        return String(a.id || "").localeCompare(String(b.id || ""));
+        if (b._score !== a._score) return b._score - a._score;
+        const aDistance = Number.isFinite(Number(a._distanceMiles)) ? Number(a._distanceMiles) : Number.POSITIVE_INFINITY;
+        const bDistance = Number.isFinite(Number(b._distanceMiles)) ? Number(b._distanceMiles) : Number.POSITIVE_INFINITY;
+        if (aDistance !== bDistance) return aDistance - bDistance;
+        return String(a.name || "").localeCompare(String(b.name || ""));
       });
 
     const total = rows.length;
     const offset = (page - 1) * pageSize;
-    const paged = rows.slice(offset, offset + pageSize).map(({ _isVerified, ...row }) => row);
+    const paged = rows.slice(offset, offset + pageSize).map((row) => {
+      const { _score, _scoreBreakdown, _distanceMiles, ...rest } = row;
+      if (debugScore) {
+        return {
+          ...rest,
+          debugScore: {
+            score: _score ?? null,
+            breakdown: _scoreBreakdown || null,
+            distanceMiles: _distanceMiles ?? null,
+          },
+        };
+      }
+      return rest;
+    });
 
     return res.status(200).json({
       ok: true,
-      q,
+      q: qRaw,
       suppliers: paged,
       pagination: {
         page,

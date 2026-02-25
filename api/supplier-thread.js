@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
     const { data: thread, error: threadErr } = await admin
       .from("message_threads")
-      .select("id,quote_id,supplier_id,updated_at,status")
+      .select("id,quote_id,supplier_id,updated_at,status,quotes(id,enquiries(event_date,event_postcode,customer_name,customer_email,venues(name),customers(full_name,email)))")
       .eq("id", threadId)
       .eq("supplier_id", supplierLookup.supplier.id)
       .maybeSingle();
@@ -90,6 +90,13 @@ export default async function handler(req, res) {
         quoteId: thread.quote_id,
         updatedAt: thread.updated_at,
         status: thread.status,
+        quote: {
+          eventDate: thread.quotes?.enquiries?.event_date || null,
+          eventPostcode: thread.quotes?.enquiries?.event_postcode || null,
+          venueName: thread.quotes?.enquiries?.venues?.name || null,
+          customerName: thread.quotes?.enquiries?.customer_name || thread.quotes?.enquiries?.customers?.full_name || null,
+          customerEmail: thread.quotes?.enquiries?.customer_email || thread.quotes?.enquiries?.customers?.email || null,
+        },
       },
       messages: (messages || []).map(toMessageDto),
     });

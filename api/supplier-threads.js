@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     const { data: threads, error: threadErr } = await admin
       .from("message_threads")
       .select(
-        "id,quote_id,updated_at,status,quotes(id,status,total_amount,currency_code,enquiries(event_date,event_postcode,venues(name)))"
+        "id,quote_id,updated_at,status,quotes(id,status,total_amount,currency_code,enquiries(event_date,event_postcode,customer_name,customer_email,venues(name),customers(full_name,email)))"
       )
       .eq("supplier_id", supplierLookup.supplier.id)
       .order("updated_at", { ascending: false })
@@ -121,6 +121,8 @@ export default async function handler(req, res) {
           eventDate: t.quotes?.enquiries?.event_date || null,
           eventPostcode: t.quotes?.enquiries?.event_postcode || null,
           venueName: t.quotes?.enquiries?.venues?.name || null,
+          customerName: t.quotes?.enquiries?.customer_name || t.quotes?.enquiries?.customers?.full_name || null,
+          customerEmail: t.quotes?.enquiries?.customer_email || t.quotes?.enquiries?.customers?.email || null,
         },
         lastMessage: latest
           ? {

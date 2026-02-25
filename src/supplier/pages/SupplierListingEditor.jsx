@@ -63,12 +63,45 @@ function normalizeDraft(supplier) {
     about: supplier?.about || "",
     services: Array.isArray(supplier?.services) ? supplier.services : [],
     locationLabel: supplier?.locationLabel || "",
+    basePostcode: supplier?.basePostcode || "",
+    travelRadiusMiles: Number.isFinite(Number(supplier?.travelRadiusMiles))
+      ? Math.max(10, Math.min(200, Math.trunc(Number(supplier.travelRadiusMiles))))
+      : 30,
     categories: Array.isArray(supplier?.categories) ? supplier.categories : [],
     isPublished: !!supplier?.isPublished,
   };
 }
 
-export default function SupplierListingEditor({ supplierId }) {
+function normalizeUkPostcode(value) {
+  const compact = String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!compact) return "";
+  if (compact.length <= 3) return compact;
+  return `${compact.slice(0, -3)} ${compact.slice(-3)}`.trim();
+}
+
+function isValidUkPostcode(value) {
+  return /^[A-Z]{1,2}\d[A-Z\d]?\s\d[A-Z]{2}$/.test(String(value || "").trim());
+}
+
+function getVisibilityState(draft, profile, supplier) {
+  if (draft?.isPublished) {
+    return { key: "live", badgeText: "Live in directory", badgeVariant: "success" };
+  }
+  const status = String(
+    profile?.onboardingStatus
+      || profile?.onboarding_status
+      || profile?.status
+      || supplier?.onboarding_status
+      || supplier?.status
+      || ""
+  ).toLowerCase();
+  if (status === "pending_review") {
+    return { key: "pending", badgeText: "Pending review", badgeVariant: "warning" };
+  }
+  return { key: "not_live", badgeText: "Not live", badgeVariant: "neutral" };
+}
+
+export default function SupplierListingEditor({ supplierId, supplier }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingHero, setUploadingHero] = useState(false);
@@ -89,6 +122,8 @@ export default function SupplierListingEditor({ supplierId }) {
       source.shortDescription === draft.shortDescription &&
       source.about === draft.about &&
       source.locationLabel === draft.locationLabel &&
+      source.basePostcode === draft.basePostcode &&
+      Number(source.travelRadiusMiles || 30) === Number(draft.travelRadiusMiles || 30) &&
       source.isPublished === draft.isPublished &&
       arraysEqual(source.services, draft.services) &&
       arraysEqual(source.categories, draft.categories)
@@ -112,20 +147,6 @@ export default function SupplierListingEditor({ supplierId }) {
     );
   }, [draft, media]);
 
-  const publishMissing = useMemo(() => {
-    if (!draft) return [];
-    const missing = [];
-    if (String(draft.shortDescription || "").trim().length < 30) missing.push("short description (>=30 chars)");
-    if (String(draft.about || "").trim().length < 120) missing.push("about section (>=120 chars)");
-    if (!Array.isArray(draft.categories) || draft.categories.length === 0) missing.push("at least one category");
-    if (String(draft.locationLabel || "").trim().length < 3) missing.push("location label (>=3 chars)");
-    if (!media?.hero) missing.push("hero image");
-    if (!Array.isArray(media?.gallery) || media.gallery.length < 2) missing.push("at least 2 gallery images");
-    if (!Array.isArray(draft.services) || draft.services.filter((x) => String(x || "").trim().length > 0).length < 3) {
-      missing.push("at least 3 services");
-    }
-    return missing;
-  }, [draft, media]);
 
   async function loadProfile() {
     if (!supplierId) return;
@@ -171,18 +192,6 @@ export default function SupplierListingEditor({ supplierId }) {
     setDraft((prev) => ({ ...(prev || {}), [key]: value }));
     setErr("");
     setOk("");
-  }
-
-  function onToggleIsPublished(checked) {
-    if (checked && !canPublish) {
-      const detail =
-        publishMissing.length > 0
-          ? `Add ${publishMissing.join(" and ")} before publishing.`
-          : "Complete required listing fields before publishing.";
-      setErr(detail);
-      return;
-    }
-    updateDraft("isPublished", checked);
   }
 
   function toggleCategory(name) {
@@ -236,6 +245,16 @@ export default function SupplierListingEditor({ supplierId }) {
       setErr("Services must contain 12 items or fewer.");
       return;
     }
+    const normalizedPostcode = normalizeUkPostcode(draft.basePostcode || "");
+    if (normalizedPostcode && !isValidUkPostcode(normalizedPostcode)) {
+      setErr("Enter a valid UK postcode (for example LA1 1AA).");
+      return;
+    }
+    const radius = Number(draft.travelRadiusMiles);
+    if (!Number.isFinite(radius) || Math.trunc(radius) < 10 || Math.trunc(radius) > 200) {
+      setErr("Travel radius must be between 10 and 200 miles.");
+      return;
+    }
 
     setSaving(true);
     setErr("");
@@ -249,6 +268,8 @@ export default function SupplierListingEditor({ supplierId }) {
           about: draft.about,
           services: draft.services,
           locationLabel: draft.locationLabel,
+          basePostcode: normalizedPostcode || null,
+          travelRadiusMiles: Math.trunc(radius),
           categories: draft.categories,
           isPublished: draft.isPublished && canPublish,
         }),
@@ -269,7 +290,11 @@ export default function SupplierListingEditor({ supplierId }) {
       setMedia(json?.media || { hero: null, gallery: [] });
       setCategoryOptions(Array.isArray(json?.categoryOptions) ? json.categoryOptions : []);
       setDraft(normalizeDraft(json?.supplier || {}));
-      setOk("Listing updated.");
+      if (json?.warning) {
+        setOk(`Listing updated. ${json.warning}`);
+      } else {
+        setOk("Listing updated.");
+      }
     } catch (e) {
       setErr(e?.message || "Failed to save listing");
     } finally {
@@ -388,6 +413,10 @@ export default function SupplierListingEditor({ supplierId }) {
     return <EmptyState title="Listing unavailable" description={err || "Could not load your public listing."} />;
   }
 
+  const visibility = getVisibilityState(draft, profile, supplier);
+  const listingSlug = profile.slug || "not-set";
+  const listingUrl = `https://eventwow.co.uk/suppliers/${listingSlug}`;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -403,35 +432,52 @@ export default function SupplierListingEditor({ supplierId }) {
         <div className="space-y-4 xl:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Visibility</CardTitle>
+              <CardTitle>Directory visibility</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={draft.isPublished ? "success" : "neutral"}>
-                  {draft.isPublished ? "Published" : "Hidden from directory"}
-                </Badge>
-                {!canPublish ? <Badge variant="warning">Complete required fields to publish</Badge> : null}
+                <Badge variant={visibility.badgeVariant}>{visibility.badgeText}</Badge>
               </div>
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300"
-                  checked={draft.isPublished}
-                  onChange={(e) => onToggleIsPublished(e.target.checked)}
-                  disabled
-                />
-                Publish this supplier to the public directory (admin approval required)
-              </label>
-              <p className="text-xs text-slate-500">
-                You can keep editing your profile here. Your listing goes live only after admin approval.
-              </p>
-              {!canPublish ? (
-                <p className="text-xs text-amber-700">
-                  Required before publish: {publishMissing.join(" and ")}.
+              {visibility.key === "live" ? (
+                <p className="text-xs text-slate-500">
+                  Your listing is visible to customers in the public directory.
                 </p>
-              ) : null}
+              ) : (
+                <>
+                  <p className="text-xs text-slate-500">
+                    Only admins can publish listings. You can request to be listed, and we'll review it.
+                  </p>
+                  {visibility.key === "pending" ? (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <p className="text-sm font-medium text-slate-800">Request sent</p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        We've received your request. An admin will review your listing before it goes live.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <p className="text-sm font-medium text-slate-800">Request listing</p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        To request publication, contact support or update your profile and we'll review it.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
               <div className="text-xs text-slate-500">
-                Slug: <span className="font-medium text-slate-700">{profile.slug || "Not set"}</span> (read-only)
+                <span className="mr-2">Listing URL</span>
+                <a
+                  href={listingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                >
+                  {listingUrl}
+                  <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <path d="M7 13L13 7" />
+                    <path d="M8 7h5v5" />
+                  </svg>
+                </a>
               </div>
               <div className="text-xs text-slate-500">
                 Business name: <span className="font-medium text-slate-700">{profile.name || "-"}</span>
@@ -473,6 +519,43 @@ export default function SupplierListingEditor({ supplierId }) {
                   maxLength={120}
                   placeholder="e.g. Manchester and North West"
                 />
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Base postcode</label>
+                  <Input
+                    value={draft.basePostcode}
+                    onChange={(e) => updateDraft("basePostcode", normalizeUkPostcode(e.target.value))}
+                    maxLength={8}
+                    placeholder="e.g. LA1 1AA"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Travel radius (miles)</label>
+                  <Input
+                    type="number"
+                    min={10}
+                    max={200}
+                    value={draft.travelRadiusMiles}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (!Number.isFinite(n)) return updateDraft("travelRadiusMiles", 30);
+                      updateDraft("travelRadiusMiles", Math.max(10, Math.min(200, Math.trunc(n))));
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <input
+                  type="range"
+                  min={10}
+                  max={200}
+                  step={1}
+                  value={Number(draft.travelRadiusMiles || 30)}
+                  onChange={(e) => updateDraft("travelRadiusMiles", Math.max(10, Math.min(200, Math.trunc(Number(e.target.value) || 30))))}
+                  className="w-full accent-blue-600"
+                />
+                <p className="mt-1 text-xs text-slate-500">Used to match you to nearby enquiries and search results.</p>
               </div>
             </CardContent>
           </Card>
@@ -637,4 +720,5 @@ export default function SupplierListingEditor({ supplierId }) {
     </div>
   );
 }
+
 

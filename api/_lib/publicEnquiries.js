@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { computeSupplierGateFromData } from "./supplierGate.js";
-import { createSupplierNotification, reserveEvent } from "./notifications.js";
+import { createSupplierNotification, notifyCustomerEnquiryCreated, notifySupplierEnquiryRouted, reserveEvent } from "./notifications.js";
 import { sendEmail } from "./email.js";
 
 const UUID_RE =
@@ -701,6 +701,7 @@ export async function handleCreatePublicEnquiry(req, res) {
     }
 
     const enquiryId = enquiryInsertResp.data.id;
+    const createdPublicToken = enquiryInsertResp.data.public_token;
 
     const suppliersBaseQuery = admin
       .from("suppliers")
@@ -799,6 +800,31 @@ export async function handleCreatePublicEnquiry(req, res) {
         entity_type: "enquiry",
         entity_id: enquiryId,
       });
+      try {
+        await notifySupplierEnquiryRouted({
+          admin,
+          req,
+          enquiryId,
+          supplierId: invite.supplier_id,
+          customerName: input.fullName,
+          town: resolvedVenueName || input.venuePostcode || null,
+        });
+      } catch (notifyErr) {
+        console.error("supplier enquiry email failed:", notifyErr);
+      }
+    }
+
+    try {
+      await notifyCustomerEnquiryCreated({
+        admin,
+        req,
+        enquiryId,
+        customerEmail: input.email,
+        customerName: input.fullName,
+        publicToken: createdPublicToken,
+      });
+    } catch (notifyErr) {
+      console.error("customer enquiry email failed:", notifyErr);
     }
 
     return res.status(200).json({
