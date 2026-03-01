@@ -7,6 +7,8 @@ import Badge from "../../components/ui/Badge";
 import EmptyState from "../../components/ui/EmptyState";
 import Skeleton from "../../components/ui/Skeleton";
 
+const DEFAULT_NOTIFICATION_LIMIT = 5;
+
 function fmtDate(value) {
   if (!value) return "-";
   try {
@@ -45,7 +47,7 @@ export default function SupplierNotifications() {
     setErr("");
 
     try {
-      const resp = await authFetch("/api/supplier-notifications");
+      const resp = await authFetch(`/api/supplier-notifications?limit=${DEFAULT_NOTIFICATION_LIMIT}`);
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         throw new Error(json?.details || json?.error || "Failed to load notifications");
@@ -54,7 +56,12 @@ export default function SupplierNotifications() {
       setRows(json?.notifications || []);
       setUnreadCount(Number(json?.unread_count || 0));
     } catch (e) {
-      setErr(e?.message || "Failed to load notifications");
+      const message = String(e?.message || "");
+      if (message.toLowerCase().includes("failed to fetch")) {
+        setErr("Could not reach the notifications service. Please refresh in a moment.");
+      } else {
+        setErr(message || "Failed to load notifications");
+      }
     } finally {
       setLoading(false);
     }
@@ -143,7 +150,7 @@ export default function SupplierNotifications() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="font-medium text-slate-900">{row.title}</div>
-                  {!row.read_at ? <Badge variant="brand">Unread</Badge> : <Badge variant="neutral">Read</Badge>}
+                  {!row.read_at ? <Badge variant="brand">New</Badge> : <Badge variant="neutral">Read</Badge>}
                 </div>
                 {row.body ? <div className="mt-1 text-sm text-slate-700">{row.body}</div> : null}
                 <div className="mt-1 text-xs text-slate-500">{fmtDate(row.created_at)}</div>

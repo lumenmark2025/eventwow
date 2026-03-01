@@ -828,6 +828,7 @@ export default function VenueList() {
   const [bulkSummary, setBulkSummary] = useState({ created: 0, skipped: 0, failed: 0 });
   const [draftToDelete, setDraftToDelete] = useState(null);
   const [deletingDraft, setDeletingDraft] = useState(false);
+  const notPublishedCount = useMemo(() => rows.filter((venue) => !isVenuePublished(venue)).length, [rows]);
 
   async function loadVenues() {
     setLoading(true);
@@ -1287,7 +1288,15 @@ export default function VenueList() {
         </CardContent>
       </Card>
 
-      <Section title="Venue list" right={<Badge variant="neutral">{rows.length} total</Badge>}>
+      <Section
+        title="Venue list"
+        right={(
+          <div className="flex items-center gap-2">
+            <Badge variant="neutral">{rows.length} total</Badge>
+            <Badge variant="warning">{notPublishedCount} not published</Badge>
+          </div>
+        )}
+      >
         <Card className="overflow-hidden">
           {listSuccess ? <p className="px-6 pt-4 text-sm text-emerald-700">{listSuccess}</p> : null}
           {loading ? (
