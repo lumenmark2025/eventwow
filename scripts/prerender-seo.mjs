@@ -320,6 +320,16 @@ function makeSupplierJsonLd(supplier) {
 async function main() {
   await loadDotEnv();
   const template = await readFile(TEMPLATE_PATH, "utf8");
+  // Preview can serve the Vite app without privileged SEO data. All other
+  // environments retain the strict credential check and normal prerender path.
+  if (
+    process.env.VERCEL_ENV === "preview" &&
+    (!String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim() ||
+      !String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim())
+  ) {
+    console.log("[prerender-seo] skipped for Preview: required Supabase prerender credentials are unavailable; Vite application build retained.");
+    return;
+  }
   const admin = requireSupabaseClient();
   const [categories, venueCols, supplierCols] = await Promise.all([
     loadCategories(admin),

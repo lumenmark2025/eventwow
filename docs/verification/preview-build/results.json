@@ -1,0 +1,99 @@
+{
+  "passed": true,
+  "scannedFiles": 203,
+  "requests": 26,
+  "cases": [
+    {
+      "name": "preview-no-key",
+      "exit": 0,
+      "build": true,
+      "skip": true,
+      "passed": true
+    },
+    {
+      "name": "production-no-key",
+      "exit": 1,
+      "build": true,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "preview-no-url",
+      "exit": 0,
+      "build": false,
+      "skip": true,
+      "passed": true
+    },
+    {
+      "name": "preview-whitespace-key",
+      "exit": 0,
+      "build": false,
+      "skip": true,
+      "passed": true
+    },
+    {
+      "name": "production-no-url",
+      "exit": 1,
+      "build": false,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "local-no-credentials",
+      "exit": 1,
+      "build": false,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "development-no-credentials",
+      "exit": 1,
+      "build": false,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "unknown-env-no-credentials",
+      "exit": 1,
+      "build": false,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "production-with-credentials",
+      "exit": 0,
+      "build": true,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "preview-with-credentials",
+      "exit": 0,
+      "build": false,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "local-dotenv-credentials",
+      "exit": 0,
+      "build": false,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "preview-data-error",
+      "exit": 1,
+      "build": false,
+      "skip": false,
+      "passed": true
+    },
+    {
+      "name": "production-data-error",
+      "exit": 1,
+      "build": false,
+      "skip": false,
+      "passed": true
+    }
+  ],
+  "liveSupabase": false
+}

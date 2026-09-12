@@ -1,0 +1,18 @@
+{
+  "baseline": "920cd7dec4e51f8abeffe230609d15d4ed9b6d85",
+  "branch": "ui-v2-design-system",
+  "build_matrix": "13 cases passed",
+  "vite": "passed in three complete build simulations",
+  "seo_source_static_browser_suite": "passed",
+  "lint": {
+    "errors": 428,
+    "warnings": 12,
+    "added": []
+  },
+  "private_canary_scan": {
+    "files": 203,
+    "matches": 0
+  },
+  "live_supabase": false,
+  "runtime_schema_rls_api_changes": false
+}

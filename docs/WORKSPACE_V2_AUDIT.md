@@ -383,3 +383,9 @@ Static home/list/profile fallback bodies share the public tokens and emitted Int
 [Final sweep evidence](verification/final-v2-sweep/README.md) records responsive/keyboard/axe/SEO/static checks, removed-file evidence and remaining staging requirements. Entry gzip remains 128.11 kB, no new requests/dependencies and existing code splitting remains. Vite compiles; full build still needs configured Supabase prerender credentials. Lint has no added diagnostics (428 errors/12 warnings after one obsolete-file diagnostic disappears).
 
 No additional active legacy public body was found. Browser-native controls/confirmations and scoped base primitive compatibility styles remain intentionally. The next step is configured Vercel Preview/staging release QA, including prior RLS deployment, auth recovery/return and onboarding review risks, and direct-link/SEO delivery checks. These are separate behavioral/deployment issues; no backend/schema/RLS/rewrite changes or merge to main are included.
+
+## Preview prerender build policy — 12 September 2026
+
+Preview builds (`VERCEL_ENV=preview`) now retain the successful Vite application output and explicitly skip only SEO prerender when the existing Supabase prerender URL/service-role credentials are unavailable. Production, local and other environments retain strict missing-credential failures. Preview with credentials still prerenders and still fails on data errors. No runtime/auth/RLS/query/SEO-generation contract changed.
+
+[Build-policy verification](verification/preview-build/README.md) covers 13 isolated cases, real Vite builds for missing-key Preview/Production and fixture-backed Production, generated SEO pages/sitemap, and absence of a private canary in every generated artifact. Configured live QA remains required; this supersedes the final sweep's Preview credential build blocker without relaxing Production requirements.

@@ -123,7 +123,27 @@ const oldFns = functions(oldSource(prerenderFile)),
 for (const name of Object.keys(oldFns))
   if (name !== "appShell")
     assert.deepEqual(
-      clean(newFns[name]),
+      clean(
+        name === "main"
+          ? {
+              ...newFns[name],
+              body: {
+                ...newFns[name].body,
+                // The build-policy suite verifies the Preview-only early return.
+                // Compare every other main() statement, preserving data/SEO generation.
+                body: newFns[name].body.body.filter(
+                  (node) =>
+                    !(
+                      node.type === "IfStatement" &&
+                      newSrc
+                        .slice(node.start, node.end)
+                        .includes('process.env.VERCEL_ENV === "preview"')
+                    ),
+                ),
+              },
+            }
+          : newFns[name],
+      ),
       clean(oldFns[name]),
       `Prerender ${name} must remain unchanged`,
     );
@@ -365,7 +385,7 @@ const report = {
   checks: [
     "All four React metadata calls, slug helpers, pagination callback and read URL expressions identical as AST",
     "API/Supabase/routes/rewrites/dynamic sitemap/metadata helper unchanged",
-    "All prerender functions except the shared style-only appShell identical as AST",
+    "All prerender functions identical as AST except the shared style-only appShell and the separately tested Preview credential guard",
     "Static list text, H1/H2, intro, links and empty copy identical after removing CSS/class marker",
     "Static title/description/canonical/schema output identical; existing main() route/content generation and writeSitemap unchanged",
     "Static category without JavaScript: four widths, no overflow, crawlable links and keyboard focus; same static HTML passes axe in an enabled audit context",
