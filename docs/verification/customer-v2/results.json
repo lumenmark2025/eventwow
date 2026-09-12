@@ -1,0 +1,23 @@
+[
+  "dashboard: 360/768/1024/1440px, overflow and axe passed",
+  "enquiries: 360/768/1024/1440px, overflow and axe passed",
+  "detail: 360/768/1024/1440px, overflow and axe passed",
+  "Dashboard/navigation uses original request routes; local search adds no fetch; quote accept/decline exact token payloads, no new bearer contract, refresh and global busy/terminal disabling passed",
+  "reaccept: 360/768/1024/1440px, overflow and axe passed",
+  "messages: 360/768/1024/1440px, overflow and axe passed",
+  "Reacceptance, missing-token disabling and decision errors retain detail; messaging exact get-or-create/limit=50/trimmed-body contracts, min/server-max validation, busy controls, failed-send draft retention, local append, Radix Tab/Escape/focus restoration passed",
+  "enquiries-empty: 360/768/1024/1440px, overflow and axe passed",
+  "detail-empty: 360/768/1024/1440px, overflow and axe passed",
+  "enquiries-loading: 360/768/1024/1440px, overflow and axe passed",
+  "detail-loading: 360/768/1024/1440px, overflow and axe passed",
+  "enquiries-error: 360/768/1024/1440px, overflow and axe passed",
+  "detail-error: 360/768/1024/1440px, overflow and axe passed",
+  "no-suppliers-quotes: 360/768/1024/1440px, overflow and axe passed",
+  "messages-noQuote: 360/768/1024/1440px, overflow and axe passed",
+  "messages-noThread: 360/768/1024/1440px, overflow and axe passed",
+  "messages-failHistory: 360/768/1024/1440px, overflow and axe passed",
+  "messages-emptyMessages: 360/768/1024/1440px, overflow and axe passed",
+  "messages-loadingMessages: 360/768/1024/1440px, overflow and axe passed",
+  "List/detail loading/empty/error/retry at all widths; missing/mismatched enquiry hides actions; targets failure retains loaded quotes; empty suppliers/quotes and message loading/empty/no-quote/no-thread/history-failure states passed",
+  "Mobile navigation/command keyboard controls; signed-out/Admin/Supplier/Venue guards on all three routes without Customer API calls passed"
+]

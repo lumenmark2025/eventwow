@@ -259,3 +259,48 @@ Venue, Workspace, Admin and both Supplier browser suites passed, with Venue layo
 Public claim request/verification screens remain legacy and outside the owner shell. No missing enquiries, booking, messaging, notification, claim-history or media-management capabilities were invented. Live ownership/auth/storage, claim emails/provisioning and publication isolation remain unverified; the upload/review/storage risks above require staging review before claiming those integrations are correct.
 
 Recommended Customer migration: audit its existing routes and enquiry/quote/message contracts, then migrate the dashboard and enquiry list/detail using the same shared shell, forms, tables and feedback. Follow with quote comparison/acceptance and conversations, retaining their actions, payloads and permissions. Keep public quote and marketplace pages outside that workspace scope.
+
+## Customer audit before UI changes — 12 September 2026
+
+Started from clean `ui-v2-design-system` at `90e8bba`. Read AGENTS, design-system/migration/reference documents and Admin, Supplier and Venue verification evidence before editing.
+
+### Routes, capabilities and contracts
+
+- `/customer`: static welcome dashboard with links to `/customer/enquiries` and public `/request`. There is no dashboard metric/feed endpoint; keep this an honest navigation overview without new fetching or synthetic event metrics.
+- `/customer/enquiries`: authenticated `GET /api/customer/enquiries`, returning up to 200 records ordered by created_at descending. DTO fields: id, status, eventDate, guestCount, venueName, categorySlug, createdAt. Preserve the original View and New enquiry destinations.
+- `/customer/enquiries/:id`: authenticated detail GET and a separate `/messaging-targets` GET start independently. Detail returns enquiry summary, invited suppliers, quotes, items, status/reacceptance, tokens and embedded thread/message data. No separate quote comparison route exists; the current quote list provides the supported comparison surface.
+- Quote Accept/Decline retains unauthenticated token-based `POST /api/public-quote-accept` or `/api/public-quote-decline`, JSON `{ token }`, followed by authenticated detail refresh. UI actions require a token and exact sent status, and disable all quote decisions while one is pending. Accept can create/update a supplier-side booking on the server; no Customer booking screen exists. Re-acceptance remains the existing server flag and status rule.
+- Messaging is an enquiry-local dialog opened from an invited supplier. `POST /api/customer/threads/get-or-create` retains `{ enquiry_id, supplier_id, quote_id }`, then `GET /api/customer/threads/:threadId/messages?limit=50`. Send retains JSON `{ body }` with the existing trim/minimum-two-character check and local append. The server enforces 2–2000 characters; preserve its error behaviour instead of imposing a new client limit. No clientMessageId is currently sent.
+- Customer guards and API ownership checks remain unchanged. Detail/list use customer_id, while messaging also accepts customer_user_id ownership. `/customer/*` redirects to `/customer`; no route declaration changes are needed.
+
+### Missing or incomplete functionality
+
+No Customer profile/settings, booking/event-management, standalone messages, notifications or standalone quote route exists. Enquiry creation lives on public `/request`; workspace enquiry editing/cancellation is not exposed. No supplier photography is included in these workspace DTOs; do not invent imagery or new supplier fetches.
+
+Messaging requires an existing sent/accepted/declined/closed quote on the server, even though every invited supplier has a Message button. An invite without a suitable quote returns the existing explanatory error. The server supports message cursors, but the UI only retrieves the latest 50; there is no older-history control, realtime subscription, inbox unread flow or Customer read receipt. Reopening resets composer state. Preserve these boundaries and document them.
+
+The detail endpoint fetches all quote statuses, including drafts; do not silently change backend filtering as part of this presentation migration. Public token actions, notification side effects, booking creation and ownership enforcement require staging verification.
+
+### Performance and presentation findings
+
+All three Customer routes and the layout are already lazy. The layout stores pathname-derived active navigation state through an effect; replace it with stable route links. The enquiry list has no search; a local memoized filter can reuse loaded records without backend requests. Message timestamps are reformatted on every keystroke; memoize the conversation presentation rows on message/participant changes.
+
+The detail API loads embedded thread histories that the client does not use; opening messaging still calls get-or-create and retrieves history. Detail and messaging-target endpoints duplicate supplier/quote queries. Preserve these contracts and request sequences rather than changing backend behaviour or adding speculative caches.
+
+A single error state currently hides the entire loaded enquiry after a quote mutation or messaging-target failure. Keep loaded content visible with shared error feedback, while failed/missing or mismatched enquiry IDs expose no detail/actions. A failed thread open currently allows a Send button that only no-ops without a thread ID; disable that control until a thread exists. These are small presentation/state fixes, with existing handlers unchanged.
+
+### Customer migration delivered
+
+All three existing Customer workspace routes now use Workspace v2: `/customer`, `/customer/enquiries` and `/customer/enquiries/:id`. This includes enquiry-local quote comparison/decisions and supplier conversations. No legacy Customer workspace body remains; public request/quote pages remain unchanged and no missing profile, booking, inbox, notification or event-management route was invented.
+
+Reused WorkspaceShell, PageHeader, DataTable, Section, badges, feedback, native form adapters, Radix dialog and ConversationThread. The dashboard stays an approachable navigation overview without new queries/metrics. Event summaries show the existing date/time, guest count, location and message. Quote sections retain supplier text, item quantities/prices, totals and re-acceptance statuses. No supplier images were fabricated or fetched from a new source.
+
+All ten existing request, formatting/status, quote-action and messaging helpers compare identically as parsed JavaScript. The layout's old navigation callback becomes stable links to the same URLs. Small state fixes keep loaded enquiry content visible after quote/target failures, hide mismatched/missing details, enable explicit retry and disable Send without a thread ID. Error histories no longer masquerade as empty conversations. Existing quote decisions, thread creation, 50-message retrieval, trimmed send payload and local append remain intact; server-side message-length error behaviour is preserved.
+
+Performance changes are limited to removing derived navigation state/effect, memoized local enquiry filtering and memoized message display rows/timestamps. Existing lazy loading remains, with no other-role/calendar modules requested during Customer navigation. No production dependency or automatic data fetch was added. Final entry **450.90 kB / 131.66 kB gzip** and enquiry detail **10.46 kB / 3.41 kB gzip** are artifact sizes, not a real-user latency measurement. Backend duplicate/history loading remains separately scoped work.
+
+See [Customer verification](verification/customer-v2/README.md) for screenshots, request contracts, states, keyboard/role checks and source evidence. Customer, Workspace, Admin, both Supplier and Venue browser suites passed. Customer screens/states pass axe and overflow checks at 360/768/1024/1440px. Vite compilation passed (6.53 seconds); full build retains the existing SEO credential failure. Lint is **429 errors / 12 warnings**; the one-error reduction comes from removing Customer's navigation effect. New/migrated files are clean.
+
+Live auth/ownership, token-based quote acceptance/decline, booking creation, notification delivery and messaging persistence remain unverified. The all-status quote response and lack of older-message/realtime/inbox functionality are existing gaps, not new capabilities introduced here.
+
+Recommended next step: verify the complete Customer-to-Supplier enquiry, quote/re-acceptance, booking and conversation flows in staging with real role accounts. Resolve the documented backend contract/exposure issues separately, then migrate public request and quote presentation using the established design system. No merge to `main` is part of this work.

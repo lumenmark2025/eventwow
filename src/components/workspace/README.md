@@ -57,3 +57,14 @@ Supplier Quotes uses the shared FilterBar/DataTable through `QuoteList`; search 
 Venue forms use labelled descriptions, capacity, facilities and file controls, with shared feedback and Submit/Cancel actions. File controls are disabled during saves/uploads; all backend contracts remain with the existing handlers. The empty overview's Browse venues link is rendered explicitly, since EmptyState accepts actionLabel/onAction rather than an action element.
 
 Run `npm run test:venue` using the fixture setup documented in `docs/verification/venue-v2/README.md`.
+
+
+## Customer workspace
+
+`/customer`, `/customer/enquiries` and `/customer/enquiries/:id` share WorkspaceShell and its route-driven navigation. The dashboard is a navigation overview without a data endpoint; no metrics/feed are fabricated. Enquiry creation remains on the existing public `/request` route.
+
+Customer lists and enquiry-local quote/item presentation reuse DataTable, Section, PageHeader, form feedback and status adapters. Supplier messaging remains an enquiry-local Radix dialog using ConversationThread and a labelled Textarea. The existing Customer API owns its different send validation and payload, so the dialog retains its caller-controlled Send/Close footer rather than adopting Supplier composer limits. Conversation display rows are memoized to avoid reformatting dates while typing.
+
+Loaded enquiry data remains available after action/target-fetch errors, while missing or mismatched enquiry IDs hide all detail actions. Send is disabled until a thread exists. No shared component contract or other role presentation was changed.
+
+Run `npm run test:customer` with the fixture setup in `docs/verification/customer-v2/README.md`.

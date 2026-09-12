@@ -1,0 +1,97 @@
+[
+  {
+    "file": "src/customer/pages/CustomerDashboard.jsx",
+    "functions": [],
+    "lintBefore": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "lintAfter": {
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  {
+    "file": "src/customer/pages/CustomerEnquiries.jsx",
+    "functions": [
+      {
+        "name": "authFetch",
+        "unchanged": true
+      },
+      {
+        "name": "statusVariant",
+        "unchanged": true
+      }
+    ],
+    "lintBefore": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "lintAfter": {
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  {
+    "file": "src/customer/pages/CustomerEnquiryDetail.jsx",
+    "functions": [
+      {
+        "name": "authFetch",
+        "unchanged": true
+      },
+      {
+        "name": "money",
+        "unchanged": true
+      },
+      {
+        "name": "statusVariant",
+        "unchanged": true
+      },
+      {
+        "name": "quoteStatusLabel",
+        "unchanged": true
+      },
+      {
+        "name": "quoteAction",
+        "unchanged": true
+      },
+      {
+        "name": "fetchThreadMessages",
+        "unchanged": true
+      },
+      {
+        "name": "openMessaging",
+        "unchanged": true
+      },
+      {
+        "name": "sendMessage",
+        "unchanged": true
+      }
+    ],
+    "lintBefore": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "lintAfter": {
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  {
+    "file": "src/customer/layout/CustomerLayout.jsx",
+    "functions": [
+      {
+        "name": "go",
+        "unchanged": false
+      }
+    ],
+    "lintBefore": {
+      "errors": 1,
+      "warnings": 0
+    },
+    "lintAfter": {
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+]

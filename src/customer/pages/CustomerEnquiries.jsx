@@ -1,19 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
+import PageHeader from "../../components/layout/PageHeader";
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+} from "../../components/workspace/AdminPrimitives";
+import {
+  DataTable,
+  FilterBar,
+} from "../../components/workspace/WorkspaceComponents";
 
 async function authFetch(path, options = {}) {
-  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+  const { data: sessionData, error: sessionErr } =
+    await supabase.auth.getSession();
   if (sessionErr) throw sessionErr;
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error("Not authenticated");
-  const headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` };
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
   return fetch(path, { ...options, headers });
 }
 
@@ -29,6 +39,16 @@ export default function CustomerEnquiries() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
+  const [retry, setRetry] = useState(0);
+  const [search, setSearch] = useState("");
+  const visibleRows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return rows.filter((row) =>
+      `${row.venueName || ""} ${row.eventDate || ""} ${row.status || ""}`
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [rows, search]);
 
   useEffect(() => {
     let mounted = true;
@@ -38,7 +58,10 @@ export default function CustomerEnquiries() {
       try {
         const resp = await authFetch("/api/customer/enquiries");
         const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load enquiries");
+        if (!resp.ok)
+          throw new Error(
+            json?.details || json?.error || "Failed to load enquiries",
+          );
         if (!mounted) return;
         setRows(Array.isArray(json?.rows) ? json.rows : []);
       } catch (err) {
@@ -50,65 +73,89 @@ export default function CustomerEnquiries() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [retry]);
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="My enquiries"
+        subtitle="Track your event requests and review supplier responses."
+        actions={[
+          { key: "new", label: "New enquiry", as: Link, to: "/request" },
+        ]}
+      />
       <Card>
         <CardHeader>
-          <CardTitle>My enquiries</CardTitle>
+          <CardTitle>Your requests</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">Track all requests submitted from your account.</p>
-          <Button as={Link} to="/request" variant="secondary">New enquiry</Button>
-        </CardContent>
-      </Card>
-
-      <Card className="overflow-hidden">
-        {loading ? (
-          <CardContent className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        ) : error ? (
-          <CardContent>
-            <p className="text-sm text-rose-700">{error}</p>
-          </CardContent>
-        ) : rows.length === 0 ? (
-          <CardContent>
-            <EmptyState title="No enquiries yet" description="Create your first enquiry to start receiving supplier quotes." />
-          </CardContent>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <THead>
-                <TR>
-                  <TH>Date</TH>
-                  <TH>Venue</TH>
-                  <TH>Guests</TH>
-                  <TH>Status</TH>
-                  <TH className="text-right">Action</TH>
-                </TR>
-              </THead>
-              <TBody>
-                {rows.map((row) => (
-                  <TR key={row.id}>
-                    <TD>{row.eventDate || "-"}</TD>
-                    <TD>{row.venueName || "-"}</TD>
-                    <TD>{row.guestCount ?? "-"}</TD>
-                    <TD><Badge variant={statusVariant(row.status)}>{row.status || "new"}</Badge></TD>
-                    <TD className="text-right">
-                      <Button as={Link} to={`/customer/enquiries/${row.id}`} size="sm" variant="secondary">
-                        View
-                      </Button>
-                    </TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          </div>
+        {!loading && !error && rows.length > 0 && (
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search venue, date or status"
+            count={visibleRows.length}
+          />
         )}
+        <DataTable
+          className="ew-admin-table"
+          caption="Your latest enquiries (up to 200)"
+          loading={loading}
+          error={error}
+          onRetry={() => setRetry((value) => value + 1)}
+          rows={visibleRows}
+          emptyTitle={
+            rows.length ? "No matching enquiries" : "No enquiries yet"
+          }
+          emptyDescription={
+            rows.length
+              ? "Try another venue, date or status."
+              : "Create your first enquiry to start receiving supplier quotes."
+          }
+          columns={[
+            {
+              key: "eventDate",
+              label: "Event date",
+              render: (row) => row.eventDate || "Not provided",
+            },
+            {
+              key: "venueName",
+              label: "Venue / location",
+              render: (row) => row.venueName || "Not provided",
+            },
+            {
+              key: "guestCount",
+              label: "Guests",
+              render: (row) => row.guestCount ?? "Not provided",
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (row) => (
+                <Badge variant={statusVariant(row.status)}>
+                  {row.status || "new"}
+                </Badge>
+              ),
+            },
+            {
+              key: "action",
+              label: "Details",
+              render: (row) => (
+                <Button
+                  as={Link}
+                  to={`/customer/enquiries/${row.id}`}
+                  variant="secondary"
+                  size="sm"
+                >
+                  View
+                  <span className="sr-only">
+                    {" "}
+                    enquiry for {row.venueName || row.eventDate || "your event"}
+                  </span>
+                </Button>
+              ),
+            },
+          ]}
+        />
       </Card>
     </div>
   );

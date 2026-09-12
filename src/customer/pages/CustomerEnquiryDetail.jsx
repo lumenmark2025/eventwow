@@ -1,26 +1,45 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Modal from "../../components/ui/Modal";
-import Skeleton from "../../components/ui/Skeleton";
+import PageHeader from "../../components/layout/PageHeader";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Modal,
+  Skeleton,
+  Feedback,
+  FormField,
+  Textarea,
+  Section,
+} from "../../components/workspace/AdminPrimitives";
+import { DataTable } from "../../components/workspace/WorkspaceComponents";
+import { ConversationThread } from "../../components/workspace/ConversationThread";
 
 async function authFetch(path, options = {}) {
-  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+  const { data: sessionData, error: sessionErr } =
+    await supabase.auth.getSession();
   if (sessionErr) throw sessionErr;
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error("Not authenticated");
-  const headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` };
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
   return fetch(path, { ...options, headers });
 }
 
 function money(value, currency = "GBP") {
   const amount = Number(value || 0);
   try {
-    return new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount);
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency,
+    }).format(amount);
   } catch {
     return `${currency} ${amount.toFixed(2)}`;
   }
@@ -36,7 +55,10 @@ function statusVariant(status) {
 }
 
 function quoteStatusLabel(quote) {
-  if (String(quote?.status || "").toLowerCase() === "sent" && quote?.reacceptRequired) {
+  if (
+    String(quote?.status || "").toLowerCase() === "sent" &&
+    quote?.reacceptRequired
+  ) {
     return "Updated - awaiting acceptance";
   }
   return String(quote?.status || "unknown");
@@ -48,6 +70,7 @@ export default function CustomerEnquiryDetail() {
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState("");
+  const [retry, setRetry] = useState(0);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [messageTargets, setMessageTargets] = useState([]);
   const [messageOpen, setMessageOpen] = useState(false);
@@ -67,9 +90,14 @@ export default function CustomerEnquiryDetail() {
       setLoading(true);
       setError("");
       try {
-        const resp = await authFetch(`/api/customer/enquiries/${encodeURIComponent(String(id || ""))}`);
+        const resp = await authFetch(
+          `/api/customer/enquiries/${encodeURIComponent(String(id || ""))}`,
+        );
         const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load enquiry");
+        if (!resp.ok)
+          throw new Error(
+            json?.details || json?.error || "Failed to load enquiry",
+          );
         if (!mounted) return;
         setData(json);
       } catch (err) {
@@ -81,7 +109,7 @@ export default function CustomerEnquiryDetail() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, retry]);
 
   useEffect(() => {
     let mounted = true;
@@ -89,13 +117,21 @@ export default function CustomerEnquiryDetail() {
       if (!id) return;
       setTargetsLoading(true);
       try {
-        const resp = await authFetch(`/api/customer/enquiries/${encodeURIComponent(String(id))}/messaging-targets`);
+        const resp = await authFetch(
+          `/api/customer/enquiries/${encodeURIComponent(String(id))}/messaging-targets`,
+        );
         const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load messaging suppliers");
+        if (!resp.ok)
+          throw new Error(
+            json?.details ||
+              json?.error ||
+              "Failed to load messaging suppliers",
+          );
         if (!mounted) return;
         setMessageTargets(Array.isArray(json?.rows) ? json.rows : []);
       } catch (err) {
-        if (mounted) setError(err?.message || "Failed to load messaging suppliers");
+        if (mounted)
+          setError(err?.message || "Failed to load messaging suppliers");
       } finally {
         if (mounted) setTargetsLoading(false);
       }
@@ -104,27 +140,44 @@ export default function CustomerEnquiryDetail() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, retry]);
 
-  const quoteRows = useMemo(() => (Array.isArray(data?.quotes) ? data.quotes : []), [data?.quotes]);
-  const targetBySupplierId = useMemo(() => new Map((messageTargets || []).map((row) => [row.supplier_id, row])), [messageTargets]);
+  const quoteRows = useMemo(
+    () => (Array.isArray(data?.quotes) ? data.quotes : []),
+    [data?.quotes],
+  );
+  const targetBySupplierId = useMemo(
+    () => new Map((messageTargets || []).map((row) => [row.supplier_id, row])),
+    [messageTargets],
+  );
 
   async function quoteAction(quoteToken, type) {
     if (!quoteToken) return;
     setBusy(`${type}:${quoteToken}`);
     setError("");
     try {
-      const endpoint = type === "accept" ? "/api/public-quote-accept" : "/api/public-quote-decline";
+      const endpoint =
+        type === "accept"
+          ? "/api/public-quote-accept"
+          : "/api/public-quote-decline";
       const resp = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: quoteToken }),
       });
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || `Failed to ${type} quote`);
-      const refresh = await authFetch(`/api/customer/enquiries/${encodeURIComponent(String(id || ""))}`);
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || `Failed to ${type} quote`,
+        );
+      const refresh = await authFetch(
+        `/api/customer/enquiries/${encodeURIComponent(String(id || ""))}`,
+      );
       const refreshed = await refresh.json().catch(() => ({}));
-      if (!refresh.ok) throw new Error(refreshed?.details || refreshed?.error || "Failed to refresh enquiry");
+      if (!refresh.ok)
+        throw new Error(
+          refreshed?.details || refreshed?.error || "Failed to refresh enquiry",
+        );
       setData(refreshed);
     } catch (err) {
       setError(err?.message || `Failed to ${type} quote`);
@@ -134,9 +187,14 @@ export default function CustomerEnquiryDetail() {
   }
 
   async function fetchThreadMessages(threadId) {
-    const resp = await authFetch(`/api/customer/threads/${encodeURIComponent(threadId)}/messages?limit=50`);
+    const resp = await authFetch(
+      `/api/customer/threads/${encodeURIComponent(threadId)}/messages?limit=50`,
+    );
     const json = await resp.json().catch(() => ({}));
-    if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load messages");
+    if (!resp.ok)
+      throw new Error(
+        json?.details || json?.error || "Failed to load messages",
+      );
     return {
       threadId: json?.thread?.id || threadId,
       messages: Array.isArray(json?.messages) ? json.messages : [],
@@ -157,17 +215,23 @@ export default function CustomerEnquiryDetail() {
     });
 
     try {
-      const createResp = await authFetch("/api/customer/threads/get-or-create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          enquiry_id: id,
-          supplier_id: target.supplier_id,
-          quote_id: target.quote_id || null,
-        }),
-      });
+      const createResp = await authFetch(
+        "/api/customer/threads/get-or-create",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            enquiry_id: id,
+            supplier_id: target.supplier_id,
+            quote_id: target.quote_id || null,
+          }),
+        },
+      );
       const createJson = await createResp.json().catch(() => ({}));
-      if (!createResp.ok) throw new Error(createJson?.details || createJson?.error || "Failed to open thread");
+      if (!createResp.ok)
+        throw new Error(
+          createJson?.details || createJson?.error || "Failed to open thread",
+        );
 
       const createdThreadId = createJson?.thread_id;
       if (!createdThreadId) throw new Error("Thread unavailable");
@@ -182,8 +246,14 @@ export default function CustomerEnquiryDetail() {
       }));
       setMessageTargets((prev) =>
         (prev || []).map((row) =>
-          row.supplier_id === target.supplier_id ? { ...row, thread_id: loaded.threadId, quote_id: row.quote_id || createJson?.quote_id || null } : row
-        )
+          row.supplier_id === target.supplier_id
+            ? {
+                ...row,
+                thread_id: loaded.threadId,
+                quote_id: row.quote_id || createJson?.quote_id || null,
+              }
+            : row,
+        ),
       );
     } catch (err) {
       setMessageState((prev) => ({
@@ -201,18 +271,26 @@ export default function CustomerEnquiryDetail() {
 
     setMessageState((prev) => ({ ...prev, sending: true, error: "" }));
     try {
-      const resp = await authFetch(`/api/customer/threads/${encodeURIComponent(threadId)}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: bodyText }),
-      });
+      const resp = await authFetch(
+        `/api/customer/threads/${encodeURIComponent(threadId)}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: bodyText }),
+        },
+      );
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to send message");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to send message",
+        );
       setMessageState((prev) => ({
         ...prev,
         sending: false,
         body: "",
-        messages: json?.message ? [...prev.messages, json.message] : prev.messages,
+        messages: json?.message
+          ? [...prev.messages, json.message]
+          : prev.messages,
       }));
     } catch (err) {
       setMessageState((prev) => ({
@@ -223,187 +301,308 @@ export default function CustomerEnquiryDetail() {
     }
   }
 
+  const conversationMessages = useMemo(
+    () =>
+      messageState.messages.map((msg) => ({
+        id: msg.id,
+        own: msg.senderType === "customer",
+        sender:
+          msg.senderType === "customer"
+            ? "You"
+            : activeTarget?.supplier_name || "Supplier",
+        body: msg.body,
+        createdAt: msg.createdAt,
+        when: msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "-",
+      })),
+    [messageState.messages, activeTarget?.supplier_name],
+  );
+
   if (loading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-56" />
-        <Skeleton className="h-40 w-full" />
+      <div className="space-y-6">
+        <PageHeader
+          title="Enquiry details"
+          subtitle="Loading your event request."
+        />
+        <Skeleton className="h-64" />
       </div>
     );
   }
 
-  if (error || !data?.enquiry) {
-    return <EmptyState title="Enquiry unavailable" description={error || "This enquiry could not be loaded."} />;
+  if (!data?.enquiry || String(data.enquiry.id) !== String(id)) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Enquiry unavailable"
+          subtitle="Your event request could not be loaded."
+        />
+        <Feedback onRetry={() => setRetry((value) => value + 1)}>
+          {error || "This enquiry could not be loaded."}
+        </Feedback>
+        <Button as={Link} to="/customer/enquiries" variant="secondary">
+          Back to enquiries
+        </Button>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Enquiry details"
+        subtitle="Review your event, supplier quotes and conversations."
+        actions={[
+          {
+            key: "back",
+            label: "Back to enquiries",
+            as: Link,
+            to: "/customer/enquiries",
+            variant: "secondary",
+          },
+          {
+            key: "new",
+            label: "Create another enquiry",
+            as: Link,
+            to: "/request",
+            variant: "secondary",
+          },
+        ]}
+      />
+      {error && (
+        <Feedback onRetry={() => setRetry((value) => value + 1)}>
+          {error}
+        </Feedback>
+      )}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span>Enquiry detail</span>
-            <Badge variant={statusVariant(data.enquiry.status)}>{data.enquiry.status || "new"}</Badge>
-          </CardTitle>
+          <CardTitle>Your event</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-slate-700">
-          <p><span className="text-slate-500">Date:</span> {data.enquiry.eventDate || "-"}</p>
-          <p><span className="text-slate-500">Guests:</span> {data.enquiry.guestCount ?? "-"}</p>
-          <p><span className="text-slate-500">Venue:</span> {data.enquiry.venueName || "-"}</p>
-          <p><span className="text-slate-500">Message:</span> {data.enquiry.message || "-"}</p>
-          <div className="pt-2">
-            <Button as={Link} to="/request" variant="secondary" size="sm">Create another enquiry</Button>
+        <CardContent className="space-y-4">
+          <Badge variant={statusVariant(data.enquiry.status)}>
+            {data.enquiry.status || "new"}
+          </Badge>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt className="ew-form-help">Date</dt>
+              <dd>{data.enquiry.eventDate || "Not provided"}</dd>
+            </div>
+            <div>
+              <dt className="ew-form-help">Start time</dt>
+              <dd>{data.enquiry.startTime || "Not provided"}</dd>
+            </div>
+            <div>
+              <dt className="ew-form-help">Guests</dt>
+              <dd>{data.enquiry.guestCount ?? "Not provided"}</dd>
+            </div>
+            <div>
+              <dt className="ew-form-help">Venue / location</dt>
+              <dd>{data.enquiry.venueName || "Not provided"}</dd>
+            </div>
+          </dl>
+          <div>
+            <p className="ew-form-help">Your message</p>
+            <p className="whitespace-pre-wrap">
+              {data.enquiry.message || "No message provided."}
+            </p>
           </div>
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Invited suppliers</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {(data.invites || []).length === 0 ? (
-            <p className="text-sm text-slate-600">No suppliers linked yet.</p>
-          ) : (
-            data.invites.map((row) => (
-              <div key={row.id} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-900">{row.supplierName}</span>
-                    <Badge variant={statusVariant(row.status)}>{row.status || "invited"}</Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={targetsLoading}
-                    onClick={() => openMessaging(targetBySupplierId.get(row.supplierId) || { supplier_id: row.supplierId, supplier_name: row.supplierName })}
-                  >
-                    Message supplier
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </CardContent>
+        <DataTable
+          className="ew-admin-table"
+          caption="Suppliers invited to your enquiry"
+          rows={data.invites || []}
+          emptyTitle="No suppliers linked yet"
+          emptyDescription="Invited suppliers will appear here."
+          columns={[
+            { key: "supplierName", label: "Supplier" },
+            {
+              key: "status",
+              label: "Status",
+              render: (row) => (
+                <Badge variant={statusVariant(row.status)}>
+                  {row.status || "invited"}
+                </Badge>
+              ),
+            },
+            {
+              key: "message",
+              label: "Conversation",
+              render: (row) => (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={targetsLoading}
+                  onClick={() =>
+                    openMessaging(
+                      targetBySupplierId.get(row.supplierId) || {
+                        supplier_id: row.supplierId,
+                        supplier_name: row.supplierName,
+                      },
+                    )
+                  }
+                >
+                  Message supplier
+                  <span className="sr-only">: {row.supplierName}</span>
+                </Button>
+              ),
+            },
+          ]}
+        />
       </Card>
-
       <Card>
         <CardHeader>
-          <CardTitle>Quotes</CardTitle>
+          <CardTitle>Supplier quotes</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-6">
           {quoteRows.length === 0 ? (
-            <p className="text-sm text-slate-600">No quotes received yet.</p>
+            <EmptyState
+              title="No quotes received yet"
+              description="Quotes from your suppliers will appear here."
+            />
           ) : (
             quoteRows.map((quote) => (
-              <div key={quote.id} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-slate-900">{quote.supplierName}</p>
-                    <Badge variant={statusVariant(quote.status)}>{quoteStatusLabel(quote)}</Badge>
+              <Section
+                key={quote.id}
+                title={quote.supplierName}
+                right={
+                  <strong className="text-lg">
+                    {money(quote.totalAmount, quote.currencyCode)}
+                  </strong>
+                }
+              >
+                <div className="space-y-4">
+                  <Badge variant={statusVariant(quote.status)}>
+                    {quoteStatusLabel(quote)}
+                  </Badge>
+                  {quote.reacceptRequired && (
+                    <Feedback tone="warning">
+                      This quote has been updated since you accepted it. Please
+                      review and accept again to confirm.
+                    </Feedback>
+                  )}
+                  {quote.quoteText && (
+                    <div>
+                      <p className="ew-form-help">Message from supplier</p>
+                      <p className="whitespace-pre-wrap">{quote.quoteText}</p>
+                    </div>
+                  )}
+                  {(quote.items || []).length > 0 && (
+                    <DataTable
+                      className="ew-admin-table"
+                      caption={`${quote.supplierName} quote items`}
+                      rows={quote.items}
+                      columns={[
+                        { key: "title", label: "Included item" },
+                        { key: "qty", label: "Quantity" },
+                        {
+                          key: "unitPrice",
+                          label: "Unit price",
+                          render: (item) =>
+                            money(item.unitPrice, quote.currencyCode),
+                        },
+                      ]}
+                    />
+                  )}
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      size="sm"
+                      aria-label={`Accept quote from ${quote.supplierName}`}
+                      disabled={
+                        !quote.quoteToken || quote.status !== "sent" || !!busy
+                      }
+                      onClick={() => quoteAction(quote.quoteToken, "accept")}
+                    >
+                      {busy === `accept:${quote.quoteToken}`
+                        ? "Accepting..."
+                        : "Accept"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      aria-label={`Decline quote from ${quote.supplierName}`}
+                      disabled={
+                        !quote.quoteToken || quote.status !== "sent" || !!busy
+                      }
+                      onClick={() => quoteAction(quote.quoteToken, "decline")}
+                    >
+                      {busy === `decline:${quote.quoteToken}`
+                        ? "Declining..."
+                        : "Decline"}
+                    </Button>
                   </div>
-                  <p className="text-lg font-semibold text-slate-900">{money(quote.totalAmount, quote.currencyCode)}</p>
                 </div>
-                {quote.reacceptRequired ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                    This quote has been updated since you accepted it. Please review and accept again to confirm.
-                  </div>
-                ) : null}
-                {quote.quoteText ? (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Message from supplier</p>
-                    {quote.quoteText}
-                  </div>
-                ) : null}
-                {(quote.items || []).length > 0 ? (
-                  <ul className="text-sm text-slate-700 space-y-1">
-                    {quote.items.map((item) => (
-                      <li key={item.id}>{item.title}: {item.qty} x {money(item.unitPrice, quote.currencyCode)}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    disabled={!quote.quoteToken || quote.status !== "sent" || !!busy}
-                    onClick={() => quoteAction(quote.quoteToken, "accept")}
-                  >
-                    {busy === `accept:${quote.quoteToken}` ? "Accepting..." : "Accept"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={!quote.quoteToken || quote.status !== "sent" || !!busy}
-                    onClick={() => quoteAction(quote.quoteToken, "decline")}
-                  >
-                    {busy === `decline:${quote.quoteToken}` ? "Declining..." : "Decline"}
-                  </Button>
-                </div>
-              </div>
+              </Section>
             ))
           )}
         </CardContent>
       </Card>
-
-      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
-
       <Modal
         open={messageOpen}
         onClose={() => setMessageOpen(false)}
         title={`Message ${activeTarget?.supplier_name || "supplier"}`}
         footer={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3">
             <Button
               type="button"
-              disabled={messageState.loading || messageState.sending || String(messageState.body || "").trim().length < 2}
+              disabled={
+                messageState.loading ||
+                messageState.sending ||
+                !messageState.threadId ||
+                String(messageState.body || "").trim().length < 2
+              }
               onClick={sendMessage}
             >
               {messageState.sending ? "Sending..." : "Send"}
             </Button>
-            <Button type="button" variant="secondary" onClick={() => setMessageOpen(false)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setMessageOpen(false)}
+            >
               Close
             </Button>
           </div>
         }
       >
-        <div className="space-y-3">
-          {messageState.error ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              {messageState.error}
+        <div className="space-y-4">
+          {messageState.error && <Feedback>{messageState.error}</Feedback>}
+          {messageState.loading ? (
+            <div>
+              <p role="status">Loading messages...</p>
+              <Skeleton className="h-40" />
             </div>
-          ) : null}
-          <div className="max-h-72 space-y-2 overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
-            {messageState.loading && messageState.messages.length === 0 ? (
-              <p className="text-sm text-slate-500">Loading messages...</p>
-            ) : messageState.messages.length === 0 ? (
-              <p className="text-sm text-slate-500">No messages yet.</p>
-            ) : (
-              messageState.messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
-                    msg.senderType === "customer"
-                      ? "ml-auto bg-brand text-white"
-                      : "border border-slate-200 bg-white text-slate-800"
-                  }`}
-                >
-                  <p>{msg.body}</p>
-                  <p className={`mt-1 text-[11px] ${msg.senderType === "customer" ? "text-white/80" : "text-slate-500"}`}>
-                    {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "-"}
-                  </p>
-                </div>
-              ))
-            )}
+          ) : messageState.error && messageState.messages.length === 0 ? (
+            <p className="ew-form-help">
+              Close and reopen this conversation to try again.
+            </p>
+          ) : (
+            <ConversationThread
+              title={activeTarget?.supplier_name || "Supplier"}
+              subtitle={data.enquiry.venueName || "Your enquiry"}
+              messages={conversationMessages}
+            />
+          )}
+          <div className="ew-message-composer">
+            <FormField
+              label="Message body"
+              help="Discuss the details of this enquiry with your supplier."
+            >
+              <Textarea
+                value={messageState.body}
+                onChange={(e) =>
+                  setMessageState((prev) => ({ ...prev, body: e.target.value }))
+                }
+                rows={4}
+                placeholder="Write your message..."
+                disabled={messageState.loading || messageState.sending}
+              />
+            </FormField>
           </div>
-          <textarea
-            value={messageState.body}
-            onChange={(e) => setMessageState((prev) => ({ ...prev, body: e.target.value }))}
-            rows={4}
-            placeholder="Write your message..."
-            className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
-            aria-label="Message body"
-            disabled={messageState.loading || messageState.sending}
-          />
         </div>
       </Modal>
     </div>
