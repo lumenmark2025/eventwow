@@ -1,14 +1,9 @@
-import { useEffect, useState } from "react";
+import { FormField, Textarea, Select, Feedback, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Input, Skeleton } from "../../components/workspace/AdminPrimitives";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Input from "../../components/ui/Input";
-import Skeleton from "../../components/ui/Skeleton";
-import StatCard from "../../components/ui/StatCard";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
+import { MetricCard, DataTable, FilterBar, StatusBadge } from "../../components/workspace/WorkspaceComponents";
+import { Inbox, Send, Clock } from "lucide-react";
 
 async function fetchAdminJson(path, options = {}) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -172,7 +167,7 @@ function EnquiryCreate({ user, onDone }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader title="Create enquiry" subtitle="Customer to enquiry to supplier invites." />
 
       <form onSubmit={createEnquiryFlow} className="space-y-4">
@@ -182,21 +177,20 @@ function EnquiryCreate({ user, onDone }) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Input placeholder="Full name *" value={custName} onChange={(e) => setCustName(e.target.value)} />
-              <Input placeholder="Email *" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} />
-              <Input placeholder="Phone *" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} />
+              <FormField label="Full name *"><Input placeholder="Full name *" value={custName} onChange={(e) => setCustName(e.target.value)} /></FormField>
+              <FormField label="Email *"><Input placeholder="Email *" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} /></FormField>
+              <FormField label="Phone *"><Input placeholder="Phone *" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} /></FormField>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-slate-600">Preferred contact:</span>
-              <select
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+              <FormField label="Preferred contact"><Select
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2"
                 value={custPref}
                 onChange={(e) => setCustPref(e.target.value)}
               >
                 <option value="email">Email</option>
                 <option value="phone">Phone</option>
                 <option value="whatsapp">WhatsApp</option>
-              </select>
+              </Select></FormField>
             </div>
           </CardContent>
         </Card>
@@ -207,16 +201,16 @@ function EnquiryCreate({ user, onDone }) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
-              <Input placeholder="Event postcode *" value={eventPostcode} onChange={(e) => setEventPostcode(e.target.value)} />
-              <Input placeholder="Guests (optional)" value={guestCount} onChange={(e) => setGuestCount(e.target.value)} />
+              <FormField label="Event date"><Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></FormField>
+              <FormField label="Event postcode *"><Input placeholder="Event postcode *" value={eventPostcode} onChange={(e) => setEventPostcode(e.target.value)} /></FormField>
+              <FormField label="Guests (optional)"><Input placeholder="Guests (optional)" value={guestCount} onChange={(e) => setGuestCount(e.target.value)} /></FormField>
             </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Input placeholder="Budget min GBP" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} />
-              <Input placeholder="Budget max GBP" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} />
-              <select
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+              <FormField label="Budget min GBP"><Input placeholder="Budget min GBP" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} /></FormField>
+              <FormField label="Budget max GBP"><Input placeholder="Budget max GBP" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} /></FormField>
+              <FormField label="Venue attribution"><Select
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2"
                 value={venueId}
                 onChange={(e) => setVenueId(e.target.value)}
               >
@@ -224,15 +218,15 @@ function EnquiryCreate({ user, onDone }) {
                 {venues.map((v) => (
                   <option key={v.id} value={v.id}>{v.name}</option>
                 ))}
-              </select>
+              </Select></FormField>
             </div>
 
-            <textarea
-              className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+            <FormField label="Notes (optional)"><Textarea
+              className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2"
               placeholder="Notes (optional)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-            />
+            /></FormField>
           </CardContent>
         </Card>
 
@@ -242,7 +236,7 @@ function EnquiryCreate({ user, onDone }) {
             <CardDescription>Select one or more suppliers for this enquiry.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid max-h-[260px] grid-cols-1 gap-2 overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-2">
+            <div className="grid max-h-96 grid-cols-1 gap-2 overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-2">
               {suppliers.map((s) => {
                 const checked = selectedSupplierIds.includes(s.id);
                 return (
@@ -253,12 +247,12 @@ function EnquiryCreate({ user, onDone }) {
                 );
               })}
             </div>
-            <Badge variant="neutral">Selected: {selectedSupplierIds.length}</Badge>
+            <span className="ew-result-count">Selected: {selectedSupplierIds.length}</span>
           </CardContent>
         </Card>
 
-        {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-        {ok ? <p className="text-sm text-emerald-700">{ok}</p> : null}
+        {err ? <Feedback tone="danger">{err}</Feedback> : null}
+        {ok ? <Feedback tone="success">{ok}</Feedback> : null}
 
         <Button type="submit" disabled={saving}>{saving ? "Creating..." : "Create enquiry + invite suppliers"}</Button>
       </form>
@@ -320,7 +314,7 @@ function InviteRow({ invite, onUpdated }) {
   return (
     <Card>
       <CardContent className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-medium text-slate-900">{invite.suppliers?.business_name ?? "Supplier"}</p>
             <Badge variant={statusVariant(invite.supplier_status)}>{invite.supplier_status}</Badge>
@@ -335,18 +329,18 @@ function InviteRow({ invite, onUpdated }) {
 
         {showDecline ? (
           <div className="flex flex-col gap-2 md:flex-row md:items-center">
-            <Input
+            <FormField label="Decline reason (optional)"><Input
               placeholder="Decline reason (optional)"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               disabled={busy}
-            />
+            /></FormField>
             <Button type="button" variant="secondary" disabled={busy} onClick={saveDecline}>Save decline</Button>
           </div>
         ) : null}
 
-        {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-        {ok ? <p className="text-sm text-emerald-700">{ok}</p> : null}
+        {err ? <Feedback tone="danger">{err}</Feedback> : null}
+        {ok ? <Feedback tone="success">{ok}</Feedback> : null}
       </CardContent>
     </Card>
   );
@@ -600,7 +594,7 @@ function QuotePanel({ enquiryId, supplierId, user }) {
           <>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="neutral">Status: {quote.status}</Badge>
-              <Badge variant="brand">Total: GBP {Number(quote.total_amount || 0).toFixed(2)}</Badge>
+              <span className="font-semibold">Total: GBP {Number(quote.total_amount || 0).toFixed(2)}</span>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -650,7 +644,7 @@ function QuotePanel({ enquiryId, supplierId, user }) {
                           {it.qty} x GBP {Number(it.unit_price).toFixed(2)} = GBP {Number(it.line_total).toFixed(2)}
                         </p>
                       </div>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => deleteItem(it.id)}>
+                      <Button type="button" size="sm" variant="danger" onClick={() => deleteItem(it.id)}>
                         Remove
                       </Button>
                     </div>
@@ -660,14 +654,14 @@ function QuotePanel({ enquiryId, supplierId, user }) {
             </div>
 
             <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
-              <Input
+              <FormField label="Item title" className="md:col-span-2"><Input
                 className="md:col-span-2"
                 placeholder="Item title"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-              />
-              <Input placeholder="Qty" value={newQty} onChange={(e) => setNewQty(e.target.value)} />
-              <Input placeholder="Unit GBP" value={newUnit} onChange={(e) => setNewUnit(e.target.value)} />
+              /></FormField>
+              <FormField label="Qty"><Input placeholder="Qty" value={newQty} onChange={(e) => setNewQty(e.target.value)} /></FormField>
+              <FormField label="Unit GBP"><Input placeholder="Unit GBP" value={newUnit} onChange={(e) => setNewUnit(e.target.value)} /></FormField>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -677,8 +671,8 @@ function QuotePanel({ enquiryId, supplierId, user }) {
           </>
         )}
 
-        {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-        {ok ? <p className="text-sm text-emerald-700">{ok}</p> : null}
+        {err ? <Feedback tone="danger">{err}</Feedback> : null}
+        {ok ? <Feedback tone="success">{ok}</Feedback> : null}
       </CardContent>
     </Card>
   );
@@ -710,9 +704,10 @@ function EnquiryDetail({ enquiryId, user, onBack }) {
     load();
   }, [enquiryId]);
 
-  if (loading) return <Skeleton className="h-40 w-full" />;
-  if (err) return <p className="text-sm text-rose-600">Error: {err}</p>;
-  if (!enquiry) return <EmptyState title="Enquiry not found" description="The selected enquiry could not be loaded." />;
+  if (loading || err || !enquiry) return <div className="ew-page-stack">
+    <PageHeader title="Enquiry detail" actions={[{ key: "back", label: "Back to enquiries", variant: "secondary", onClick: onBack }]} />
+    {loading ? <Skeleton className="h-40 w-full" /> : err ? <Feedback tone="danger" onRetry={load}>{err}</Feedback> : <EmptyState title="Enquiry not found" description="The selected enquiry could not be loaded." />}
+  </div>;
 
   return (
     <div className="space-y-4">
@@ -727,37 +722,37 @@ function EnquiryDetail({ enquiryId, user, onBack }) {
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle>Overview</CardTitle>
             <Badge variant={statusVariant(enquiry.status)}>{enquiry.status}</Badge>
-            <Badge variant="neutral">{enquiry.match_source}</Badge>
+            <span className="ew-muted">{enquiry.match_source}</span>
           </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-2">
-          <p><span className="text-slate-500">Date:</span> {enquiry.event_date}</p>
-          <p><span className="text-slate-500">Postcode:</span> {enquiry.event_postcode}</p>
-          <p><span className="text-slate-500">Event type:</span> {enquiry.event_type || "-"}</p>
-          <p><span className="text-slate-500">Category:</span> {enquiry.enquiry_category_slug || "-"}</p>
-          <p><span className="text-slate-500">Start time:</span> {enquiry.start_time || "-"}</p>
-          <p><span className="text-slate-500">Guests:</span> {enquiry.guest_count ?? "-"}</p>
-          <p><span className="text-slate-500">Budget range:</span> {enquiry.budget_range || "-"}</p>
+          <p><span className="ew-muted">Date:</span> {enquiry.event_date}</p>
+          <p><span className="ew-muted">Postcode:</span> {enquiry.event_postcode}</p>
+          <p><span className="ew-muted">Event type:</span> {enquiry.event_type || "-"}</p>
+          <p><span className="ew-muted">Category:</span> {enquiry.enquiry_category_slug || "-"}</p>
+          <p><span className="ew-muted">Start time:</span> {enquiry.start_time || "-"}</p>
+          <p><span className="ew-muted">Guests:</span> {enquiry.guest_count ?? "-"}</p>
+          <p><span className="ew-muted">Budget range:</span> {enquiry.budget_range || "-"}</p>
           <p>
-            <span className="text-slate-500">Budget amount:</span>{" "}
+            <span className="ew-muted">Budget amount:</span>{" "}
             {enquiry.budget_amount ? `£${Number(enquiry.budget_amount).toFixed(2)} ${enquiry.budget_unit === "per_person" ? "per person" : "in total"}` : "-"}
           </p>
-          <p><span className="text-slate-500">Venue:</span> {enquiry.venues?.name ?? "-"}</p>
-          <p><span className="text-slate-500">Venue known:</span> {enquiry.venue_known ? "Yes" : "No"}</p>
-          <p><span className="text-slate-500">Venue name:</span> {enquiry.venue_name || "-"}</p>
-          <p><span className="text-slate-500">Venue postcode:</span> {enquiry.venue_postcode || "-"}</p>
-          <p><span className="text-slate-500">Indoor/outdoor:</span> {enquiry.indoor_outdoor || "-"}</p>
-          <p><span className="text-slate-500">Power available:</span> {enquiry.power_available === null ? "-" : enquiry.power_available ? "Yes" : "No"}</p>
-          <p><span className="text-slate-500">Contact preference:</span> {enquiry.contact_preference || "-"}</p>
-          <p><span className="text-slate-500">Urgency:</span> {enquiry.urgency || "-"}</p>
-          <p><span className="text-slate-500">Source page:</span> {enquiry.source_page || "-"}</p>
-          <p><span className="text-slate-500">Message quality score:</span> {Number(enquiry.message_quality_score || 0)}</p>
-          <p className="md:col-span-2"><span className="text-slate-500">Quality flags:</span> {Array.isArray(enquiry.message_quality_flags) && enquiry.message_quality_flags.length > 0 ? enquiry.message_quality_flags.join(", ") : "-"}</p>
-          {enquiry.dietary_requirements ? <p className="md:col-span-2 whitespace-pre-wrap"><span className="text-slate-500">Dietary requirements:</span> {enquiry.dietary_requirements}</p> : null}
-          {enquiry.message ? <p className="md:col-span-2 whitespace-pre-wrap"><span className="text-slate-500">Message:</span> {enquiry.message}</p> : null}
+          <p><span className="ew-muted">Venue:</span> {enquiry.venues?.name ?? "-"}</p>
+          <p><span className="ew-muted">Venue known:</span> {enquiry.venue_known ? "Yes" : "No"}</p>
+          <p><span className="ew-muted">Venue name:</span> {enquiry.venue_name || "-"}</p>
+          <p><span className="ew-muted">Venue postcode:</span> {enquiry.venue_postcode || "-"}</p>
+          <p><span className="ew-muted">Indoor/outdoor:</span> {enquiry.indoor_outdoor || "-"}</p>
+          <p><span className="ew-muted">Power available:</span> {enquiry.power_available === null ? "-" : enquiry.power_available ? "Yes" : "No"}</p>
+          <p><span className="ew-muted">Contact preference:</span> {enquiry.contact_preference || "-"}</p>
+          <p><span className="ew-muted">Urgency:</span> {enquiry.urgency || "-"}</p>
+          <p><span className="ew-muted">Source page:</span> {enquiry.source_page || "-"}</p>
+          <p><span className="ew-muted">Message quality score:</span> {Number(enquiry.message_quality_score || 0)}</p>
+          <p className="md:col-span-2"><span className="ew-muted">Quality flags:</span> {Array.isArray(enquiry.message_quality_flags) && enquiry.message_quality_flags.length > 0 ? enquiry.message_quality_flags.join(", ") : "-"}</p>
+          {enquiry.dietary_requirements ? <p className="md:col-span-2 whitespace-pre-wrap"><span className="ew-muted">Dietary requirements:</span> {enquiry.dietary_requirements}</p> : null}
+          {enquiry.message ? <p className="md:col-span-2 whitespace-pre-wrap"><span className="ew-muted">Message:</span> {enquiry.message}</p> : null}
           {enquiry.structured_answers ? (
             <p className="md:col-span-2 whitespace-pre-wrap">
-              <span className="text-slate-500">Structured answers:</span> {JSON.stringify(enquiry.structured_answers, null, 2)}
+              <span className="ew-muted">Structured answers:</span> {JSON.stringify(enquiry.structured_answers, null, 2)}
             </p>
           ) : null}
         </CardContent>
@@ -804,6 +799,12 @@ export default function EnquiryList({ user }) {
   const [selectedId, setSelectedId] = useState(null);
   const [mode, setMode] = useState("list");
   const isDev = import.meta.env.DEV;
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const filteredRows = useMemo(() => rows.filter((row) =>
+    (status === "all" || row.status === status) &&
+    [row.customers?.full_name, row.event_postcode, row.venues?.name, row.event_type].join(" ").toLowerCase().includes(search.toLowerCase())
+  ), [rows, search, status]);
 
   async function load() {
     setErr("");
@@ -875,77 +876,24 @@ export default function EnquiryList({ user }) {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Enquiries"
-        subtitle="Review concierge enquiries and supplier activity."
-        actions={[{ key: "create", label: "Create enquiry", onClick: () => setMode("create") }]}
-      />
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <StatCard label="Total enquiries" value={rows.length} />
-        <StatCard label="New" value={rows.filter((r) => r.status === "new").length} />
-        <StatCard label="Quoted" value={rows.filter((r) => r.status === "quoted").length} />
+    <div className="ew-page-stack">
+      <PageHeader title="Enquiries" subtitle="Review concierge enquiries and supplier activity." actions={[{ key: "create", label: "Create enquiry", onClick: () => setMode("create") }]} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <MetricCard label="Loaded enquiries" value={err ? null : rows.length} hint="Latest 100 records" icon={Inbox} loading={loading} />
+        <MetricCard label="New" value={err ? null : rows.filter((r) => r.status === "new").length} hint="Within loaded records" tone="orange" icon={Clock} loading={loading} />
+        <MetricCard label="Quoted" value={err ? null : rows.filter((r) => r.status === "quoted").length} hint="Within loaded records" tone="green" icon={Send} loading={loading} />
       </div>
-
-      <Card className="overflow-hidden">
-        {loading ? (
-          <CardContent className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        ) : err ? (
-          <CardContent>
-            <EmptyState
-              title="Error loading enquiries"
-              description={err}
-              actionLabel="Retry"
-              onAction={load}
-            />
-          </CardContent>
-        ) : rows.length === 0 ? (
-          <CardContent>
-            <EmptyState title="No enquiries yet" description="Create a concierge enquiry to get started." />
-          </CardContent>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <THead>
-                <TR>
-                  <TH>Date</TH>
-                  <TH>Postcode</TH>
-                  <TH>Customer</TH>
-                  <TH>Venue</TH>
-                  <TH>Status</TH>
-                  <TH>Source</TH>
-                </TR>
-              </THead>
-              <TBody>
-                {rows.map((r) => (
-                  <TR
-                    key={r.id}
-                    interactive
-                    className="cursor-pointer"
-                    onClick={() => {
-                      setSelectedId(r.id);
-                      setMode("detail");
-                    }}
-                    title="Click to view"
-                  >
-                    <TD>{r.event_date}</TD>
-                    <TD>{r.event_postcode}</TD>
-                    <TD>{r.customers?.full_name ?? "-"}</TD>
-                    <TD>{r.venues?.name ?? "-"}</TD>
-                    <TD><Badge variant={statusVariant(r.status)}>{r.status}</Badge></TD>
-                    <TD><Badge variant="neutral">{r.match_source}</Badge></TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          </div>
-        )}
-      </Card>
+      <div className="ew-panel">
+        <FilterBar search={search} onSearchChange={setSearch} placeholder="Search customer, postcode or venue…" status={status} onStatusChange={setStatus} statuses={[...new Set(rows.map((row) => row.status).filter(Boolean))].map((value) => ({ value, label: value }))} count={loading || err ? null : filteredRows.length}>
+          <Button variant="secondary" onClick={load} disabled={loading}>Refresh</Button>
+        </FilterBar>
+        <DataTable caption="Admin enquiries, latest 100 records" rows={filteredRows} loading={loading} error={err} onRetry={load} emptyTitle={rows.length ? "No matching enquiries" : "No enquiries yet"} emptyDescription={rows.length ? "Try a different search or status." : "Create a concierge enquiry to get started."} columns={[
+          { key: "customer", label: "Customer", render: (row) => <button className="ew-text-action" onClick={() => { setSelectedId(row.id); setMode("detail"); }}>{row.customers?.full_name || "View enquiry"}</button> },
+          { key: "event_date", label: "Event date" }, { key: "event_postcode", label: "Postcode" },
+          { key: "venue", label: "Venue", render: (row) => row.venues?.name || "—" },
+          { key: "status", label: "Status", render: (row) => <StatusBadge status={row.status} /> }, { key: "match_source", label: "Source" },
+        ]} />
+      </div>
     </div>
   );
 }

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import Badge from "../../components/ui/Badge";
-import EmptyState from "../../components/ui/EmptyState";
-import Input from "../../components/ui/Input";
-import Skeleton from "../../components/ui/Skeleton";
+import { Button, Feedback } from "../../components/workspace/AdminPrimitives";
+import {
+  DataTable,
+  FilterBar,
+  StatusBadge,
+  WorkspaceDialog,
+} from "../../components/workspace/WorkspaceComponents";
 import { supabase } from "../../lib/supabase";
-import EnquirySummaryCard from "../components/EnquirySummaryCard";
 
 function fmtDate(value) {
   if (!value) return "-";
@@ -18,16 +18,9 @@ function fmtDate(value) {
   }
 }
 
-function statusVariant(status) {
-  const s = String(status || "").toLowerCase();
-  if (s === "quoted") return "brand";
-  if (s === "declined") return "danger";
-  if (s === "invited") return "warning";
-  return "neutral";
-}
-
 async function authFetch(path, options = {}) {
-  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+  const { data: sessionData, error: sessionErr } =
+    await supabase.auth.getSession();
   if (sessionErr) throw sessionErr;
   const accessToken = sessionData?.session?.access_token;
   if (!accessToken) throw new Error("Session expired. Please sign in again.");
@@ -56,6 +49,8 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
   const [ok, setOk] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [selectedId, setSelectedId] = useState(null);
+  const selectedRow = rows.find((row) => row.id === selectedId);
 
   async function load() {
     if (!supplierId) return;
@@ -64,9 +59,14 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
     try {
       const qs = new URLSearchParams();
       if (status) qs.set("status", status);
-      const resp = await authFetch(`/api/supplier-enquiries${qs.toString() ? `?${qs.toString()}` : ""}`);
+      const resp = await authFetch(
+        `/api/supplier-enquiries${qs.toString() ? `?${qs.toString()}` : ""}`,
+      );
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load enquiries");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to load enquiries",
+        );
       setRows(json?.rows || []);
     } catch (e) {
       const msg = e?.message || "Failed to load enquiries";
@@ -85,7 +85,9 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
   }, [supplierId, status]);
 
   const filtered = useMemo(() => {
-    const q = String(query || "").trim().toLowerCase();
+    const q = String(query || "")
+      .trim()
+      .toLowerCase();
     if (!q) return rows;
     return rows.filter((row) => {
       const hay = [
@@ -116,7 +118,10 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
         body: JSON.stringify({ enquiryId }),
       });
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to decline enquiry");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to decline enquiry",
+        );
       setOk("Enquiry declined.");
       await load();
     } catch (e) {
@@ -136,10 +141,15 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
         body: JSON.stringify({ enquiryId }),
       });
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to create quote");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to create quote",
+        );
       const quoteId = json?.quoteId;
       if (!quoteId) throw new Error("No quote returned");
-      setOk(json?.existed ? "Opening existing quote..." : "Draft quote created.");
+      setOk(
+        json?.existed ? "Opening existing quote..." : "Draft quote created.",
+      );
       if (typeof onCreateQuote === "function") onCreateQuote(quoteId);
     } catch (e) {
       setErr(e?.message || "Failed to create quote");
@@ -148,94 +158,194 @@ export default function SupplierEnquiries({ supplierId, onCreateQuote }) {
     }
   }
 
-  if (loading) {
+  function actions(row) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-72" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Skeleton className="h-[420px]" />
-          <Skeleton className="h-[420px]" />
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => createQuote(row.enquiryId)}
+          disabled={busyId === row.enquiryId || row.status === "declined"}
+        >
+          {row.quoteId ? "View quote" : "Create quote"}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="danger"
+          onClick={() => declineEnquiry(row.enquiryId)}
+          disabled={
+            busyId === row.enquiryId ||
+            row.status === "declined" ||
+            row.status === "quoted"
+          }
+        >
+          Decline
+        </Button>
       </div>
     );
   }
-
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Enquiries"
-        subtitle="Review invitations with full event details before sending quotes."
-        actions={[{ key: "refresh", label: "Refresh", variant: "secondary", onClick: load }]}
+        subtitle="Review invitations and event details before sending quotes."
+        actions={[
+          {
+            key: "refresh",
+            label: "Refresh",
+            variant: "secondary",
+            onClick: load,
+            disabled: loading,
+          },
+        ]}
       />
-
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+      {ok && <Feedback tone="success">{ok}</Feedback>}
+      <div className="ew-panel">
+        <FilterBar
+          search={query}
+          onSearchChange={setQuery}
           placeholder="Search customer, venue, status or notes"
+          status={status || "all"}
+          onStatusChange={(value) => setStatus(value === "all" ? "" : value)}
+          statuses={[
+            { value: "invited", label: "Invited" },
+            { value: "quoted", label: "Quoted" },
+            { value: "declined", label: "Declined" },
+          ]}
+          count={loading || err ? null : filtered.length}
         />
-        <select
-          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">All statuses</option>
-          <option value="invited">Invited</option>
-          <option value="quoted">Quoted</option>
-          <option value="declined">Declined</option>
-        </select>
+        <DataTable
+          className="ew-admin-table"
+          caption="Supplier enquiries"
+          rows={filtered}
+          loading={loading}
+          error={err}
+          onRetry={load}
+          emptyTitle="No enquiries found"
+          emptyDescription="New customer requests will appear here. Try another filter if needed."
+          columns={[
+            {
+              key: "customer",
+              label: "Customer",
+              render: (row) => (
+                <div>
+                  <button
+                    className="ew-text-action"
+                    onClick={() => setSelectedId(row.id)}
+                  >
+                    {row.customerName ||
+                      row.enquiry?.customerName ||
+                      "Customer"}
+                  </button>
+                  <small>Invited: {fmtDate(row.invitedAt)}</small>
+                </div>
+              ),
+            },
+            {
+              key: "event",
+              label: "Event",
+              render: (row) => (
+                <div>
+                  {row.enquiry?.eventDate || "—"}
+                  <small>
+                    {row.enquiry?.categoryLabel || "—"}
+                    {row.enquiry?.guestCount != null
+                      ? ` · ${row.enquiry.guestCount} guests`
+                      : ""}
+                  </small>
+                </div>
+              ),
+            },
+            {
+              key: "location",
+              label: "Location",
+              render: (row) =>
+                row.enquiry?.venue?.name ||
+                row.enquiry?.locationLabel ||
+                row.enquiry?.postcode ||
+                "—",
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (row) => <StatusBadge status={row.status} />,
+            },
+            { key: "actions", label: "Actions", render: actions },
+          ]}
+        />
       </div>
-
-      {err ? <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div> : null}
-      {ok ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{ok}</div> : null}
-
-      {filtered.length === 0 ? (
-        <EmptyState title="No enquiries yet" description="New customer requests will appear here." />
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filtered.map((row) => (
-            <Card key={row.id}>
-              <CardHeader>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-lg">
-                    {row.customerName || row.enquiry?.customerName || "Customer"}
-                  </CardTitle>
-                  <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {row.enquiry?.categoryLabel ? <Badge variant="neutral">{row.enquiry.categoryLabel}</Badge> : null}
-                  {row.enquiry?.eventDate ? <Badge variant="neutral">{row.enquiry.eventDate}</Badge> : null}
-                  {row.enquiry?.guestCount ? <Badge variant="neutral">{row.enquiry.guestCount} guests</Badge> : null}
-                  {row.enquiry?.budget?.label ? <Badge variant="neutral">Budget: {row.enquiry.budget.label}</Badge> : null}
-                </div>
-                <EnquirySummaryCard enquiry={row.enquiry} compact />
-                <p className="text-xs text-slate-500">Invited: {fmtDate(row.invitedAt)}</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => createQuote(row.enquiryId)}
-                    disabled={busyId === row.enquiryId || row.status === "declined"}
-                  >
-                    {row.quoteId ? "View quote" : "Create quote"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => declineEnquiry(row.enquiryId)}
-                    disabled={busyId === row.enquiryId || row.status === "declined" || row.status === "quoted"}
-                  >
-                    Decline
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <WorkspaceDialog
+        open={!!selectedRow}
+        onClose={() => setSelectedId(null)}
+        title="Request details"
+        footer={selectedRow ? actions(selectedRow) : null}
+      >
+        {selectedRow && (
+          <div className="ew-record-details space-y-4">
+            {err && <Feedback>{err}</Feedback>}
+            <StatusBadge status={selectedRow.status} />
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <dt className="ew-field-label">Customer</dt>
+                <dd>
+                  {selectedRow.customerName ||
+                    selectedRow.enquiry?.customerName ||
+                    "Customer"}
+                </dd>
+              </div>
+              <div>
+                <dt className="ew-field-label">Date</dt>
+                <dd>{selectedRow.enquiry?.eventDate || "—"}</dd>
+              </div>
+              <div>
+                <dt className="ew-field-label">Time</dt>
+                <dd>{selectedRow.enquiry?.startTime || "—"}</dd>
+              </div>
+              <div>
+                <dt className="ew-field-label">Guests</dt>
+                <dd>{selectedRow.enquiry?.guestCount ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="ew-field-label">Budget</dt>
+                <dd>
+                  {selectedRow.enquiry?.budget?.label ||
+                    selectedRow.enquiry?.budget?.range ||
+                    "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="ew-field-label">Category</dt>
+                <dd>{selectedRow.enquiry?.categoryLabel || "—"}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="ew-field-label">Venue</dt>
+                <dd>
+                  {[
+                    selectedRow.enquiry?.venue?.name,
+                    selectedRow.enquiry?.venue?.address,
+                    selectedRow.enquiry?.venue?.locationLabel ||
+                      selectedRow.enquiry?.locationLabel,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "—"}
+                </dd>
+              </div>
+            </dl>
+            {selectedRow.enquiry?.message && (
+              <section>
+                <h3 className="ew-field-label">Message</h3>
+                <p className="whitespace-pre-wrap">
+                  {selectedRow.enquiry.message}
+                </p>
+              </section>
+            )}
+            <p className="ew-form-help">
+              Invited: {fmtDate(selectedRow.invitedAt)}
+            </p>
+          </div>
+        )}
+      </WorkspaceDialog>
     </div>
   );
 }

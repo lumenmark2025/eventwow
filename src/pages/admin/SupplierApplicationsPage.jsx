@@ -1,14 +1,7 @@
+import { FormField, Select, Feedback, Section, Button, Input, Card, CardContent, EmptyState, Skeleton, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
-import { Card, CardContent } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
 async function apiFetch(path, options = {}) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -98,16 +91,16 @@ export default function SupplierApplicationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader title="Supplier Applications" subtitle="Review pending supplier onboarding submissions." />
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? <Feedback tone="danger" onRetry={load}>{error}</Feedback> : null}
 
       <Section
         title="Applications"
         right={(
-          <div className="flex items-center gap-2">
-            <select
+          <div className="flex flex-wrap items-center gap-2">
+            <FormField label="Filter applications by status"><Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm"
@@ -119,8 +112,8 @@ export default function SupplierApplicationsPage() {
               <option value="rejected">Rejected</option>
               <option value="approved">Approved</option>
               <option value="all">All</option>
-            </select>
-            <Badge variant="neutral">{rows.length}</Badge>
+            </Select></FormField>
+            <span className="ew-result-count">{loading || error ? "—" : rows.length} records</span>
           </div>
         )}
       >
@@ -132,7 +125,7 @@ export default function SupplierApplicationsPage() {
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
               </div>
-            ) : rows.length === 0 ? (
+            ) : error ? null : rows.length === 0 ? (
               <div className="p-5">
                 <EmptyState title="No pending suppliers" description="New supplier applications will appear here." />
               </div>
@@ -154,36 +147,36 @@ export default function SupplierApplicationsPage() {
                     {rows.map((row) => (
                       <TR key={row.id}>
                         <TD>
-                          <div className="space-y-0.5">
+                          <div className="gap-1">
                             <p className="font-medium text-slate-900">{row.business_name || "-"}</p>
-                            <p className="text-xs text-slate-500">/{row.slug || "-"}</p>
+                            <p className="text-xs ew-muted">/{row.slug || "-"}</p>
                           </div>
                         </TD>
                         <TD>
-                          <div className="space-y-0.5 text-xs text-slate-600">
+                          <div className="gap-1 text-xs text-slate-600">
                             <p>{row.public_email || "-"}</p>
                             <p>{row.public_phone || "-"}</p>
                             <p>{row.location_label || "-"}</p>
                           </div>
                         </TD>
-                        <TD className="max-w-[220px]">
+                        <TD className="min-w-0">
                           <div className="flex flex-wrap gap-1">
                             {(row.listing_categories || []).map((cat) => (
-                              <Badge key={`${row.id}-${cat}`} variant="neutral">{cat}</Badge>
+                              <span key={`${row.id}-${cat}`}>{cat}</span>
                             ))}
                           </div>
                         </TD>
-                        <TD className="max-w-[260px] text-sm text-slate-700">{row.short_description || "-"}</TD>
+                        <TD className="min-w-0 text-sm text-slate-700">{row.short_description || "-"}</TD>
                         <TD>{fmt(row.submitted_at)}</TD>
-                        <TD className="min-w-[220px]">
-                          <Input
+                        <TD className="min-w-0">
+                          <Input aria-label="Optional internal note"
                             value={notesById[row.id] ?? ""}
                             onChange={(e) => setNotesById((prev) => ({ ...prev, [row.id]: e.target.value }))}
                             placeholder="Optional internal note"
                           />
                         </TD>
                         <TD>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             {String(row.onboarding_status || "").toLowerCase() === "pending_review" ? (
                               <>
                                 <Button
@@ -195,7 +188,7 @@ export default function SupplierApplicationsPage() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  variant="secondary"
+                                  variant="danger"
                                   disabled={busy === `approve:${row.id}` || busy === `reject:${row.id}`}
                                   onClick={() => reject(row.id)}
                                 >
@@ -203,7 +196,7 @@ export default function SupplierApplicationsPage() {
                                 </Button>
                               </>
                             ) : (
-                              <span className="text-xs text-slate-500">No action</span>
+                              <span className="text-xs ew-muted">No action</span>
                             )}
                           </div>
                         </TD>

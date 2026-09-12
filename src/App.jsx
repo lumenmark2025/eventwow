@@ -1,67 +1,69 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { lazy, useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 import { getSupplierStartRoute } from "./lib/authRedirect";
 
 import Login from "./components/Login";
-import AdminLayout from "./admin/layout/AdminLayout";
-import SupplierLayout from "./supplier/layout/SupplierLayout";
-import CustomerLayout from "./customer/layout/CustomerLayout";
+const AdminLayout = lazy(() => import("./admin/layout/AdminLayout"));
+const SupplierLayout = lazy(() => import("./supplier/layout/SupplierLayout"));
+const CustomerLayout = lazy(() => import("./customer/layout/CustomerLayout"));
 import { warnIfAuthOriginLooksWrong } from "./lib/siteUrl";
 
-import AdminVenuesPage from "./pages/admin/VenuesPage";
-import AdminSuppliersPage from "./pages/admin/SuppliersPage";
-import AdminEnquiriesPage from "./pages/admin/EnquiriesPage";
-import AdminDashboardPage from "./pages/admin/DashboardPage";
-import CreditsLedgerPage from "./pages/admin/CreditsLedgerPage";
-import SupplierPerformancePage from "./pages/admin/SupplierPerformancePage";
-import ReviewsPage from "./pages/admin/ReviewsPage";
-import VenueClaimsPage from "./pages/admin/VenueClaimsPage";
-import CategoriesPage from "./pages/admin/CategoriesPage";
-import SupplierApplicationsPage from "./pages/admin/SupplierApplicationsPage";
-import VenueHeroImagesPage from "./pages/admin/VenueHeroImagesPage";
+const AdminVenuesPage = lazy(() => import("./pages/admin/VenuesPage"));
+const AdminSuppliersPage = lazy(() => import("./pages/admin/SuppliersPage"));
+const AdminEnquiriesPage = lazy(() => import("./pages/admin/EnquiriesPage"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
+const CreditsLedgerPage = lazy(() => import("./pages/admin/CreditsLedgerPage"));
+const SupplierPerformancePage = lazy(() => import("./pages/admin/SupplierPerformancePage"));
+const ReviewsPage = lazy(() => import("./pages/admin/ReviewsPage"));
+const VenueClaimsPage = lazy(() => import("./pages/admin/VenueClaimsPage"));
+const CategoriesPage = lazy(() => import("./pages/admin/CategoriesPage"));
+const SupplierApplicationsPage = lazy(() => import("./pages/admin/SupplierApplicationsPage"));
+const VenueHeroImagesPage = lazy(() => import("./pages/admin/VenueHeroImagesPage"));
 
-import DashboardPage from "./pages/supplier/DashboardPage";
-import SupplierEnquiriesPage from "./pages/supplier/EnquiriesPage";
-import QuotesPage from "./pages/supplier/QuotesPage";
-import BookingsPage from "./pages/supplier/BookingsPage";
-import MessagesPage from "./pages/supplier/MessagesPage";
-import NotificationsPage from "./pages/supplier/NotificationsPage";
-import ListingPage from "./pages/supplier/ListingPage";
-import CustomerDashboardPage from "./pages/customer/DashboardPage";
-import CustomerEnquiriesPage from "./pages/customer/EnquiriesPage";
-import CustomerEnquiryDetailPage from "./pages/customer/EnquiryDetailPage";
-import VenueLayout from "./venue/layout/VenueLayout";
-import VenueDashboardPage from "./pages/venue/DashboardPage";
-import VenueEditPage from "./pages/venue/VenueEditPage";
+const DashboardPage = lazy(() => import("./pages/supplier/DashboardPage"));
+const SupplierEnquiriesPage = lazy(() => import("./pages/supplier/EnquiriesPage"));
+const QuotesPage = lazy(() => import("./pages/supplier/QuotesPage"));
+const BookingsPage = lazy(() => import("./pages/supplier/BookingsPage"));
+const MessagesPage = lazy(() => import("./pages/supplier/MessagesPage"));
+const NotificationsPage = lazy(() => import("./pages/supplier/NotificationsPage"));
+const ListingPage = lazy(() => import("./pages/supplier/ListingPage"));
+const CustomerDashboardPage = lazy(() => import("./pages/customer/DashboardPage"));
+const CustomerEnquiriesPage = lazy(() => import("./pages/customer/EnquiriesPage"));
+const CustomerEnquiryDetailPage = lazy(() => import("./pages/customer/EnquiryDetailPage"));
+const VenueLayout = lazy(() => import("./venue/layout/VenueLayout"));
+const VenueDashboardPage = lazy(() => import("./pages/venue/DashboardPage"));
+const VenueEditPage = lazy(() => import("./pages/venue/VenueEditPage"));
 
-import PublicQuotePage from "./pages/PublicQuotePage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import UpdatePassword from "./pages/UpdatePassword";
+const PublicQuotePage = lazy(() => import("./pages/PublicQuotePage"));
+const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 
 import HomePage from "./pages/marketing/HomePage";
-import BrowsePage from "./pages/marketing/BrowsePage";
-import HowItWorksPage from "./pages/marketing/HowItWorksPage";
-import PricingPage from "./pages/marketing/PricingPage";
-import ContactPage from "./pages/marketing/ContactPage";
-import SuppliersPage from "./pages/marketing/SuppliersPage";
-import SupplierProfilePage from "./pages/marketing/SupplierProfilePage";
-import VenuesPage from "./pages/marketing/VenuesPage";
-import VenueProfilePage from "./pages/marketing/VenueProfilePage";
-import VenueClaimRequestPage from "./pages/marketing/VenueClaimRequestPage";
-import VenueClaimVerifyPage from "./pages/marketing/VenueClaimVerifyPage";
-import RequestPage from "./pages/marketing/RequestPage";
-import SupplierRequestQuotePage from "./pages/marketing/SupplierRequestQuotePage";
-import EnquiryQuotesPage from "./pages/marketing/EnquiryQuotesPage";
-import BookingAccessPage from "./pages/marketing/BookingAccessPage";
-import CategoryLocationLandingPage from "./pages/marketing/CategoryLocationLandingPage";
-import SupplierSeoLandingPage from "./pages/marketing/SupplierSeoLandingPage";
-import CategoryLandingPage from "./pages/marketing/CategoryLandingPage";
-import SupplierJoinPage from "./pages/marketing/SupplierJoinPage";
-import SupplierVerifyPage from "./pages/marketing/SupplierVerifyPage";
-import SupplierOnboardingPage from "./pages/marketing/SupplierOnboardingPage";
+const BrowsePage = lazy(() => import("./pages/marketing/BrowsePage"));
+const HowItWorksPage = lazy(() => import("./pages/marketing/HowItWorksPage"));
+const PricingPage = lazy(() => import("./pages/marketing/PricingPage"));
+const ContactPage = lazy(() => import("./pages/marketing/ContactPage"));
+const SuppliersPage = lazy(() => import("./pages/marketing/SuppliersPage"));
+const SupplierProfilePage = lazy(() => import("./pages/marketing/SupplierProfilePage"));
+const VenuesPage = lazy(() => import("./pages/marketing/VenuesPage"));
+const VenueProfilePage = lazy(() => import("./pages/marketing/VenueProfilePage"));
+const VenueClaimRequestPage = lazy(() => import("./pages/marketing/VenueClaimRequestPage"));
+const VenueClaimVerifyPage = lazy(() => import("./pages/marketing/VenueClaimVerifyPage"));
+const RequestPage = lazy(() => import("./pages/marketing/RequestPage"));
+const SupplierRequestQuotePage = lazy(() => import("./pages/marketing/SupplierRequestQuotePage"));
+const EnquiryQuotesPage = lazy(() => import("./pages/marketing/EnquiryQuotesPage"));
+const BookingAccessPage = lazy(() => import("./pages/marketing/BookingAccessPage"));
+const CategoryLocationLandingPage = lazy(() => import("./pages/marketing/CategoryLocationLandingPage"));
+const SupplierSeoLandingPage = lazy(() => import("./pages/marketing/SupplierSeoLandingPage"));
+const CategoryLandingPage = lazy(() => import("./pages/marketing/CategoryLandingPage"));
+const SupplierJoinPage = lazy(() => import("./pages/marketing/SupplierJoinPage"));
+const SupplierVerifyPage = lazy(() => import("./pages/marketing/SupplierVerifyPage"));
+const SupplierOnboardingPage = lazy(() => import("./pages/marketing/SupplierOnboardingPage"));
+
+const DesignSystemPage = lazy(() => import("./pages/DesignSystemPage"));
 
 function AccessDenied({ error, onSignOut }) {
   return (
@@ -335,6 +337,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/design-system" element={<DesignSystemPage />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/contact" element={<ContactPage />} />

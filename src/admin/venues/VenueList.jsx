@@ -1,16 +1,10 @@
+import { FormActions, FormField, Textarea, Select, Feedback, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Input, Skeleton, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Input from "../../components/ui/Input";
-import Modal from "../../components/ui/Modal";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
+import { WorkspaceDialog as Modal, MetricCard, DataTable, FilterBar, StatusBadge } from "../../components/workspace/WorkspaceComponents";
+import { Building2, Eye, EyeOff } from "lucide-react";
 import { formatVenueGuestCapacity, getVenueAttentionFlags } from "../../lib/venueDisplay";
 import {
   buildVenueDuplicateKey,
@@ -93,6 +87,7 @@ function normalizeTypeForAi(typeName) {
 
 function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
   const [loading, setLoading] = useState(true);
+  const [venueReady, setVenueReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -159,6 +154,7 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
     let mounted = true;
     (async () => {
       setLoading(true);
+      setVenueReady(false);
       setError("");
       setSuccess("");
       try {
@@ -167,6 +163,7 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
         if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load venue");
         if (!mounted) return;
         const venue = json?.venue || {};
+        setVenueReady(Boolean(json?.venue));
         setEditorVenueTypes(Array.isArray(json?.venueTypes) ? json.venueTypes : []);
         setForm({
           name: venue.name || "",
@@ -488,17 +485,17 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
     }
   }
 
-  if (loading) {
+  if (loading || !venueReady) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-52" />
-        <Skeleton className="h-80 w-full" />
+      <div className="ew-page-stack">
+        <PageHeader title="Edit venue" actions={[{ key: "back", label: "Back", variant: "secondary", onClick: onBack }]} />
+        {loading ? <Skeleton className="h-80 w-full" /> : error ? <Feedback tone="danger">{error}</Feedback> : <EmptyState title="Venue not found" description="Return to venues to select another record." />}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Edit venue"
         subtitle="Manage venue copy, guest range, imagery, and linked suppliers."
@@ -509,9 +506,9 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
         ]}
       />
 
-      {dirty ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Unsaved changes</div> : null}
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
-      {success ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</div> : null}
+      {dirty ? <Feedback tone="warning">Unsaved changes</Feedback> : null}
+      {error ? <Feedback tone="danger">{error}</Feedback> : null}
+      {success ? <Feedback tone="success">{success}</Feedback> : null}
 
       <Card>
         <CardHeader>
@@ -520,51 +517,51 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="Venue name" />
-            <Input value={form.slug} onChange={(e) => setField("slug", e.target.value)} placeholder="Slug" />
-            <Input value={form.locationLabel} onChange={(e) => setField("locationLabel", e.target.value)} placeholder="Location label" />
-            <Input value={form.city} onChange={(e) => setField("city", e.target.value)} placeholder="City" />
-            <Input value={form.postcode} onChange={(e) => setField("postcode", e.target.value)} placeholder="Postcode" />
-            <select
+            <FormField label="Venue name"><Input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="Venue name" /></FormField>
+            <FormField label="Slug"><Input value={form.slug} onChange={(e) => setField("slug", e.target.value)} placeholder="Slug" /></FormField>
+            <FormField label="Location label"><Input value={form.locationLabel} onChange={(e) => setField("locationLabel", e.target.value)} placeholder="Location label" /></FormField>
+            <FormField label="City"><Input value={form.city} onChange={(e) => setField("city", e.target.value)} placeholder="City" /></FormField>
+            <FormField label="Postcode"><Input value={form.postcode} onChange={(e) => setField("postcode", e.target.value)} placeholder="Postcode" /></FormField>
+            <FormField label="Type"><Select
               value={form.type}
               onChange={(e) => setField("type", e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none"
             >
               <option value="">Type (optional)</option>
               {aiTypeOptions.map((typeName) => (
                 <option key={typeName} value={typeName}>{typeName}</option>
               ))}
-            </select>
-            <Input value={form.websiteUrl} onChange={(e) => setField("websiteUrl", e.target.value)} placeholder="Website URL" />
-            <Input value={form.guestMin} onChange={(e) => setField("guestMin", e.target.value)} type="number" placeholder="Guest min" />
-            <Input value={form.guestMax} onChange={(e) => setField("guestMax", e.target.value)} type="number" placeholder="Guest max" />
+            </Select></FormField>
+            <FormField label="Website URL"><Input value={form.websiteUrl} onChange={(e) => setField("websiteUrl", e.target.value)} placeholder="Website URL" /></FormField>
+            <FormField label="Minimum guests"><Input value={form.guestMin} onChange={(e) => setField("guestMin", e.target.value)} type="number" placeholder="Guest min" /></FormField>
+            <FormField label="Maximum guests"><Input value={form.guestMax} onChange={(e) => setField("guestMax", e.target.value)} type="number" placeholder="Guest max" /></FormField>
           </div>
-          <Input
+          <FormField label="AI tags (comma separated)"><Input
             value={(form.aiTags || []).join(", ")}
             onChange={(e) => setField("aiTags", csvToList(e.target.value, 10, 40))}
             placeholder="AI tags (comma separated)"
-          />
-          <Input
+          /></FormField>
+          <FormField label="Hero image search terms (comma separated)"><Input
             value={(form.aiSuggestedSearchTerms || []).join(", ")}
             onChange={(e) => setField("aiSuggestedSearchTerms", csvToList(e.target.value, 6, 80))}
             placeholder="Hero image search terms (comma separated)"
-          />
+          /></FormField>
           {form.aiGeneratedAt ? (
-            <p className="text-xs text-slate-500">AI draft generated: {new Date(form.aiGeneratedAt).toLocaleString()}</p>
+            <p className="text-xs ew-muted">AI draft generated: {new Date(form.aiGeneratedAt).toLocaleString()}</p>
           ) : null}
-          <textarea
-            className="min-h-[90px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+          <FormField label="Short description"><Textarea
+            className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
             value={form.shortDescription}
             onChange={(e) => setField("shortDescription", e.target.value)}
             placeholder="Short description"
-          />
-          <textarea
-            className="min-h-[160px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+          /></FormField>
+          <FormField label="About"><Textarea
+            className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
             value={form.about}
             onChange={(e) => setField("about", e.target.value)}
             placeholder="About"
-          />
-          <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          /></FormField>
+          <label className="ew-checkbox-label">
             <input type="checkbox" checked={form.listedPublicly} onChange={(e) => setField("listedPublicly", e.target.checked)} />
             Listed publicly
           </label>
@@ -578,21 +575,21 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+            <label className="ew-upload">
               Upload hero
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                className="hidden"
+                className="ew-file-input"
                 onChange={(e) => uploadImage(e.target.files?.[0], "hero")}
               />
             </label>
-            <label className="inline-flex cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+            <label className="ew-upload">
               Upload gallery image
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                className="hidden"
+                className="ew-file-input"
                 onChange={(e) => uploadImage(e.target.files?.[0], "gallery")}
               />
             </label>
@@ -600,40 +597,39 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
           </div>
 
           {form.heroImageUrl ? (
-            <div className="overflow-hidden rounded-2xl border border-slate-200">
+            <div className="overflow-hidden rounded-xl border border-slate-200">
               <img src={form.heroImageUrl} alt="Venue hero" className="h-44 w-full object-cover" loading="lazy" />
             </div>
           ) : null}
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {(form.gallery || []).map((img, index) => (
-              <div key={img.id || `${img.url}-${index}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div key={img.id || `${img.url}-${index}`} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                 <img src={img.url} alt={`Gallery ${index + 1}`} className="h-24 w-full object-cover" loading="lazy" />
-                <div className="flex items-center justify-between gap-1 p-2">
-                  <button
+                <div className="flex flex-wrap items-center gap-2 p-2">
+                  <Button size="sm" variant="secondary"
                     type="button"
-                    className="rounded border border-slate-200 px-2 py-1 text-xs"
+
                     onClick={() => moveGallery(index, -1)}
                     disabled={busy === "reorder"}
                   >
                     Up
-                  </button>
-                  <button
+                  </Button>
+                  <Button size="sm" variant="secondary"
                     type="button"
-                    className="rounded border border-slate-200 px-2 py-1 text-xs"
+
                     onClick={() => moveGallery(index, 1)}
                     disabled={busy === "reorder"}
                   >
                     Down
-                  </button>
-                  <button
+                  </Button>
+                  <Button size="sm" variant="danger"
                     type="button"
-                    className="rounded border border-rose-200 px-2 py-1 text-xs text-rose-700"
                     onClick={() => deleteImage(img.id)}
                     disabled={busy === `delete:${img.id}`}
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -648,10 +644,11 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="max-h-72 overflow-auto rounded-xl border border-slate-200 p-2">
+            {filteredSuppliers.length === 0 && <p className="ew-form-help">No suppliers available to link.</p>}
             {filteredSuppliers.map((supplier) => {
               const checked = linkedSupplierIds.includes(supplier.id);
               return (
-                <label key={supplier.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 text-sm">
+                <label key={supplier.id} className="flex items-center gap-2 rounded-lg px-2 gap-2 hover:bg-slate-50 text-sm">
                   <input
                     type="checkbox"
                     checked={checked}
@@ -697,104 +694,105 @@ function VenueEditor({ venueId, onBack, autoOpenAi, venueTypes = [] }) {
       >
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            <Input
+            <FormField label="Venue name *"><Input
               value={aiInput.venue_name}
               onChange={(e) => setAiInput((prev) => ({ ...prev, venue_name: e.target.value }))}
               placeholder="Venue name *"
-            />
-            <Input
+            /></FormField>
+            <FormField label="Town or city *"><Input
               value={aiInput.town_or_city}
               onChange={(e) => setAiInput((prev) => ({ ...prev, town_or_city: e.target.value }))}
               placeholder="Town or city *"
-            />
-            <Input
+            /></FormField>
+            <FormField label="County or region"><Input
               value={aiInput.county_or_region}
               onChange={(e) => setAiInput((prev) => ({ ...prev, county_or_region: e.target.value }))}
               placeholder="County or region"
-            />
-            <select
+            /></FormField>
+            <FormField label="Venue type"><Select
               value={aiInput.venue_type}
               onChange={(e) => setAiInput((prev) => ({ ...prev, venue_type: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none"
             >
               {aiTypeOptions.map((typeName) => (
                 <option key={`ai-type-${typeName}`} value={normalizeTypeForAi(typeName)}>{typeName}</option>
               ))}
-            </select>
+            </Select></FormField>
             <div className="md:col-span-2">
-              <Input
+              <FormField label="Website URL (optional, not fetched)"><Input
                 value={aiInput.website_url}
                 onChange={(e) => setAiInput((prev) => ({ ...prev, website_url: e.target.value }))}
                 placeholder="Website URL (optional, not fetched)"
-              />
+              /></FormField>
             </div>
           </div>
-          <textarea
-            className="min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+          <FormField label="Notes (optional)"><Textarea
+            className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
             value={aiInput.notes}
             onChange={(e) => setAiInput((prev) => ({ ...prev, notes: e.target.value }))}
             placeholder="Notes (optional)"
-          />
-          {aiError ? <p className="text-sm text-rose-600">{aiError}</p> : null}
+          /></FormField>
+          {aiError ? <Feedback tone="danger">{aiError}</Feedback> : null}
           {aiDraft ? (
             <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <Input
+              <FormField label="Name suggestion"><Input
                 value={aiDraft.name_suggestion}
                 onChange={(e) => setAiDraft((prev) => ({ ...prev, name_suggestion: e.target.value }))}
                 placeholder="Name suggestion"
-              />
-              <Input
+              /></FormField>
+              <FormField label="Slug suggestion"><Input
                 value={aiDraft.slug_suggestion}
                 onChange={(e) => setAiDraft((prev) => ({ ...prev, slug_suggestion: e.target.value }))}
                 placeholder="Slug suggestion"
-              />
-              <Input
+              /></FormField>
+              <FormField label="Location label"><Input
                 value={aiDraft.location_label}
                 onChange={(e) => setAiDraft((prev) => ({ ...prev, location_label: e.target.value }))}
                 placeholder="Location label"
-              />
+              /></FormField>
               <div className="grid grid-cols-2 gap-2">
-                <Input
+                <FormField label="Minimum guests"><Input
                   type="number"
                   value={aiDraft.guest_min}
                   onChange={(e) => setAiDraft((prev) => ({ ...prev, guest_min: e.target.value }))}
                   placeholder="Guest min"
-                />
-                <Input
+                /></FormField>
+                <FormField label="Maximum guests"><Input
                   type="number"
                   value={aiDraft.guest_max}
                   onChange={(e) => setAiDraft((prev) => ({ ...prev, guest_max: e.target.value }))}
                   placeholder="Guest max"
-                />
+                /></FormField>
               </div>
-              <textarea
-                className="min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+              <FormField label="Short description"><Textarea
+                className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
                 value={aiDraft.short_description}
                 onChange={(e) => setAiDraft((prev) => ({ ...prev, short_description: e.target.value }))}
                 placeholder="Short description"
-              />
-              <textarea
-                className="min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+              /></FormField>
+              <FormField label="About"><Textarea
+                className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
                 value={aiDraft.about}
                 onChange={(e) => setAiDraft((prev) => ({ ...prev, about: e.target.value }))}
                 placeholder="About"
-              />
-              <Input
+              /></FormField>
+              <FormField label="Tags (comma separated)"><Input
                 value={(aiDraft.tags || []).join(", ")}
                 onChange={(e) => setAiDraft((prev) => ({ ...prev, tags: csvToList(e.target.value, 10, 40) }))}
                 placeholder="Tags (comma separated)"
-              />
-              <Input
+              /></FormField>
+              <FormField label="Hero image search terms (comma separated)"><Input
                 value={(aiDraft.hero_image_search_terms || []).join(", ")}
                 onChange={(e) =>
                   setAiDraft((prev) => ({ ...prev, hero_image_search_terms: csvToList(e.target.value, 6, 80) }))
                 }
                 placeholder="Hero image search terms (comma separated)"
-              />
+              /></FormField>
             </div>
           ) : null}
         </div>
       </Modal>
+      <FormActions><Button type="button" variant="secondary" onClick={onBack}>Cancel</Button><Button type="button" onClick={saveVenue} disabled={saving}>{saving ? "Saving..." : "Save changes"}</Button></FormActions>
     </div>
   );
 }
@@ -828,6 +826,12 @@ export default function VenueList() {
   const [bulkSummary, setBulkSummary] = useState({ created: 0, skipped: 0, failed: 0 });
   const [draftToDelete, setDraftToDelete] = useState(null);
   const [deletingDraft, setDeletingDraft] = useState(false);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const filteredRows = useMemo(() => rows.filter((row) =>
+    (status === "all" || (status === "published" ? isVenuePublished(row) : !isVenuePublished(row))) &&
+    [row.name, row.slug, row.location_label, row.city].join(" ").toLowerCase().includes(search.toLowerCase())
+  ), [rows, search, status]);
   const notPublishedCount = useMemo(() => rows.filter((venue) => !isVenuePublished(venue)).length, [rows]);
 
   async function loadVenues() {
@@ -1233,163 +1237,48 @@ export default function VenueList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader title="Venues" subtitle="Manage public venue listings, media, and linked suppliers." />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Create venue</CardTitle>
-          <CardDescription>Add a new venue record, run AI draft, or bulk-create draft venues from CSV.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <form onSubmit={createVenue} className="flex flex-col gap-3 md:flex-row">
-            <Input
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              placeholder="Venue name"
-            />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <MetricCard label="Loaded venues" value={listError ? null : rows.length} icon={Building2} tone="purple" loading={loading} />
+        <MetricCard label="Published" value={listError ? null : rows.length - notPublishedCount} hint="Within loaded records" icon={Eye} tone="green" loading={loading} />
+        <MetricCard label="Not published" value={listError ? null : notPublishedCount} hint="Within loaded records" icon={EyeOff} tone="orange" loading={loading} />
+      </div>
+      <div className="ew-panel">
+        <details className="ew-disclosure"><summary>Create venue</summary><div className="ew-disclosure-body">
+          <p className="mb-4 text-sm">Add a venue record, run AI draft, or bulk-create draft venues from CSV.</p>
+          <form onSubmit={createVenue} className="flex flex-col gap-3 xl:flex-row">
+            <FormField label="Venue name"><Input aria-label="Venue name" value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="Venue name" /></FormField>
             <Button type="submit" disabled={creating}>{creating ? "Creating..." : "Create"}</Button>
-            <Button type="button" variant="secondary" disabled={creating} onClick={openAiBuilderFromList}>
-              {creating ? "Opening..." : "AI Draft Venue"}
-            </Button>
-            <Button type="button" variant="secondary" disabled={creating} onClick={() => setBulkOpen(true)}>
-              Bulk Add Venues (AI)
-            </Button>
+            <Button type="button" variant="secondary" disabled={creating} onClick={openAiBuilderFromList}>{creating ? "Opening..." : "AI Draft Venue"}</Button>
+            <Button type="button" variant="secondary" disabled={creating} onClick={() => setBulkOpen(true)}>Bulk Add Venues (AI)</Button>
           </form>
-          {createError ? <p className="mt-2 text-sm text-rose-600">{createError}</p> : null}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage venue types</CardTitle>
-          <CardDescription>Add and maintain venue type options used by AI tools and admin editors.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          {createError ? <Feedback tone="danger">{createError}</Feedback> : null}
+        </div></details>
+        <details className="ew-disclosure"><summary>Manage venue types</summary><div className="ew-disclosure-body">
           <form onSubmit={addVenueType} className="flex flex-col gap-3 md:flex-row">
-            <Input
-              value={newTypeName}
-              onChange={(e) => setNewTypeName(e.target.value)}
-              placeholder="New venue type (e.g. Wedding Barn)"
-            />
-            <Button type="submit" disabled={addingType || !newTypeName.trim()}>
-              {addingType ? "Adding..." : "Add type"}
-            </Button>
+            <FormField label="New venue type"><Input aria-label="New venue type" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} placeholder="New venue type (e.g. Wedding Barn)" /></FormField>
+            <Button type="submit" disabled={addingType || !newTypeName.trim()}>{addingType ? "Adding..." : "Add type"}</Button>
           </form>
-          {typeError ? <p className="text-sm text-rose-600">{typeError}</p> : null}
-          {typeSuccess ? <p className="text-sm text-emerald-700">{typeSuccess}</p> : null}
-          <div className="flex flex-wrap gap-2">
-            {venueTypes.length === 0 ? (
-              <span className="text-sm text-slate-500">No venue types found.</span>
-            ) : (
-              venueTypes.map((type) => <Badge key={type.id || type.slug || type.name} variant="neutral">{type.name}</Badge>)
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Section
-        title="Venue list"
-        right={(
-          <div className="flex items-center gap-2">
-            <Badge variant="neutral">{rows.length} total</Badge>
-            <Badge variant="warning">{notPublishedCount} not published</Badge>
-          </div>
-        )}
-      >
-        <Card className="overflow-hidden">
-          {listSuccess ? <p className="px-6 pt-4 text-sm text-emerald-700">{listSuccess}</p> : null}
-          {loading ? (
-            <CardContent className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </CardContent>
-          ) : listError ? (
-            <CardContent className="space-y-3">
-              <p className="text-sm text-rose-700">{listError}</p>
-              <div>
-                <Button variant="secondary" onClick={loadVenues}>Retry</Button>
-              </div>
-            </CardContent>
-          ) : rows.length === 0 ? (
-            <CardContent>
-              <EmptyState title="No venues found" description="Create your first venue listing." />
-            </CardContent>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Name</TH>
-                    <TH>Slug</TH>
-                    <TH>Location</TH>
-                    <TH>Guests</TH>
-                    <TH>Quality</TH>
-                    <TH>Status</TH>
-                    <TH className="text-right">Actions</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {rows.map((v) => {
-                    const attention = getVenueAttentionFlags(v);
-                    return (
-                      <TR
-                        key={v.id}
-                        interactive
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/admin/venues/${v.id}`)}
-                        title="Click to edit"
-                      >
-                        <TD className="font-medium text-slate-900">{v.name}</TD>
-                        <TD className="text-slate-600">{v.slug}</TD>
-                        <TD>{v.location_label || v.city || "-"}</TD>
-                        <TD>{formatVenueGuestCapacity(v.guest_min, v.guest_max) || "-"}</TD>
-                        <TD>
-                          {attention.needsAttention ? (
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <Badge variant="warning">Needs attention</Badge>
-                              {attention.issues.map((issue) => (
-                                <Badge key={`${v.id}-${issue}`} variant="neutral">{issue}</Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-400">-</span>
-                          )}
-                        </TD>
-                        <TD>
-                          <Badge variant={isVenuePublished(v) ? "success" : "neutral"}>
-                            {isVenuePublished(v) ? "Published" : "Hidden"}
-                          </Badge>
-                        </TD>
-                        <TD className="text-right">
-                          {!isVenuePublished(v) ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              className="border-rose-200 text-rose-700 hover:bg-rose-50"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setDraftToDelete(v);
-                              }}
-                            >
-                              Delete
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-slate-400">-</span>
-                          )}
-                        </TD>
-                      </TR>
-                    );
-                  })}
-                </TBody>
-              </Table>
-            </div>
-          )}
-        </Card>
-      </Section>
+          {typeError ? <Feedback tone="danger">{typeError}</Feedback> : null}
+          {typeSuccess ? <Feedback tone="success">{typeSuccess}</Feedback> : null}
+          <p className="mt-4 text-sm ew-muted">{venueTypes.length ? venueTypes.map((type) => type.name).join(" · ") : "No venue types found."}</p>
+        </div></details>
+      </div>
+      <div className="ew-panel">
+        <FilterBar search={search} onSearchChange={setSearch} placeholder="Search venue, slug or location…" status={status} onStatusChange={setStatus} statuses={[{ value: "published", label: "Published" }, { value: "hidden", label: "Not published" }]} count={loading || listError ? null : filteredRows.length}>
+          <Button variant="secondary" onClick={loadVenues} disabled={loading}>Refresh</Button>
+        </FilterBar>
+        {listSuccess && <p role="status" className="ew-inline-note">{listSuccess}</p>}
+        <DataTable caption="Venue management" rows={filteredRows} loading={loading} error={listError} onRetry={loadVenues} emptyTitle="No venues found" emptyDescription="Try another filter or create a venue listing." columns={[
+          { key: "name", label: "Venue", render: (row) => <div><button className="ew-text-action" onClick={() => navigate(`/admin/venues/${row.id}`)}>{row.name}</button><small>{row.slug}</small></div> },
+          { key: "location", label: "Location", render: (row) => row.location_label || row.city || "—" },
+          { key: "guests", label: "Guests", render: (row) => formatVenueGuestCapacity(row.guest_min, row.guest_max) || "—" },
+          { key: "quality", label: "Quality", render: (row) => { const attention = getVenueAttentionFlags(row); return attention.needsAttention ? <div><StatusBadge status="Needs attention" /><small>{attention.issues.join(" · ")}</small></div> : "—"; } },
+          { key: "status", label: "Status", render: (row) => <StatusBadge status={isVenuePublished(row) ? "Published" : "Hidden"} /> },
+          { key: "actions", label: "Actions", render: (row) => <div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" onClick={() => navigate(`/admin/venues/${row.id}`)} aria-label={`Edit ${row.name}`}>Edit</Button>{!isVenuePublished(row) && <Button size="sm" variant="danger" onClick={() => setDraftToDelete(row)} aria-label={`Delete ${row.name}`}>Delete</Button>}</div> },
+        ]} />
+      </div>
 
       <Modal
         open={!!draftToDelete}
@@ -1403,7 +1292,7 @@ export default function VenueList() {
             <Button type="button" variant="secondary" onClick={() => setDraftToDelete(null)} disabled={deletingDraft}>
               Cancel
             </Button>
-            <Button type="button" onClick={deleteDraftVenue} disabled={deletingDraft}>
+            <Button type="button" variant="danger" onClick={deleteDraftVenue} disabled={deletingDraft}>
               {deletingDraft ? "Deleting..." : "Delete draft"}
             </Button>
           </div>
@@ -1443,33 +1332,33 @@ export default function VenueList() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">CSV header required: <code>name,url,town,type</code>. The <code>type</code> column is optional.</p>
-          <textarea
-            className="min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+          <FormField label="Venue CSV data"><Textarea
+            className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
             value={bulkCsv}
             onChange={(e) => setBulkCsv(e.target.value)}
             placeholder={"name,url,town,type\nThe Old Barn,https://example.com,Cartmel,Wedding Barn"}
-          />
+          /></FormField>
           <div className="flex flex-wrap items-center gap-3">
-            <label className="inline-flex cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+            <label className="ew-upload">
               Upload CSV
               <input
                 type="file"
                 accept=".csv,text/csv"
-                className="hidden"
+                className="ew-file-input"
                 onChange={(e) => loadCsvFile(e.target.files?.[0])}
               />
             </label>
-            <select
+            <FormField label="Default venue type"><Select
               value={defaultTypeName}
               onChange={(e) => setDefaultTypeName(e.target.value)}
-              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none"
             >
               <option value="">Default type (optional)</option>
               {venueTypes.map((type) => (
                 <option key={`default-${type.id || type.slug || type.name}`} value={type.name}>{type.name}</option>
               ))}
-            </select>
-            <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            </Select></FormField>
+            <label className="ew-checkbox-label">
               <input
                 type="checkbox"
                 checked={autoCreateMissingTypes}
@@ -1479,7 +1368,7 @@ export default function VenueList() {
             </label>
           </div>
 
-          {bulkError ? <p className="text-sm text-rose-600">{bulkError}</p> : null}
+          {bulkError ? <Feedback tone="danger">{bulkError}</Feedback> : null}
           {bulkNotice ? <p className="text-sm text-slate-600">{bulkNotice}</p> : null}
           {bulkRunning ? (
             <p className="text-sm text-slate-700">Progress: {bulkProgress.done}/{bulkProgress.total}</p>
@@ -1491,7 +1380,7 @@ export default function VenueList() {
           ) : null}
 
           {bulkRows.length > 0 ? (
-            <div className="max-h-[360px] overflow-auto rounded-xl border border-slate-200">
+            <div className="max-h-96 overflow-auto rounded-xl border border-slate-200">
               <Table>
                 <THead>
                   <TR>
@@ -1511,22 +1400,23 @@ export default function VenueList() {
                       <TD>
                         <input
                           type="checkbox"
+                          aria-label={`Include ${row.name}`}
                           checked={!!row.include}
                           disabled={row.errors.length > 0 || !!row.duplicateReason || bulkRunning}
                           onChange={(e) => updateBulkRowInclude(row.id, e.target.checked)}
                         />
                       </TD>
                       <TD>{row.rowNumber}</TD>
-                      <TD className="max-w-[180px] truncate">{row.name}</TD>
-                      <TD className="max-w-[130px] truncate">{row.town}</TD>
+                      <TD className="min-w-0 truncate">{row.name}</TD>
+                      <TD className="min-w-0 truncate">{row.town}</TD>
                       <TD>
                         {row.previewType ? (
                           <div className="flex flex-wrap items-center gap-1">
-                            <Badge variant="neutral">{row.previewType}</Badge>
-                            <span className="text-xs text-slate-500">{row.previewTypeSource}</span>
+                            <span>{row.previewType}</span>
+                            <span className="text-xs ew-muted">{row.previewTypeSource}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">blank</span>
+                          <span className="text-xs ew-muted">blank</span>
                         )}
                       </TD>
                       <TD>
@@ -1536,9 +1426,9 @@ export default function VenueList() {
                         {row.status === "pending" ? <Badge variant="brand">Pending</Badge> : null}
                         {row.status === "ready" ? <Badge variant="neutral">Ready</Badge> : null}
                       </TD>
-                      <TD className="max-w-[240px]">
-                        {row.errors.length ? <p className="text-xs text-rose-600">{row.errors.join("; ")}</p> : null}
-                        {row.duplicateReason ? <p className="text-xs text-amber-700">{row.duplicateReason}</p> : null}
+                      <TD className="min-w-0">
+                        {row.errors.length ? <Feedback tone="danger">{row.errors.join("; ")}</Feedback> : null}
+                        {row.duplicateReason ? <Feedback tone="warning">{row.duplicateReason}</Feedback> : null}
                         {row.warnings.length ? <p className="text-xs text-slate-600">{row.warnings.join("; ")}</p> : null}
                         {row.message ? <p className="text-xs text-slate-600">{row.message}</p> : null}
                       </TD>
@@ -1548,7 +1438,7 @@ export default function VenueList() {
                             Edit draft
                           </Button>
                         ) : (
-                          <span className="text-xs text-slate-400">-</span>
+                          <span className="text-xs ew-muted">-</span>
                         )}
                       </TD>
                     </TR>

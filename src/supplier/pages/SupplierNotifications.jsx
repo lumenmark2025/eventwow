@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import Badge from "../../components/ui/Badge";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
+import { Button, Feedback } from "../../components/workspace/AdminPrimitives";
+import {
+  DataTable,
+  StatusBadge,
+} from "../../components/workspace/WorkspaceComponents";
 
 const DEFAULT_NOTIFICATION_LIMIT = 5;
 
@@ -27,7 +27,8 @@ export default function SupplierNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   async function authFetch(path, options = {}) {
-    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+    const { data: sessionData, error: sessionErr } =
+      await supabase.auth.getSession();
     if (sessionErr) throw sessionErr;
     const accessToken = sessionData?.session?.access_token;
     if (!accessToken) throw new Error("Not authenticated");
@@ -47,10 +48,14 @@ export default function SupplierNotifications() {
     setErr("");
 
     try {
-      const resp = await authFetch(`/api/supplier-notifications?limit=${DEFAULT_NOTIFICATION_LIMIT}`);
+      const resp = await authFetch(
+        `/api/supplier-notifications?limit=${DEFAULT_NOTIFICATION_LIMIT}`,
+      );
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error(json?.details || json?.error || "Failed to load notifications");
+        throw new Error(
+          json?.details || json?.error || "Failed to load notifications",
+        );
       }
 
       setRows(json?.notifications || []);
@@ -58,7 +63,9 @@ export default function SupplierNotifications() {
     } catch (e) {
       const message = String(e?.message || "");
       if (message.toLowerCase().includes("failed to fetch")) {
-        setErr("Could not reach the notifications service. Please refresh in a moment.");
+        setErr(
+          "Could not reach the notifications service. Please refresh in a moment.",
+        );
       } else {
         setErr(message || "Failed to load notifications");
       }
@@ -84,7 +91,9 @@ export default function SupplierNotifications() {
       });
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error(json?.details || json?.error || "Failed to mark notifications");
+        throw new Error(
+          json?.details || json?.error || "Failed to mark notifications",
+        );
       }
 
       setOk("Marked as read.");
@@ -112,53 +121,85 @@ export default function SupplierNotifications() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Notifications"
         subtitle="Recent quote and message updates for your account."
         actions={[
-          { key: "refresh", label: "Refresh", variant: "secondary", onClick: loadNotifications },
-          { key: "mark-all", label: marking ? "Marking..." : "Mark all read", disabled: marking || unreadCount < 1, onClick: () => markRead({ all: true }) },
+          {
+            key: "refresh",
+            label: "Refresh",
+            variant: "secondary",
+            onClick: loadNotifications,
+            disabled: loading || marking,
+          },
+          {
+            key: "mark-all",
+            label: marking ? "Marking..." : "Mark all read",
+            disabled: loading || !!err || marking || unreadCount < 1,
+            onClick: () => markRead({ all: true }),
+          },
         ]}
       />
-
-      {err ? <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div> : null}
-      {ok ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{ok}</div> : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Inbox {unreadCount > 0 ? <Badge variant="brand" className="ml-2">{unreadCount} unread</Badge> : null}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {loading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-            </div>
-          ) : rows.length === 0 ? (
-            <EmptyState title="No notifications" description="You are up to date." />
-          ) : (
-            rows.map((row) => (
-              <button
-                key={row.id}
-                type="button"
-                onClick={() => openNotification(row)}
-                className={`w-full rounded-xl border p-3 text-left transition-shadow hover:shadow-sm ${row.read_at ? "border-slate-200 bg-white" : "border-brand/40 bg-blue-50/40"}`}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="font-medium text-slate-900">{row.title}</div>
-                  {!row.read_at ? <Badge variant="brand">New</Badge> : <Badge variant="neutral">Read</Badge>}
+      {ok && <Feedback tone="success">{ok}</Feedback>}
+      <div className="ew-panel">
+        <div className="ew-panel-heading">
+          <h2>Inbox</h2>
+          <span className="ew-result-count">
+            {loading || err ? "—" : unreadCount} unread · latest{" "}
+            {DEFAULT_NOTIFICATION_LIMIT}
+          </span>
+        </div>
+        <DataTable
+          className="ew-admin-table"
+          caption="Supplier notifications"
+          rows={rows}
+          loading={loading}
+          error={err}
+          onRetry={loadNotifications}
+          emptyTitle="No notifications"
+          emptyDescription="You are up to date."
+          columns={[
+            {
+              key: "notification",
+              label: "Notification",
+              render: (row) => (
+                <div>
+                  <strong>{row.title}</strong>
+                  {row.body && <p>{row.body}</p>}
                 </div>
-                {row.body ? <div className="mt-1 text-sm text-slate-700">{row.body}</div> : null}
-                <div className="mt-1 text-xs text-slate-500">{fmtDate(row.created_at)}</div>
-              </button>
-            ))
-          )}
-        </CardContent>
-      </Card>
+              ),
+            },
+            {
+              key: "created",
+              label: "Received",
+              render: (row) => fmtDate(row.created_at),
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (row) => (
+                <StatusBadge status={row.read_at ? "Read" : "New"} />
+              ),
+            },
+            {
+              key: "action",
+              label: "Action",
+              render: (row) => (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={marking}
+                  onClick={() => openNotification(row)}
+                  aria-label={`Open ${row.title}`}
+                >
+                  Open
+                </Button>
+              ),
+            },
+          ]}
+        />
+      </div>
     </div>
   );
 }

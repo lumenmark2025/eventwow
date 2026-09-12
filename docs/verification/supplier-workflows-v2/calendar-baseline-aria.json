@@ -1,0 +1,39 @@
+[
+  {
+    "id": "aria-required-children",
+    "targets": [
+      [
+        ".rbc-row-content"
+      ]
+    ]
+  },
+  {
+    "id": "aria-required-parent",
+    "targets": [
+      [
+        ".rbc-header:nth-child(1) > .rbc-button-link > span[role=\"columnheader\"][aria-sort=\"none\"]"
+      ],
+      [
+        ".rbc-header:nth-child(2) > .rbc-button-link > span[role=\"columnheader\"][aria-sort=\"none\"]"
+      ],
+      [
+        ".rbc-header:nth-child(3) > .rbc-button-link > span[role=\"columnheader\"][aria-sort=\"none\"]"
+      ],
+      [
+        ".rbc-header:nth-child(4) > .rbc-button-link > span[role=\"columnheader\"][aria-sort=\"none\"]"
+      ],
+      [
+        ".rbc-header:nth-child(5) > .rbc-button-link > span[role=\"columnheader\"][aria-sort=\"none\"]"
+      ],
+      [
+        ".rbc-header:nth-child(6) > .rbc-button-link > span[role=\"columnheader\"][aria-sort=\"none\"]"
+      ],
+      [
+        ".rbc-today.rbc-header > .rbc-button-link > span[role=\"columnheader\"][aria-sort=\"none\"]"
+      ],
+      [
+        ".rbc-allday-cell"
+      ]
+    ]
+  }
+]

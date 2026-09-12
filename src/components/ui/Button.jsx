@@ -25,6 +25,6 @@ export default function Button({
   };
 
   return (
-    <Component className={cn(base, variants[variant], sizes[size], className)} {...props} />
+    <Component data-ui="button" data-variant={variant} className={cn(base, variants[variant], sizes[size], className)} {...props} />
   );
 }

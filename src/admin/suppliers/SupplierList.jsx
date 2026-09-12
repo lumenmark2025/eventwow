@@ -1,17 +1,10 @@
-import { useEffect, useState } from "react";
+import { FormActions, FormField, Textarea, Select, Feedback, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Input, Skeleton, StatCard, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { slugify } from "../../utils/slugify";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Input from "../../components/ui/Input";
-import Modal from "../../components/ui/Modal";
-import Skeleton from "../../components/ui/Skeleton";
-import StatCard from "../../components/ui/StatCard";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
+import { WorkspaceDialog as Modal, MetricCard, DataTable, FilterBar, StatusBadge } from "../../components/workspace/WorkspaceComponents";
+import { X, Store, CreditCard, BadgeCheck } from "lucide-react";
 
 function SupplierVenueLinksReadOnly({ supplierId }) {
   const [rows, setRows] = useState([]);
@@ -38,7 +31,7 @@ function SupplierVenueLinksReadOnly({ supplierId }) {
   }, [supplierId]);
 
   if (loading) return <Skeleton className="h-24 w-full" />;
-  if (err) return <p className="text-sm text-rose-600">{err}</p>;
+  if (err) return <Feedback tone="danger">{err}</Feedback>;
 
   if (!rows.length) {
     return <EmptyState title="No linked venues" description="This supplier has not been trusted by any venues yet." />;
@@ -50,7 +43,7 @@ function SupplierVenueLinksReadOnly({ supplierId }) {
         <div key={r.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3">
           <div className="text-sm">
             <p className="font-medium text-slate-900">{r.venues?.name || "Unknown venue"}</p>
-            <p className="text-xs text-slate-500">{r.venues?.slug || "-"}</p>
+            <p className="text-xs ew-muted">{r.venues?.slug || "-"}</p>
           </div>
           <Badge variant={r.is_trusted ? "success" : "neutral"}>{r.is_trusted ? "Trusted" : "Not trusted"}</Badge>
         </div>
@@ -70,6 +63,7 @@ function toBase64(file) {
 
 function SupplierEdit({ supplierId, user, onBack, onSaved }) {
   const [loading, setLoading] = useState(true);
+  const [profileReady, setProfileReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
@@ -125,6 +119,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      setProfileReady(false);
       setErr("");
       setOk("");
       setWarn("");
@@ -140,6 +135,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
       if (error) setErr(error.message);
       else if (!data) setErr("Supplier not found.");
       else {
+        setProfileReady(true);
         setForm({
           business_name: data.business_name ?? "",
           slug: data.slug ?? "",
@@ -530,17 +526,17 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
     }
   }
 
-  if (loading) {
+  if (loading || !profileReady) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-56" />
-        <Skeleton className="h-56 w-full" />
+      <div className="ew-page-stack">
+        <PageHeader title="Supplier detail" actions={[{ key: "back", label: "Back", variant: "secondary", onClick: onBack }]} />
+        {loading ? <Skeleton className="h-56 w-full" /> : err === "Supplier not found." ? <EmptyState title="Supplier not found" description="Return to suppliers to select another record." /> : <Feedback tone="danger">{err || "The supplier could not be loaded."}</Feedback>}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Supplier detail"
         subtitle="Update profile settings and manage credits."
@@ -550,14 +546,14 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
         ]}
       />
 
-      {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-      {ok ? <p className="text-sm text-emerald-700">{ok}</p> : null}
-      {warn ? <p className="text-sm text-amber-700">{warn}</p> : null}
+      {err ? <Feedback tone="danger">{err}</Feedback> : null}
+      {ok ? <Feedback tone="success">{ok}</Feedback> : null}
+      {warn ? <Feedback tone="warning">{warn}</Feedback> : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <StatCard label="Credits balance" value={form.credits_balance ?? 0} hint="Current available credits" />
-        <StatCard label="Published" value={form.is_published ? "Yes" : "No"} />
-        <StatCard label="Verified" value={form.is_verified ? "Yes" : "No"} />
+        <StatCard icon={CreditCard} tone="green" label="Credits balance" value={form.credits_balance ?? 0} hint="Current available credits" />
+        <StatCard icon={Store} tone="orange" label="Published" value={form.is_published ? "Yes" : "No"} />
+        <StatCard icon={BadgeCheck} tone="purple" label="Verified" value={form.is_verified ? "Yes" : "No"} />
       </div>
 
       <Card>
@@ -566,7 +562,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
           <CardDescription>Adjust supplier credits with audited changes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {creditMsg ? <p className="text-sm text-emerald-700">{creditMsg}</p> : null}
+          {creditMsg ? <Feedback tone="success">{creditMsg}</Feedback> : null}
           <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={() => setShowAdjustModal(true)}>Adjust credits</Button>
             <Button type="button" variant="secondary" onClick={loadCreditTransactions} disabled={txnsLoading}>
@@ -574,7 +570,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
             </Button>
           </div>
 
-          {txnsErr ? <p className="text-sm text-rose-600">{txnsErr}</p> : null}
+          {txnsErr ? <Feedback tone="danger">{txnsErr}</Feedback> : null}
 
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <Table>
@@ -588,6 +584,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                 </TR>
               </THead>
               <TBody>
+                {txnsLoading ? <TR><TD colSpan={5}><Skeleton className="h-6 w-full" /></TD></TR> : null}
                 {(txns || []).slice(0, 50).map((t) => (
                   <TR key={t.id}>
                     <TD className="whitespace-nowrap">{t.created_at ? new Date(t.created_at).toLocaleString() : ""}</TD>
@@ -605,7 +602,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                     </TD>
                   </TR>
                 ))}
-                {!txnsLoading && (!txns || txns.length === 0) ? (
+                {!txnsLoading && !txnsErr && (!txns || txns.length === 0) ? (
                   <TR>
                     <TD colSpan={5} className="text-slate-600">No credit transactions yet.</TD>
                   </TR>
@@ -623,55 +620,55 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Business name *</label>
-            <Input value={form.business_name} onChange={(e) => setField("business_name", e.target.value)} />
+            <label htmlFor="edit-supplier-business_name" className="ew-field-label">Business name *</label>
+            <Input id="edit-supplier-business_name" value={form.business_name} onChange={(e) => setField("business_name", e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Slug *</label>
+            <label htmlFor="admin-field-supplierlist-1" className="ew-field-label">Slug *</label>
             <div className="flex gap-2">
-              <Input value={form.slug} onChange={(e) => setField("slug", e.target.value)} />
+              <Input id="admin-field-supplierlist-1" value={form.slug} onChange={(e) => setField("slug", e.target.value)} />
               <Button type="button" variant="secondary" onClick={() => setField("slug", slugify(form.business_name))}>Auto</Button>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Base city</label>
-            <Input value={form.base_city} onChange={(e) => setField("base_city", e.target.value)} />
+            <label htmlFor="edit-supplier-base_city" className="ew-field-label">Base city</label>
+            <Input id="edit-supplier-base_city" value={form.base_city} onChange={(e) => setField("base_city", e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Base postcode</label>
-            <Input value={form.base_postcode} onChange={(e) => setField("base_postcode", e.target.value)} />
+            <label htmlFor="edit-supplier-base_postcode" className="ew-field-label">Base postcode</label>
+            <Input id="edit-supplier-base_postcode" value={form.base_postcode} onChange={(e) => setField("base_postcode", e.target.value)} />
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700">Description</label>
-            <textarea
-              className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+            <label htmlFor="admin-field-supplierlist-2" className="ew-field-label">Description</label>
+            <Textarea id="admin-field-supplierlist-2"
+              className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2"
               value={form.description}
               onChange={(e) => setField("description", e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Website URL</label>
-            <Input value={form.website_url} onChange={(e) => setField("website_url", e.target.value)} />
+            <label htmlFor="admin-field-supplierlist-3" className="ew-field-label">Website URL</label>
+            <Input id="admin-field-supplierlist-3" value={form.website_url} onChange={(e) => setField("website_url", e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Instagram URL</label>
-            <Input value={form.instagram_url} onChange={(e) => setField("instagram_url", e.target.value)} />
+            <label htmlFor="admin-field-supplierlist-4" className="ew-field-label">Instagram URL</label>
+            <Input id="admin-field-supplierlist-4" value={form.instagram_url} onChange={(e) => setField("instagram_url", e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Public email</label>
-            <Input value={form.public_email} onChange={(e) => setField("public_email", e.target.value)} />
+            <label htmlFor="admin-field-supplierlist-5" className="ew-field-label">Public email</label>
+            <Input id="admin-field-supplierlist-5" value={form.public_email} onChange={(e) => setField("public_email", e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Public phone</label>
-            <Input value={form.public_phone} onChange={(e) => setField("public_phone", e.target.value)} />
+            <label htmlFor="admin-field-supplierlist-6" className="ew-field-label">Public phone</label>
+            <Input id="admin-field-supplierlist-6" value={form.public_phone} onChange={(e) => setField("public_phone", e.target.value)} />
           </div>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -705,13 +702,13 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
           </label>
 
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700">Food hygiene rating link (FSA)</label>
-            <Input
+            <label htmlFor="admin-field-supplierlist-7" className="ew-field-label">Food hygiene rating link (FSA)</label>
+            <Input id="admin-field-supplierlist-7"
               value={form.fsa_rating_url}
               onChange={(e) => setField("fsa_rating_url", e.target.value)}
               placeholder="https://ratings.food.gov.uk/business/1234567/example-business"
             />
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-3 text-xs ew-muted">
               <span>Current rating: {form.fsa_rating_value || "Not set"}</span>
               {form.fsa_rating_last_fetched_at ? (
                 <span>Last fetched: {new Date(form.fsa_rating_last_fetched_at).toLocaleString()}</span>
@@ -730,14 +727,14 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
           <CardDescription>Images, services and categories shown on the public supplier page.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {listingErr ? <p className="text-sm text-rose-600">{listingErr}</p> : null}
-          {listingOk ? <p className="text-sm text-emerald-700">{listingOk}</p> : null}
+          {listingErr ? <Feedback tone="danger">{listingErr}</Feedback> : null}
+          {listingOk ? <Feedback tone="success">{listingOk}</Feedback> : null}
           {listingLoading ? <Skeleton className="h-48 w-full" /> : null}
 
           {!listingLoading && listing ? (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <div className="space-y-4 lg:col-span-2">
-                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                <div className="ew-form-subsection space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={listing.isPublished ? "success" : "neutral"}>
                       {listing.isPublished ? "Published" : "Hidden from directory"}
@@ -757,31 +754,31 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                   ) : null}
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-4">
+                <div className="ew-form-subsection space-y-4">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Short description</label>
-                    <Input
+                    <label htmlFor="admin-field-supplierlist-8" className="ew-field-label">Short description</label>
+                    <Input id="admin-field-supplierlist-8"
                       value={listing.shortDescription || ""}
                       onChange={(e) => updateListingField("shortDescription", e.target.value)}
                       maxLength={160}
                       placeholder="One-line summary customers see in cards"
                     />
-                    <p className="mt-1 text-xs text-slate-500">{String(listing.shortDescription || "").length}/160</p>
+                    <p className="mt-1 text-xs ew-muted">{String(listing.shortDescription || "").length}/160</p>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">About</label>
-                    <textarea
-                      className="min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+                    <label htmlFor="admin-field-supplierlist-9" className="ew-field-label">About</label>
+                    <Textarea id="admin-field-supplierlist-9"
+                      className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
                       value={listing.about || ""}
                       onChange={(e) => updateListingField("about", e.target.value)}
                       maxLength={4000}
                       placeholder="Describe your offer, style, experience and what customers can expect"
                     />
-                    <p className="mt-1 text-xs text-slate-500">{String(listing.about || "").length}/4000</p>
+                    <p className="mt-1 text-xs ew-muted">{String(listing.about || "").length}/4000</p>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Location / service area</label>
-                    <Input
+                    <label htmlFor="admin-field-supplierlist-10" className="ew-field-label">Location / service area</label>
+                    <Input id="admin-field-supplierlist-10"
                       value={listing.locationLabel || ""}
                       onChange={(e) => updateListingField("locationLabel", e.target.value)}
                       maxLength={120}
@@ -790,7 +787,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                <div className="ew-form-subsection space-y-3">
                   <div className="text-sm font-semibold text-slate-900">Services</div>
                   <div className="flex flex-wrap gap-2">
                     {(listing.services || []).map((service, idx) => (
@@ -801,30 +798,30 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                         {service}
                         <button
                           type="button"
-                          className="text-slate-500 hover:text-slate-900"
+                          className="ew-icon-button"
                           onClick={() => removeService(idx)}
                           aria-label={`Remove ${service}`}
                         >
-                          x
+                          <X size={16} aria-hidden="true" />
                         </button>
                       </span>
                     ))}
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input
+                    <FormField label="Add a service bullet"><Input
                       value={newService}
                       onChange={(e) => setNewService(e.target.value)}
                       maxLength={80}
                       placeholder="Add a service bullet"
-                    />
+                    /></FormField>
                     <Button type="button" variant="secondary" onClick={addService} disabled={(listing.services || []).length >= 12}>
                       Add
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-500">{(listing.services || []).length}/12 services</p>
+                  <p className="text-xs ew-muted">{(listing.services || []).length}/12 services</p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                <div className="ew-form-subsection space-y-3">
                   <div className="text-sm font-semibold text-slate-900">Categories</div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {(categoryOptions || []).map((name) => {
@@ -857,54 +854,54 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                <div className="ew-form-subsection space-y-3">
                   <div className="text-sm font-semibold text-slate-900">Hero image</div>
                   {media.hero?.url ? (
                     <img src={media.hero.url} alt="Hero" className="h-40 w-full rounded-xl object-cover" />
                   ) : (
-                    <div className="h-40 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
+                    <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50"><p className="ew-form-help">No hero image yet.</p></div>
                   )}
-                  <label className="block">
+                  <label className="ew-upload">
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
+                      className="ew-file-input"
                       onChange={(e) => uploadListingImage(e.target.files?.[0], "hero")}
                     />
-                    <span className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <span className="ew-field-label">
                       {uploadingHero ? "Uploading..." : "Upload hero image"}
                     </span>
                   </label>
                   {media.hero?.id ? (
-                    <Button type="button" variant="ghost" className="w-full" onClick={() => deleteListingImage(media.hero.id)}>
+                    <Button type="button" variant="danger" className="w-full" onClick={() => deleteListingImage(media.hero.id)}>
                       Delete hero image
                     </Button>
                   ) : null}
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
+                <div className="ew-form-subsection space-y-3">
                   <div className="text-sm font-semibold text-slate-900">Gallery</div>
-                  <label className="block">
+                  <label className="ew-upload">
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
+                      className="ew-file-input"
                       onChange={(e) => uploadListingImage(e.target.files?.[0], "gallery")}
                     />
-                    <span className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <span className="ew-field-label">
                       {uploadingGallery ? "Uploading..." : "Add gallery image"}
                     </span>
                   </label>
 
                   {(media.gallery || []).length === 0 ? (
-                    <p className="text-sm text-slate-500">No gallery images yet.</p>
+                    <p className="text-sm ew-muted">No gallery images yet.</p>
                   ) : (
                     <div className="space-y-2">
                       {media.gallery.map((img) => (
                         <div key={img.id} className="rounded-xl border border-slate-200 p-2">
                           <img src={img.url} alt={img.caption || "Gallery"} className="h-24 w-full rounded-lg object-cover" />
                           <div className="mt-2 flex items-center justify-end gap-2">
-                            <Button type="button" variant="ghost" size="sm" onClick={() => deleteListingImage(img.id)}>
+                            <Button type="button" variant="danger" size="sm" onClick={() => deleteListingImage(img.id)}>
                               Delete
                             </Button>
                           </div>
@@ -937,9 +934,9 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Category context</label>
-              <select
-                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
+              <label htmlFor="admin-field-supplierlist-11" className="ew-field-label">Category context</label>
+              <Select id="admin-field-supplierlist-11"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none"
                 value={categorySlug}
                 onChange={(e) => setCategorySlug(e.target.value)}
               >
@@ -947,12 +944,12 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                 {(rankingContexts.categories || []).map((c) => (
                   <option key={c.slug} value={c.slug}>{c.label || c.slug}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Location context</label>
-              <select
-                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
+              <label htmlFor="admin-field-supplierlist-12" className="ew-field-label">Location context</label>
+              <Select id="admin-field-supplierlist-12"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none"
                 value={locationSlug}
                 onChange={(e) => setLocationSlug(e.target.value)}
               >
@@ -960,18 +957,19 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                 {(rankingContexts.locations || []).map((l) => (
                   <option key={l.slug} value={l.slug}>{l.label || l.slug}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
-          {rankingError ? <p className="text-sm text-rose-600">{rankingError}</p> : null}
+          {rankingError ? <Feedback tone="danger">{rankingError}</Feedback> : null}
           {rankingLoading ? <Skeleton className="h-36 w-full" /> : null}
 
+          {!rankingLoading && !ranking && !rankingError ? <p className="ew-form-help">No ranking available for this supplier.</p> : null}
           {!rankingLoading && ranking ? (
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Base quality</div>
+                  <div className="mb-2 text-xs uppercase tracking-wide ew-muted">Base quality</div>
                   <div className="space-y-1">
                     <div>Smoothed acceptance: <span className="font-medium">{(Number(ranking?.components?.smoothed_acceptance || 0) * 100).toFixed(1)}%</span></div>
                     <div>Response score: <span className="font-medium">{(Number(ranking?.components?.response_score || 0) * 100).toFixed(1)}</span></div>
@@ -981,7 +979,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
                   </div>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Context + final</div>
+                  <div className="mb-2 text-xs uppercase tracking-wide ew-muted">Context + final</div>
                   <div className="space-y-1">
                     <div>Category match: <span className="font-medium">{(Number(ranking?.match?.category_match || 0) * 100).toFixed(1)}</span></div>
                     <div>Location match: <span className="font-medium">{(Number(ranking?.match?.location_match || 0) * 100).toFixed(1)}</span></div>
@@ -994,7 +992,7 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
               </div>
               {Array.isArray(ranking?.explanations) && ranking.explanations.length > 0 ? (
                 <div className="rounded-xl border border-slate-200 bg-white p-3">
-                  <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Explanation</div>
+                  <div className="mb-2 text-xs uppercase tracking-wide ew-muted">Explanation</div>
                   <ul className="list-disc space-y-1 pl-5 text-slate-700">
                     {ranking.explanations.map((line) => (
                       <li key={line}>{line}</li>
@@ -1028,8 +1026,8 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
       >
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Change (integer)</label>
-            <Input type="number" step="1" value={creditChange} onChange={(e) => setCreditChange(parseInt(e.target.value || "0", 10))} />
+            <label htmlFor="admin-field-supplierlist-13" className="ew-field-label">Change (integer)</label>
+            <Input id="admin-field-supplierlist-13" type="number" step="1" value={creditChange} onChange={(e) => setCreditChange(parseInt(e.target.value || "0", 10))} />
             <div className="flex flex-wrap gap-2">
               {[5, 10, 25].map((n) => (
                 <Button key={n} type="button" variant="secondary" size="sm" disabled={creditSubmitting} onClick={() => setCreditChange(n)}>
@@ -1043,8 +1041,8 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Reason *</label>
-            <Input
+            <label htmlFor="admin-field-supplierlist-14" className="ew-field-label">Reason *</label>
+            <Input id="admin-field-supplierlist-14"
               placeholder="e.g. Pilot top-up / manual correction"
               value={creditReason}
               onChange={(e) => setCreditReason(e.target.value)}
@@ -1052,13 +1050,13 @@ function SupplierEdit({ supplierId, user, onBack, onSaved }) {
           </div>
         </div>
       </Modal>
+      <FormActions><Button type="button" variant="secondary" onClick={onBack}>Cancel</Button><Button type="button" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save changes"}</Button></FormActions>
     </div>
   );
 }
 
 export default function SupplierList({ user }) {
   const [suppliers, setSuppliers] = useState([]);
-  const [filteredSuppliers, setFilteredSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [search, setSearch] = useState("");
@@ -1082,38 +1080,34 @@ export default function SupplierList({ user }) {
       if (error) setErr(error.message);
       else {
         setSuppliers(data || []);
-        setFilteredSuppliers(data || []);
       }
 
       setLoading(false);
     })();
   }, []);
 
-  useEffect(() => {
+  const filteredSuppliers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) {
-      setFilteredSuppliers(suppliers);
-      return;
-    }
-
-    setFilteredSuppliers(
-      suppliers.filter((s) =>
-        [s.business_name, s.slug, s.base_city, s.base_postcode].join(" ").toLowerCase().includes(q)
-      )
+    return suppliers.filter((s) =>
+      [s.business_name, s.slug, s.base_city, s.base_postcode].join(" ").toLowerCase().includes(q)
     );
   }, [search, suppliers]);
 
-  function refresh() {
-    (async () => {
+  async function refresh() {
+    setLoading(true);
+    setErr("");
+    try {
       const { data, error } = await supabase
         .from("suppliers")
         .select("id,business_name,slug,base_city,base_postcode,is_published,is_verified,credits_balance")
         .order("created_at", { ascending: false });
-
-      if (!error) {
-        setSuppliers(data || []);
-      }
-    })();
+      if (error) throw error;
+      setSuppliers(data || []);
+    } catch (error) {
+      setErr(error.message || "Failed to load suppliers");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function fetchAuthedJson(url, options = {}) {
@@ -1171,90 +1165,26 @@ export default function SupplierList({ user }) {
   const positiveCredits = suppliers.filter((s) => Number(s.credits_balance || 0) > 0).length;
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Suppliers" subtitle="Manage supplier profiles and credits." />
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <StatCard label="Total suppliers" value={suppliers.length} />
-        <StatCard label="With credits" value={positiveCredits} />
-        <StatCard label="Published" value={suppliers.filter((s) => s.is_published).length} />
+    <div className="ew-page-stack">
+      <PageHeader title="Suppliers" subtitle="Manage supplier profiles and credits." actions={[{ label: "Create supplier", onClick: () => setCreateOpen(true) }]} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <MetricCard label="Loaded suppliers" value={err ? null : suppliers.length} icon={Store} tone="purple" loading={loading} />
+        <MetricCard label="With credits" value={err ? null : positiveCredits} hint="Within loaded records" icon={CreditCard} tone="green" loading={loading} />
+        <MetricCard label="Published" value={err ? null : suppliers.filter((s) => s.is_published).length} hint="Within loaded records" icon={BadgeCheck} loading={loading} />
       </div>
-
-      <Card>
-        <CardContent className="pt-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search suppliers by name, slug, city, or postcode"
-              className="sm:max-w-md"
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="secondary" onClick={() => setCreateOpen(true)}>Create supplier</Button>
-              <Button type="button" variant="secondary" onClick={refresh}>Refresh</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-
-      <Card className="overflow-hidden">
-        {loading ? (
-          <CardContent className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        ) : filteredSuppliers.length === 0 ? (
-          <CardContent>
-            <EmptyState title="No suppliers found" description="Try a different search term." />
-          </CardContent>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <THead>
-                <TR>
-                  <TH>Business</TH>
-                  <TH>Slug</TH>
-                  <TH>Base</TH>
-                  <TH>Credits</TH>
-                  <TH>Published</TH>
-                  <TH>Verified</TH>
-                  <TH className="text-right">Action</TH>
-                </TR>
-              </THead>
-              <TBody>
-                {filteredSuppliers.map((s) => (
-                  <TR key={s.id} interactive>
-                    <TD className="font-medium text-slate-900">{s.business_name}</TD>
-                    <TD className="text-slate-600">{s.slug}</TD>
-                    <TD className="text-slate-600">
-                      {(s.base_city || "") + (s.base_postcode ? ` (${s.base_postcode})` : "") || "-"}
-                    </TD>
-                    <TD>
-                      <Badge variant={Number(s.credits_balance || 0) > 0 ? "brand" : "neutral"}>
-                        {s.credits_balance ?? 0}
-                      </Badge>
-                    </TD>
-                    <TD>
-                      <Badge variant={s.is_published ? "success" : "neutral"}>{s.is_published ? "Yes" : "No"}</Badge>
-                    </TD>
-                    <TD>
-                      <Badge variant={s.is_verified ? "success" : "warning"}>{s.is_verified ? "Yes" : "No"}</Badge>
-                    </TD>
-                    <TD className="text-right">
-                      <Button type="button" size="sm" variant="secondary" onClick={() => setSelectedSupplierId(s.id)}>
-                        View
-                      </Button>
-                    </TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          </div>
-        )}
-      </Card>
+      <div className="ew-panel">
+        <FilterBar search={search} onSearchChange={setSearch} placeholder="Search name, slug, city or postcode…" count={loading || err ? null : filteredSuppliers.length}>
+          <Button variant="secondary" onClick={refresh} disabled={loading}>Refresh</Button>
+        </FilterBar>
+        <DataTable caption="Supplier management" rows={filteredSuppliers} loading={loading} error={err} onRetry={refresh} emptyTitle="No suppliers found" emptyDescription="Try a different search term or create a supplier." columns={[
+          { key: "business", label: "Business", render: (row) => <div><button className="ew-text-action" onClick={() => setSelectedSupplierId(row.id)}>{row.business_name}</button><small>{row.slug}</small></div> },
+          { key: "base", label: "Base", render: (row) => [row.base_city, row.base_postcode].filter(Boolean).join(", ") || "—" },
+          { key: "credits_balance", label: "Credits" },
+          { key: "published", label: "Visibility", render: (row) => <StatusBadge status={row.is_published ? "Published" : "Hidden"} /> },
+          { key: "verified", label: "Verification", render: (row) => <StatusBadge status={row.is_verified ? "Verified" : "Not verified"} /> },
+          { key: "action", label: "Action", render: (row) => <Button size="sm" variant="secondary" onClick={() => setSelectedSupplierId(row.id)} aria-label={`View ${row.business_name}`}>View</Button> },
+        ]} />
+      </div>
 
       <Modal
         open={createOpen}
@@ -1272,23 +1202,23 @@ export default function SupplierList({ user }) {
         }
       >
         <div className="space-y-3">
-          {createErr ? <p className="text-sm text-rose-600">{createErr}</p> : null}
+          {createErr ? <Feedback tone="danger">{createErr}</Feedback> : null}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700">Business name *</label>
-              <Input value={createForm.business_name} onChange={(e) => setCreateForm((p) => ({ ...p, business_name: e.target.value }))} />
+              <label htmlFor="create-supplier-business_name" className="ew-field-label">Business name *</label>
+              <Input id="create-supplier-business_name" value={createForm.business_name} onChange={(e) => setCreateForm((p) => ({ ...p, business_name: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700">Login email *</label>
-              <Input type="email" value={createForm.public_email} onChange={(e) => setCreateForm((p) => ({ ...p, public_email: e.target.value }))} />
+              <label htmlFor="create-supplier-public_email" className="ew-field-label">Login email *</label>
+              <Input id="create-supplier-public_email" type="email" value={createForm.public_email} onChange={(e) => setCreateForm((p) => ({ ...p, public_email: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700">Base city</label>
-              <Input value={createForm.base_city} onChange={(e) => setCreateForm((p) => ({ ...p, base_city: e.target.value }))} />
+              <label htmlFor="create-supplier-base_city" className="ew-field-label">Base city</label>
+              <Input id="create-supplier-base_city" value={createForm.base_city} onChange={(e) => setCreateForm((p) => ({ ...p, base_city: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700">Base postcode</label>
-              <Input value={createForm.base_postcode} onChange={(e) => setCreateForm((p) => ({ ...p, base_postcode: e.target.value }))} />
+              <label htmlFor="create-supplier-base_postcode" className="ew-field-label">Base postcode</label>
+              <Input id="create-supplier-base_postcode" value={createForm.base_postcode} onChange={(e) => setCreateForm((p) => ({ ...p, base_postcode: e.target.value }))} />
             </div>
           </div>
         </div>

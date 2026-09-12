@@ -1,205 +1,239 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Store,
+  Send,
+  CreditCard,
+  ChartNoAxesCombined,
+  Inbox,
+  Building2,
+  Tags,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
-import StatCard from "../../components/ui/StatCard";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
+import {
+  WorkspacePageHeader,
+  MetricCard,
+  DataTable,
+  DashboardCard,
+  ActivityList,
+  QuickActions,
+  ErrorState,
+} from "../../components/workspace/WorkspaceComponents";
 
-function formatPercent(value) {
-  const pct = Number(value || 0) * 100;
-  return `${pct.toFixed(1)}%`;
-}
-
-function fromNow(iso) {
-  if (!iso) return "-";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (!Number.isFinite(ms)) return "-";
-  const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-async function authGet(url) {
-  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-  if (sessionErr) throw sessionErr;
-  const token = sessionData?.session?.access_token;
-  if (!token) throw new Error("Not authenticated");
-
-  const resp = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(json?.details || json?.error || "Request failed");
-  return json;
-}
+const endpoints = [
+  "/api/admin-quote-funnel",
+  "/api/admin-supplier-metrics",
+  "/api/admin-credits-ledger?limit=8&offset=0",
+];
+const percent = (value) =>
+  value == null ? "—" : `${(Number(value) * 100).toFixed(1)}%`;
 
 export default function AdminDashboardPage() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [funnel, setFunnel] = useState(null);
-  const [supplierMetrics, setSupplierMetrics] = useState([]);
-  const [recentLedger, setRecentLedger] = useState([]);
-
+  const [state, setState] = useState({ loading: true, data: [], errors: [] });
+  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      setError("");
+    const controller = new AbortController();
+    async function load() {
       try {
-        const [funnelResp, supplierResp, ledgerResp] = await Promise.all([
-          authGet("/api/admin-quote-funnel"),
-          authGet("/api/admin-supplier-metrics"),
-          authGet("/api/admin-credits-ledger?limit=8&offset=0"),
-        ]);
-        if (!mounted) return;
-        setFunnel(funnelResp?.totals || null);
-        setSupplierMetrics(supplierResp?.rows || []);
-        setRecentLedger(ledgerResp?.rows || []);
-      } catch (e) {
-        if (mounted) setError(e?.message || "Failed to load dashboard");
-      } finally {
-        if (mounted) setLoading(false);
+        // All requests in this refresh share one session lookup; no cross-user cache.
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const token = data?.session?.access_token;
+        if (!token) throw new Error("Not authenticated");
+        const results = await Promise.allSettled(
+          endpoints.map(async (url) => {
+            const response = await fetch(url, {
+              headers: { Authorization: `Bearer ${token}` },
+              signal: controller.signal,
+            });
+            const json = await response.json();
+            if (!response.ok)
+              throw new Error(json?.details || json?.error || "Request failed");
+            return json;
+          }),
+        );
+        if (!controller.signal.aborted)
+          setState({
+            loading: false,
+            data: results.map((result) =>
+              result.status === "fulfilled" ? result.value : null,
+            ),
+            errors: results.map((result) =>
+              result.status === "rejected" ? result.reason.message : "",
+            ),
+          });
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setState({
+            loading: false,
+            data: [],
+            errors: endpoints.map(() => error.message),
+          });
       }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const creditsIssued30d = useMemo(
-    () => recentLedger.filter((row) => Number(row.delta || 0) > 0).reduce((sum, row) => sum + Number(row.delta || 0), 0),
-    [recentLedger]
-  );
-
+    }
+    load();
+    return () => controller.abort();
+  }, [refresh]);
+  const retry = () => {
+    setState({ loading: true, data: [], errors: [] });
+    setRefresh((value) => value + 1);
+  };
+  const { loading, data, errors } = state;
+  const funnel = data[0]?.totals;
+  const suppliers = data[1]?.rows;
+  const ledger = data[2]?.rows;
+  const credits = ledger
+    ?.filter((row) => Number(row.delta) > 0)
+    .reduce((sum, row) => sum + Number(row.delta), 0);
+  const leaderboard = [...(suppliers || [])]
+    .sort(
+      (a, b) =>
+        b.acceptance_rate - a.acceptance_rate || b.quotes_sent - a.quotes_sent,
+    )
+    .slice(0, 8);
   return (
-    <div className="space-y-6">
-      <PageHeader title="Admin Dashboard" subtitle="Operational overview for credits and quote conversion." />
-
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {loading ? (
-          <>
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-28 w-full" />
-          </>
-        ) : (
-          <>
-            <StatCard label="Active suppliers (30d)" value={supplierMetrics.length} />
-            <StatCard label="Credits issued (recent)" value={creditsIssued30d} hint="From latest ledger entries" />
-            <StatCard label="Quotes sent (30d)" value={funnel?.sent ?? 0} />
-            <StatCard label="Acceptance rate (30d)" value={formatPercent(funnel?.acceptance_rate)} />
-          </>
-        )}
+    <div className="ew-page-stack">
+      <WorkspacePageHeader
+        title="Dashboard"
+        subtitle="Welcome back. Here's what's happening on EventWow."
+        actions={[
+          {
+            label: "Refresh",
+            variant: "secondary",
+            onClick: retry,
+            disabled: loading,
+          },
+        ]}
+      />
+      <div className="ew-metrics">
+        <MetricCard
+          label="Suppliers sending quotes"
+          value={suppliers?.length}
+          hint="Last 30 days"
+          tone="purple"
+          icon={Store}
+          loading={loading}
+        />
+        <MetricCard
+          label="Credits issued"
+          value={credits}
+          hint="From the latest 8 ledger entries"
+          tone="green"
+          icon={CreditCard}
+          loading={loading}
+        />
+        <MetricCard
+          label="Quotes sent"
+          value={funnel?.sent}
+          hint="Last 30 days"
+          tone="blue"
+          icon={Send}
+          loading={loading}
+        />
+        <MetricCard
+          label="Acceptance rate"
+          value={percent(funnel?.acceptance_rate)}
+          hint="Last 30 days"
+          tone="orange"
+          icon={ChartNoAxesCombined}
+          loading={loading}
+        />
       </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Section title="Recent credit activity">
-          <Card>
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="space-y-3 p-5">
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                </div>
-              ) : recentLedger.length === 0 ? (
-                <div className="p-5">
-                  <EmptyState title="No recent adjustments" description="Ledger entries will appear after credit changes." />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <THead>
-                      <TR>
-                        <TH>Supplier</TH>
-                        <TH>Delta</TH>
-                        <TH>Reason</TH>
-                        <TH>When</TH>
-                      </TR>
-                    </THead>
-                    <TBody>
-                      {recentLedger.map((row) => (
-                        <TR key={row.id}>
-                          <TD>{row?.supplier?.business_name || "Supplier"}</TD>
-                          <TD>
-                            <Badge variant={Number(row.delta) >= 0 ? "success" : "danger"}>
-                              {Number(row.delta) > 0 ? `+${row.delta}` : row.delta}
-                            </Badge>
-                          </TD>
-                          <TD>{row.reason}</TD>
-                          <TD className="text-slate-500">{fromNow(row.created_at)}</TD>
-                        </TR>
-                      ))}
-                    </TBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </Section>
-
-        <Section title="Top supplier performance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Acceptance leaderboard</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="space-y-3 p-5">
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                </div>
-              ) : supplierMetrics.length === 0 ? (
-                <div className="p-5">
-                  <EmptyState title="No supplier metrics yet" description="Send quotes to populate performance stats." />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <THead>
-                      <TR>
-                        <TH>Supplier</TH>
-                        <TH>Sent</TH>
-                        <TH>Accepted</TH>
-                        <TH>Rate</TH>
-                      </TR>
-                    </THead>
-                    <TBody>
-                      {[...supplierMetrics]
-                        .sort((a, b) => b.acceptance_rate - a.acceptance_rate || b.quotes_sent - a.quotes_sent)
-                        .slice(0, 8)
-                        .map((row) => (
-                          <TR key={row.supplier_id}>
-                            <TD>{row?.supplier?.business_name || "Supplier"}</TD>
-                            <TD>{row.quotes_sent}</TD>
-                            <TD>{row.quotes_accepted}</TD>
-                            <TD>
-                              <Badge variant="brand">{formatPercent(row.acceptance_rate)}</Badge>
-                            </TD>
-                          </TR>
-                        ))}
-                    </TBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </Section>
+      <div className="ew-dashboard-grid">
+        <DashboardCard title="Supplier performance" to="/admin/performance">
+          <DataTable
+            caption="Supplier acceptance leaderboard, last 30 days"
+            loading={loading}
+            error={errors[1]}
+            onRetry={retry}
+            rows={leaderboard}
+            rowKey="supplier_id"
+            emptyTitle="No supplier metrics yet"
+            emptyDescription="Supplier performance appears once quotes are sent."
+            columns={[
+              {
+                key: "supplier",
+                label: "Supplier",
+                render: (row) => (
+                  <strong>{row.supplier?.business_name || "Supplier"}</strong>
+                ),
+              },
+              { key: "quotes_sent", label: "Sent" },
+              { key: "quotes_accepted", label: "Accepted" },
+              {
+                key: "acceptance_rate",
+                label: "Rate",
+                render: (row) => percent(row.acceptance_rate),
+              },
+            ]}
+          />
+        </DashboardCard>
+        <DashboardCard
+          title="Recent credit activity"
+          to="/admin/credits-ledger"
+        >
+          <ActivityList
+            loading={loading}
+            error={errors[2]}
+            onRetry={retry}
+            items={(ledger || []).map((row) => ({
+              id: row.id,
+              title: row.supplier?.business_name || "Supplier",
+              description: row.reason,
+              when: row.created_at
+                ? new Date(row.created_at).toLocaleString("en-GB")
+                : "",
+              value: `${Number(row.delta) > 0 ? "+" : ""}${row.delta}`,
+            }))}
+          />
+        </DashboardCard>
+        <div className="ew-dashboard-side">
+          <DashboardCard title="Quick actions">
+            <QuickActions
+              actions={[
+                { label: "Suppliers", to: "/admin/suppliers", icon: Store },
+                { label: "Venues", to: "/admin/venues", icon: Building2 },
+                { label: "Enquiries", to: "/admin/enquiries", icon: Inbox },
+                { label: "Categories", to: "/admin/categories", icon: Tags },
+              ]}
+            />
+          </DashboardCard>
+          <DashboardCard title="Quote overview" to="/admin/performance">
+            {errors[0] ? (
+              <ErrorState message={errors[0]} onRetry={retry} />
+            ) : (
+              <DataTable
+                caption="Quote outcomes in the last 30 days"
+                loading={loading}
+                rows={
+                  funnel
+                    ? [
+                        { id: "sent", label: "Sent", value: funnel.sent },
+                        {
+                          id: "accepted",
+                          label: "Accepted",
+                          value: funnel.accepted,
+                        },
+                        {
+                          id: "declined",
+                          label: "Declined",
+                          value: funnel.declined,
+                        },
+                        { id: "closed", label: "Closed", value: funnel.closed },
+                      ]
+                    : []
+                }
+                columns={[
+                  { key: "label", label: "Outcome" },
+                  { key: "value", label: "Quotes" },
+                ]}
+                emptyTitle="No quote data available"
+              />
+            )}
+            <p className="ew-inline-note">
+              Last 30 days. Outcomes can overlap as quotes progress.
+            </p>
+          </DashboardCard>
+        </div>
       </div>
     </div>
   );

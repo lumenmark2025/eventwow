@@ -1,13 +1,7 @@
+import { FormField, Select, Feedback, Section, Badge, Button, Card, CardContent, EmptyState, Skeleton, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
 async function apiFetch(path, options = {}) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -84,16 +78,16 @@ export default function VenueClaimsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader title="Venue claims" subtitle="Review and approve venue ownership requests." />
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? <Feedback tone="danger" onRetry={load}>{error}</Feedback> : null}
 
       <Section
         title="Claim requests"
         right={(
-          <div className="flex items-center gap-2">
-            <select
+          <div className="flex flex-wrap items-center gap-2">
+            <FormField label="Filter claim status"><Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm"
@@ -104,8 +98,8 @@ export default function VenueClaimsPage() {
               <option value="rejected">Rejected</option>
               <option value="expired">Expired</option>
               <option value="all">All</option>
-            </select>
-            <Badge variant="neutral">{rows.length}</Badge>
+            </Select></FormField>
+            <span className="ew-result-count">{loading || error ? "—" : rows.length} records</span>
           </div>
         )}
       >
@@ -117,7 +111,7 @@ export default function VenueClaimsPage() {
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
               </div>
-            ) : rows.length === 0 ? (
+            ) : error ? null : rows.length === 0 ? (
               <div className="p-5">
                 <EmptyState title="No claims found" description="New venue claim requests will appear here." />
               </div>
@@ -139,26 +133,26 @@ export default function VenueClaimsPage() {
                     {rows.map((row) => (
                       <TR key={row.id}>
                         <TD>
-                          <div className="space-y-0.5">
+                          <div className="gap-1">
                             <p className="font-medium text-slate-900">{row.venue_name || "Venue"}</p>
-                            {row.venue_slug ? <p className="text-xs text-slate-500">/{row.venue_slug}</p> : null}
+                            {row.venue_slug ? <p className="text-xs ew-muted">/{row.venue_slug}</p> : null}
                           </div>
                         </TD>
                         <TD>
-                          <div className="space-y-0.5">
+                          <div className="gap-1">
                             <p className="font-medium text-slate-900">{row.requester_name || "-"}</p>
-                            <p className="text-xs text-slate-500">{row.requester_email || "-"}</p>
+                            <p className="text-xs ew-muted">{row.requester_email || "-"}</p>
                           </div>
                         </TD>
                         <TD>{row.role_at_venue || "-"}</TD>
-                        <TD className="max-w-[340px]">{row.message || "-"}</TD>
+                        <TD className="min-w-0">{row.message || "-"}</TD>
                         <TD>
                           <Badge variant={statusBadgeVariant(row.status)}>{row.status}</Badge>
                         </TD>
                         <TD>{fmtDate(row.created_at)}</TD>
                         <TD>
                           {row.status === "pending" ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <Button
                                 size="sm"
                                 disabled={busy === `approve:${row.id}` || busy === `reject:${row.id}`}
@@ -168,7 +162,7 @@ export default function VenueClaimsPage() {
                               </Button>
                               <Button
                                 size="sm"
-                                variant="secondary"
+                                variant="danger"
                                 disabled={busy === `approve:${row.id}` || busy === `reject:${row.id}`}
                                 onClick={() => act(row.id, "reject")}
                               >
@@ -176,7 +170,7 @@ export default function VenueClaimsPage() {
                               </Button>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-500">-</span>
+                            <span className="text-xs ew-muted">-</span>
                           )}
                         </TD>
                       </TR>

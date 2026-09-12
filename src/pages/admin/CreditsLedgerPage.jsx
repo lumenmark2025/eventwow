@@ -1,15 +1,7 @@
+import { FormField, Feedback, Section, Button, Card, CardContent, EmptyState, Input, Modal, Skeleton, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Input from "../../components/ui/Input";
-import Modal from "../../components/ui/Modal";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
 async function authGet(url) {
   const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
@@ -99,29 +91,29 @@ export default function CreditsLedgerPage() {
   const hasNext = offset + rows.length < totalCount;
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Credits Ledger"
         subtitle="Append-only audit trail of credit balance changes."
         actions={[{ key: "export", label: "Export CSV", variant: "secondary", onClick: exportCsv, disabled: rows.length === 0 }]}
       />
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? <Feedback tone="danger" onRetry={load}>{error}</Feedback> : null}
 
       <Section title="Filters">
         <Card>
           <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <Input value={supplierId} onChange={(e) => setSupplierId(e.target.value)} placeholder="Supplier ID (uuid)" />
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (e.g. quote_send)" />
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <FormField label="Supplier ID (uuid)"><Input value={supplierId} onChange={(e) => setSupplierId(e.target.value)} placeholder="Supplier ID (uuid)" /></FormField>
+            <FormField label="Reason (e.g. quote_send)"><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (e.g. quote_send)" /></FormField>
+            <FormField label="From"><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
+            <FormField label="To"><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
           </CardContent>
         </Card>
       </Section>
 
       <Section
         title="Entries"
-        right={<p className="text-xs text-slate-500">{totalCount} total</p>}
+        right={<p className="text-xs ew-muted">{loading || error ? "—" : totalCount} total</p>}
       >
         <Card>
           <CardContent className="p-0">
@@ -131,7 +123,7 @@ export default function CreditsLedgerPage() {
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
               </div>
-            ) : rows.length === 0 ? (
+            ) : error ? null : rows.length === 0 ? (
               <div className="p-5">
                 <EmptyState title="No ledger entries found" description="Try widening your filter window." />
               </div>
@@ -154,9 +146,9 @@ export default function CreditsLedgerPage() {
                         <TD className="whitespace-nowrap">{new Date(row.created_at).toLocaleString()}</TD>
                         <TD>{row?.supplier?.business_name || row.supplier_id}</TD>
                         <TD>
-                          <Badge variant={Number(row.delta) >= 0 ? "success" : "danger"}>
+                          <span className="font-semibold">
                             {Number(row.delta) > 0 ? `+${row.delta}` : row.delta}
-                          </Badge>
+                          </span>
                         </TD>
                         <TD>{row.balance_after}</TD>
                         <TD>{row.reason}</TD>
@@ -182,7 +174,7 @@ export default function CreditsLedgerPage() {
 
       <Modal open={!!selectedRow} onClose={() => setSelectedRow(null)} title="Ledger Entry">
         {selectedRow ? (
-          <div className="space-y-2 text-sm">
+          <div className="ew-record-details space-y-2 text-sm">
             <p><span className="font-medium">ID:</span> {selectedRow.id}</p>
             <p><span className="font-medium">Supplier:</span> {selectedRow?.supplier?.business_name || selectedRow.supplier_id}</p>
             <p><span className="font-medium">Delta:</span> {selectedRow.delta}</p>

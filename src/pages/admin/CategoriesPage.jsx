@@ -1,15 +1,7 @@
+import { FormField, Textarea, Feedback, Section, Button, Card, CardContent, EmptyState, Input, Modal, Skeleton, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Input from "../../components/ui/Input";
-import Modal from "../../components/ui/Modal";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
 function slugify(value) {
   return String(value || "")
@@ -139,27 +131,27 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
       )}
     >
       <div className="space-y-3">
-        <Input
+        <FormField label="Display name"><Input
           value={form.display_name}
           onChange={(e) => setForm((prev) => ({ ...prev, display_name: e.target.value }))}
           placeholder="Display name"
-        />
-        <Input
+        /></FormField>
+        <FormField label="Slug"><Input
           value={form.slug}
           onChange={(e) => setForm((prev) => ({ ...prev, slug: slugify(e.target.value) }))}
           placeholder="Slug"
-        />
-        <Input
+        /></FormField>
+        <FormField label="Image URL (optional)"><Input
           value={form.image_url}
           onChange={(e) => setForm((prev) => ({ ...prev, image_url: e.target.value }))}
           placeholder="Image URL (optional)"
-        />
-        <textarea
+        /></FormField>
+        <FormField label="Short description"><Textarea
           value={form.short_description}
           onChange={(e) => setForm((prev) => ({ ...prev, short_description: e.target.value }))}
-          className="min-h-[100px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+          className="min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
           placeholder="Short description"
-        />
+        /></FormField>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -169,12 +161,12 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
           Featured
         </label>
         {form.is_featured ? (
-          <Input
+          <FormField label="Featured order"><Input
             type="number"
             value={form.featured_order}
             onChange={(e) => setForm((prev) => ({ ...prev, featured_order: e.target.value }))}
             placeholder="Featured order"
-          />
+          /></FormField>
         ) : null}
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -184,8 +176,8 @@ function CategoryEditorModal({ open, onClose, initial, onSave }) {
           />
           Active
         </label>
-        {inlineError ? <p className="text-sm text-rose-600">{inlineError}</p> : null}
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        {inlineError ? <Feedback tone="danger">{inlineError}</Feedback> : null}
+        {error ? <Feedback tone="danger">{error}</Feedback> : null}
       </div>
     </Modal>
   );
@@ -326,7 +318,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Categories"
         subtitle="Manage supplier categories used on homepage and browse tiles."
@@ -342,26 +334,26 @@ export default function CategoriesPage() {
         ]}
       />
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-      {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
+      {error ? <Feedback tone="danger" onRetry={load}>{error}</Feedback> : null}
+      {success ? <Feedback tone="success">{success}</Feedback> : null}
 
       <Section
         title="Category list"
         right={(
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="secondary" onClick={reorderFeatured} disabled={savingId === "reorder"}>
               {savingId === "reorder" ? "Reordering..." : "Reorder featured"}
             </Button>
-            <Badge variant="neutral">{rows.length}</Badge>
+            <span className="ew-result-count">{loading || error ? "—" : rows.length} records</span>
           </div>
         )}
       >
         <Card>
           <CardContent className="space-y-4 p-4">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or slug" className="sm:max-w-sm" />
+              <FormField label="Search by name or slug"><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or slug" className="sm:max-w-sm" /></FormField>
               <Button type="button" variant="secondary" onClick={load}>Search</Button>
-              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm">
+              <label className="ew-checkbox-label">
                 <input type="checkbox" checked={activeOnly} onChange={(e) => setActiveOnly(e.target.checked)} />
                 Active only
               </label>
@@ -373,7 +365,7 @@ export default function CategoriesPage() {
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
               </div>
-            ) : rows.length === 0 ? (
+            ) : error ? null : rows.length === 0 ? (
               <EmptyState title="No categories found" description="Create your first category." />
             ) : (
               <div className="overflow-x-auto">
@@ -406,23 +398,24 @@ export default function CategoriesPage() {
                             <div className="h-14 w-24 rounded-md border border-dashed border-slate-300 bg-slate-50" />
                           )}
                         </TD>
-                        <TD className="max-w-[360px]">{row.short_description}</TD>
+                        <TD className="min-w-0">{row.short_description}</TD>
                         <TD>
                           <label className="inline-flex items-center gap-2 text-sm">
                             <input
                               type="checkbox"
+                              aria-label={`Feature ${row.display_name}`}
                               checked={!!row.is_featured}
-                              disabled={savingId === `feature:${row.id}`}
+                              disabled={savingId === `is_featured:${row.id}`}
                               onChange={(e) => toggle(row, "is_featured", e.target.checked)}
                             />
                           </label>
                         </TD>
                         <TD>
-                          <input
+                          <Input aria-label="Featured order"
                             type="number"
-                            className="h-9 w-20 rounded-lg border border-slate-200 px-2 text-sm"
+                            className="w-20"
                             value={row.featured_order}
-                            disabled={savingId === `order:${row.id}`}
+                            disabled={savingId === `featured_order:${row.id}`}
                             onBlur={(e) => {
                               const next = Number.isFinite(Number(e.target.value)) ? Math.trunc(Number(e.target.value)) : 0;
                               if (next !== Number(row.featured_order || 0)) toggle(row, "featured_order", next);
@@ -437,14 +430,15 @@ export default function CategoriesPage() {
                           <label className="inline-flex items-center gap-2 text-sm">
                             <input
                               type="checkbox"
+                              aria-label={`Activate ${row.display_name}`}
                               checked={row.is_active !== false}
-                              disabled={savingId === `active:${row.id}`}
+                              disabled={savingId === `is_active:${row.id}`}
                               onChange={(e) => toggle(row, "is_active", e.target.checked)}
                             />
                           </label>
                         </TD>
                         <TD>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Button
                               type="button"
                               size="sm"
@@ -468,7 +462,7 @@ export default function CategoriesPage() {
                             <Button
                               type="button"
                               size="sm"
-                              variant="secondary"
+                              variant="danger"
                               disabled={savingId === `delete:${row.id}` || row.is_active === false}
                               onClick={() => deactivate(row)}
                             >

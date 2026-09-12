@@ -1,0 +1,13 @@
+[
+  "dashboard: 360/768/1024/1440; axe, overflow, populated layout",
+  "enquiries: 360/768/1024/1440; axe, overflow, populated layout",
+  "notifications: 360/768/1024/1440; axe, overflow, populated layout",
+  "listing: 360/768/1024/1440; axe, overflow, populated layout",
+  "Requests: search, status filtering, quoted/declined disables, details/Escape/focus return, decline payload, original create-quote navigation",
+  "Notifications: mark all/single payloads, pending/zero-unread disables, original open destination",
+  "Listing: labels, initial/save pending disabled states, local Cancel, unchanged postcode validation, failed save retains draft, exact save payload",
+  "Listing media: focusable uploads, JPG/PNG/WEBP and 5MB validation, busy upload disables, hero/gallery uploads, reorder boundaries/order payload, delete payloads; services/categories and Cancel",
+  "All four pages: loading/empty/error at 360/768/1024/1440, retry recovery; unavailable dashboard counts/scores never become false zeroes",
+  "Credit bundles: unchanged payloads/prices, checkout failure/pending states; mobile Radix drawer/Escape/focus return, command search and account menu keyboard controls",
+  "Role guards: signed out/Admin/Customer/Venue blocked from all four Supplier routes; incomplete Supplier still redirects to onboarding"
+]

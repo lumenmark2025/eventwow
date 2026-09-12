@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import PageHeader from "../../components/layout/PageHeader";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
-import Badge from "../../components/ui/Badge";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Badge,
+  EmptyState,
+  Skeleton,
+  Feedback,
+} from "../../components/workspace/AdminPrimitives";
+import {
+  ConversationThread,
+  MessageComposer,
+} from "../../components/workspace/ConversationThread";
 import { supabase } from "../../lib/supabase";
 
 function fmtDate(value) {
@@ -19,15 +28,23 @@ function fmtDate(value) {
 
 function threadTitle(thread) {
   const venue = thread?.quote?.venueName || "Quote";
-  const eventDate = thread?.quote?.eventDate ? ` - ${thread.quote.eventDate}` : "";
+  const eventDate = thread?.quote?.eventDate
+    ? ` - ${thread.quote.eventDate}`
+    : "";
   return `${venue}${eventDate}`;
 }
 
 function customerNameFromThread(thread) {
-  const explicit = String(thread?.quote?.customerName || thread?.thread?.quote?.customerName || "").trim();
+  const explicit = String(
+    thread?.quote?.customerName || thread?.thread?.quote?.customerName || "",
+  ).trim();
   if (explicit) return explicit;
 
-  const email = String(thread?.quote?.customerEmail || thread?.thread?.quote?.customerEmail || "").trim().toLowerCase();
+  const email = String(
+    thread?.quote?.customerEmail || thread?.thread?.quote?.customerEmail || "",
+  )
+    .trim()
+    .toLowerCase();
   if (!email.includes("@")) return "Customer";
   const localPart = email.split("@")[0] || "";
   if (!localPart) return "Customer";
@@ -41,14 +58,9 @@ function customerNameFromThread(thread) {
     .join(" ");
 }
 
-function messageBadgeVariant(senderType) {
-  if (senderType === "supplier") return "brand";
-  if (senderType === "customer") return "neutral";
-  return "warning";
-}
-
 async function authFetch(path, options = {}) {
-  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+  const { data: sessionData, error: sessionErr } =
+    await supabase.auth.getSession();
   if (sessionErr) throw sessionErr;
   const accessToken = sessionData?.session?.access_token;
   if (!accessToken) throw new Error("Not authenticated");
@@ -72,7 +84,9 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
   const [ok, setOk] = useState("");
 
   const [threads, setThreads] = useState([]);
-  const [selectedThreadId, setSelectedThreadId] = useState(initialThreadId || "");
+  const [selectedThreadId, setSelectedThreadId] = useState(
+    initialThreadId || "",
+  );
   const [threadData, setThreadData] = useState(null);
   const [messageBody, setMessageBody] = useState("");
   const [search, setSearch] = useState("");
@@ -87,7 +101,9 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
       const resp = await authFetch("/api/supplier-threads");
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error(json?.details || json?.error || "Failed to load threads");
+        throw new Error(
+          json?.details || json?.error || "Failed to load threads",
+        );
       }
 
       const rows = json?.threads || [];
@@ -115,14 +131,24 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
     setErr("");
 
     try {
-      const resp = await authFetch(`/api/supplier-thread?threadId=${encodeURIComponent(threadId)}`);
+      const resp = await authFetch(
+        `/api/supplier-thread?threadId=${encodeURIComponent(threadId)}`,
+      );
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error(json?.details || json?.error || "Failed to load thread");
+        throw new Error(
+          json?.details || json?.error || "Failed to load thread",
+        );
       }
 
       setThreadData({ thread: json.thread, messages: json.messages || [] });
-      setThreads((prev) => prev.map((row) => (row.id === threadId ? { ...row, unread: false, lastReadAt: new Date().toISOString() } : row)));
+      setThreads((prev) =>
+        prev.map((row) =>
+          row.id === threadId
+            ? { ...row, unread: false, lastReadAt: new Date().toISOString() }
+            : row,
+        ),
+      );
     } catch (e) {
       setThreadData(null);
       setErr(e?.message || "Failed to load thread");
@@ -177,7 +203,10 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
     setOk("");
 
     try {
-      const clientMessageId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`;
+      const clientMessageId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}_${Math.random()}`;
 
       const resp = await authFetch("/api/supplier-send-message", {
         method: "POST",
@@ -190,7 +219,9 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
 
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error(json?.details || json?.error || "Failed to send message");
+        throw new Error(
+          json?.details || json?.error || "Failed to send message",
+        );
       }
 
       const nextMsg = json?.message;
@@ -211,14 +242,19 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
                     unread: false,
                     lastReadAt: nowIso,
                     lastMessage: {
-                      body: body.length > 120 ? `${body.slice(0, 117)}...` : body,
+                      body:
+                        body.length > 120 ? `${body.slice(0, 117)}...` : body,
                       senderType: "supplier",
                       createdAt: nowIso,
                     },
                   }
-                : row
+                : row,
             )
-            .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+            .sort((a, b) =>
+              String(b.updatedAt || "").localeCompare(
+                String(a.updatedAt || ""),
+              ),
+            ),
         );
       }
 
@@ -232,18 +268,34 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Messages"
         subtitle="Chat with customers for each quote thread."
-        actions={[{ key: "refresh", label: "Refresh", variant: "secondary", onClick: loadThreads }]}
+        actions={[
+          {
+            key: "refresh",
+            label: "Refresh",
+            variant: "secondary",
+            onClick: loadThreads,
+            disabled: threadsLoading || threadLoading || sending,
+          },
+        ]}
       />
 
-      {err ? <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div> : null}
-      {ok ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{ok}</div> : null}
+      {err && (
+        <Feedback
+          onRetry={() =>
+            selectedThreadId ? loadThread(selectedThreadId) : loadThreads()
+          }
+        >
+          {err}
+        </Feedback>
+      )}
+      {ok && <Feedback tone="success">{ok}</Feedback>}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <Card className="xl:col-span-1">
           <CardHeader>
             <CardTitle>Threads</CardTitle>
           </CardHeader>
@@ -261,10 +313,13 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-20 w-full" />
               </div>
-            ) : filteredThreads.length === 0 ? (
-              <EmptyState title="No threads yet" description="Create/send a quote and open a thread from quote actions." />
+            ) : filteredThreads.length === 0 && !err ? (
+              <EmptyState
+                title="No threads yet"
+                description="Create/send a quote and open a thread from quote actions."
+              />
             ) : (
-              <div className="max-h-[560px] space-y-2 overflow-auto">
+              <div className="ew-thread-list">
                 {filteredThreads.map((thread) => {
                   const active = selectedThreadId === thread.id;
                   const customerName = customerNameFromThread(thread);
@@ -277,19 +332,28 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
                         setOk("");
                         setErr("");
                       }}
-                      className={`w-full rounded-xl border p-3 text-left transition-shadow hover:shadow-sm ${active ? "border-brand" : "border-slate-200"}`}
+                      className="ew-thread-choice"
+                      aria-current={active ? "true" : undefined}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-slate-900">{customerName}</div>
-                          <div className="truncate text-xs text-slate-600">{threadTitle(thread)}</div>
+                          <div className="truncate text-sm font-semibold text-slate-900">
+                            {customerName}
+                          </div>
+                          <div className="truncate text-xs text-slate-600">
+                            {threadTitle(thread)}
+                          </div>
                         </div>
-                        {thread.unread ? <Badge variant="brand">Unread</Badge> : null}
+                        {thread.unread ? (
+                          <Badge variant="brand">Unread</Badge>
+                        ) : null}
                       </div>
                       <div className="mt-1 text-xs text-slate-600">
                         {thread.lastMessage?.body || "No messages yet"}
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">{fmtDate(thread.updatedAt)}</div>
+                      <div className="ew-form-help mt-1">
+                        {fmtDate(thread.updatedAt)}
+                      </div>
                     </button>
                   );
                 })}
@@ -298,13 +362,16 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>Conversation</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {!selectedThreadId ? (
-              <EmptyState title="Select a thread" description="Pick a thread from the left to view conversation history." />
+              <EmptyState
+                title="Select a thread"
+                description="Pick a thread from the left to view conversation history."
+              />
             ) : threadLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-16 w-full" />
@@ -312,59 +379,48 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
                 <Skeleton className="h-16 w-full" />
               </div>
             ) : !threadData ? (
-              <EmptyState title="Thread unavailable" description="This thread could not be loaded." />
+              <EmptyState
+                title="Thread unavailable"
+                description="This thread could not be loaded."
+              />
             ) : (
               <>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="truncate text-sm font-semibold text-slate-900">{customerNameFromThread(selectedThreadRow || threadData)}</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {selectedThreadRow?.quote?.venueName || threadData?.thread?.quote?.venueName || "Quote thread"}
-                    {selectedThreadRow?.quote?.eventDate || threadData?.thread?.quote?.eventDate
-                      ? ` - ${selectedThreadRow?.quote?.eventDate || threadData?.thread?.quote?.eventDate}`
-                      : ""}
-                    {selectedThreadRow?.quote?.eventPostcode || threadData?.thread?.quote?.eventPostcode
-                      ? ` - ${selectedThreadRow?.quote?.eventPostcode || threadData?.thread?.quote?.eventPostcode}`
-                      : ""}
-                  </p>
-                </div>
-
-                <div className="max-h-[420px] space-y-2 overflow-auto rounded-xl border border-slate-200 bg-white p-3">
-                  {(threadData.messages || []).length === 0 ? (
-                    <EmptyState title="No messages yet" description="Start the conversation by sending a message." />
-                  ) : (
-                    threadData.messages.map((msg) => (
-                      <div key={msg.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <Badge variant={messageBadgeVariant(msg.senderType)}>
-                            {msg.senderType === "supplier" ? "You" : msg.senderType}
-                          </Badge>
-                          <span className="text-xs text-slate-500">{fmtDate(msg.createdAt)}</span>
-                        </div>
-                        <div className="whitespace-pre-wrap text-slate-800">{msg.body}</div>
-                      </div>
-                    ))
+                <ConversationThread
+                  title={customerNameFromThread(
+                    selectedThreadRow || threadData,
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <textarea
-                    className="min-h-[100px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-                    placeholder="Type your message..."
-                    value={messageBody}
-                    onChange={(e) => setMessageBody(e.target.value)}
-                    maxLength={2000}
-                  />
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs text-slate-500">{messageBody.trim().length}/2000</div>
-                    <Button
-                      type="button"
-                      onClick={sendMessage}
-                      disabled={sending || messageBody.trim().length < 1 || messageBody.trim().length > 2000}
-                    >
-                      {sending ? "Sending..." : "Send message"}
-                    </Button>
-                  </div>
-                </div>
+                  subtitle={[
+                    selectedThreadRow?.quote?.venueName ||
+                      threadData?.thread?.quote?.venueName ||
+                      "Quote thread",
+                    selectedThreadRow?.quote?.eventDate ||
+                      threadData?.thread?.quote?.eventDate,
+                    selectedThreadRow?.quote?.eventPostcode ||
+                      threadData?.thread?.quote?.eventPostcode,
+                  ]
+                    .filter(Boolean)
+                    .join(" - ")}
+                  messages={(threadData.messages || []).map((msg) => ({
+                    id: msg.id,
+                    own: msg.senderType === "supplier",
+                    sender:
+                      msg.senderType === "supplier" ? "You" : msg.senderType,
+                    createdAt: msg.createdAt,
+                    when: fmtDate(msg.createdAt),
+                    body: msg.body,
+                  }))}
+                />
+                <MessageComposer
+                  value={messageBody}
+                  onChange={(e) => setMessageBody(e.target.value)}
+                  onSend={sendMessage}
+                  sending={sending}
+                  disabled={
+                    sending ||
+                    messageBody.trim().length < 1 ||
+                    messageBody.trim().length > 2000
+                  }
+                />
               </>
             )}
           </CardContent>

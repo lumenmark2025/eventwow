@@ -1,0 +1,316 @@
+[
+  {
+    "file": "src/supplier/layout/SupplierLayout.jsx",
+    "functions": [
+      {
+        "name": "refreshUnreadCount",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/supplier/pages/SupplierQuotes.jsx",
+    "functions": [
+      {
+        "name": "fmtDateTime",
+        "unchanged": true
+      },
+      {
+        "name": "money",
+        "unchanged": true
+      },
+      {
+        "name": "moneyMinor",
+        "unchanged": true
+      },
+      {
+        "name": "calcLineTotal",
+        "unchanged": true
+      },
+      {
+        "name": "isReacceptRequired",
+        "unchanged": true
+      },
+      {
+        "name": "statusText",
+        "unchanged": true
+      },
+      {
+        "name": "patchQuoteRow",
+        "unchanged": true
+      },
+      {
+        "name": "loadCredits",
+        "unchanged": true
+      },
+      {
+        "name": "loadList",
+        "unchanged": true
+      },
+      {
+        "name": "openQuote",
+        "unchanged": false
+      },
+      {
+        "name": "loadEnquiryDetail",
+        "unchanged": true
+      },
+      {
+        "name": "updateQuoteText",
+        "unchanged": true
+      },
+      {
+        "name": "updateItem",
+        "unchanged": true
+      },
+      {
+        "name": "addItem",
+        "unchanged": true
+      },
+      {
+        "name": "removeItem",
+        "unchanged": true
+      },
+      {
+        "name": "moveItem",
+        "unchanged": true
+      },
+      {
+        "name": "saveDraft",
+        "unchanged": true
+      },
+      {
+        "name": "sendQuote",
+        "unchanged": true
+      },
+      {
+        "name": "copyCustomerLink",
+        "unchanged": true
+      },
+      {
+        "name": "generateDraftText",
+        "unchanged": true
+      },
+      {
+        "name": "openMessages",
+        "unchanged": true
+      },
+      {
+        "name": "fetchPublicLinkForQuote",
+        "unchanged": true
+      },
+      {
+        "name": "getQuoteTokenFromPublicUrl",
+        "unchanged": true
+      },
+      {
+        "name": "loadPaymentStatusForToken",
+        "unchanged": true
+      },
+      {
+        "name": "requestDeposit",
+        "unchanged": true
+      },
+      {
+        "name": "closeQuote",
+        "unchanged": true
+      },
+      {
+        "name": "reopenQuote",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/supplier/pages/SupplierBookings.jsx",
+    "functions": [
+      {
+        "name": "toDateInputValue",
+        "unchanged": true
+      },
+      {
+        "name": "money",
+        "unchanged": true
+      },
+      {
+        "name": "fmtDate",
+        "unchanged": true
+      },
+      {
+        "name": "fmtDateTime",
+        "unchanged": true
+      },
+      {
+        "name": "authFetch",
+        "unchanged": true
+      },
+      {
+        "name": "paymentBadge",
+        "unchanged": true
+      },
+      {
+        "name": "statusBadge",
+        "unchanged": true
+      },
+      {
+        "name": "emptyBookingForm",
+        "unchanged": true
+      },
+      {
+        "name": "bookingToForm",
+        "unchanged": true
+      },
+      {
+        "name": "setFormField",
+        "unchanged": true
+      },
+      {
+        "name": "setBookingViewMode",
+        "unchanged": true
+      },
+      {
+        "name": "handleCalendarRangeChange",
+        "unchanged": true
+      },
+      {
+        "name": "handleCalendarNavigate",
+        "unchanged": true
+      },
+      {
+        "name": "handleCalendarView",
+        "unchanged": true
+      },
+      {
+        "name": "load",
+        "unchanged": true
+      },
+      {
+        "name": "loadDetail",
+        "unchanged": true
+      },
+      {
+        "name": "loadSources",
+        "unchanged": true
+      },
+      {
+        "name": "ensureSourceDefaults",
+        "unchanged": true
+      },
+      {
+        "name": "addSource",
+        "unchanged": true
+      },
+      {
+        "name": "patchSource",
+        "unchanged": true
+      },
+      {
+        "name": "openCreateBooking",
+        "unchanged": true
+      },
+      {
+        "name": "openEditBooking",
+        "unchanged": true
+      },
+      {
+        "name": "saveBooking",
+        "unchanged": true
+      },
+      {
+        "name": "createShareLink",
+        "unchanged": true
+      },
+      {
+        "name": "revokeShareLink",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/supplier/pages/SupplierMessages.jsx",
+    "functions": [
+      {
+        "name": "fmtDate",
+        "unchanged": true
+      },
+      {
+        "name": "threadTitle",
+        "unchanged": true
+      },
+      {
+        "name": "customerNameFromThread",
+        "unchanged": true
+      },
+      {
+        "name": "authFetch",
+        "unchanged": true
+      },
+      {
+        "name": "loadThreads",
+        "unchanged": true
+      },
+      {
+        "name": "loadThread",
+        "unchanged": true
+      },
+      {
+        "name": "sendMessage",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/components/workspace/WorkspaceComponents.jsx",
+    "functions": [
+      {
+        "name": "MetricCard",
+        "unchanged": true
+      },
+      {
+        "name": "StatusBadge",
+        "unchanged": false
+      },
+      {
+        "name": "EmptyState",
+        "unchanged": true
+      },
+      {
+        "name": "ErrorState",
+        "unchanged": true
+      },
+      {
+        "name": "FilterBar",
+        "unchanged": true
+      },
+      {
+        "name": "DataTable",
+        "unchanged": true
+      },
+      {
+        "name": "DashboardCard",
+        "unchanged": true
+      },
+      {
+        "name": "ActivityList",
+        "unchanged": true
+      },
+      {
+        "name": "QuickActions",
+        "unchanged": true
+      },
+      {
+        "name": "ApprovalAlert",
+        "unchanged": true
+      },
+      {
+        "name": "WorkspaceDialog",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  }
+]

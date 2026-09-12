@@ -1,0 +1,26 @@
+{
+  "branch": "ui-v2-design-system",
+  "viteBuild": "passed (5.46s)",
+  "fullBuild": "SEO prerender blocked by missing Supabase URL/service-role credentials",
+  "lint": {
+    "errors": 431,
+    "warnings": 12,
+    "baselineErrors": 431,
+    "baselineWarnings": 12
+  },
+  "regressionSuites": {
+    "test:workspace": "passed",
+    "test:admin": "passed",
+    "test:supplier": "passed",
+    "test:supplier-workflows": "passed"
+  },
+  "assetsKB": {
+    "entry": 450.52,
+    "entryGzip": 131.53,
+    "bookingsPage": 23.91,
+    "bookingsPageGzip": 6.37,
+    "deferredCalendar": 216.44,
+    "deferredCalendarGzip": 66.87
+  },
+  "liveIntegrations": "not exercised; all backend requests intercepted"
+}

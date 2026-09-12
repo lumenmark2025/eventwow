@@ -1,13 +1,7 @@
+import { Feedback, Section, Badge, Button, Card, CardContent, EmptyState, Skeleton, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
 async function apiFetch(path, options = {}) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -78,12 +72,12 @@ export default function ReviewsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader title="Reviews" subtitle="Moderate supplier reviews before public display." />
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? <Feedback tone="danger" onRetry={load}>{error}</Feedback> : null}
 
-      <Section title="Pending reviews" right={<Badge variant="neutral">{rows.length} pending</Badge>}>
+      <Section title="Pending reviews" right={<Badge variant="neutral">{loading || error ? "—" : rows.length} pending</Badge>}>
         <Card>
           <CardContent className="p-0">
             {loading ? (
@@ -92,7 +86,7 @@ export default function ReviewsPage() {
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
               </div>
-            ) : rows.length === 0 ? (
+            ) : error ? null : rows.length === 0 ? (
               <div className="p-5">
                 <EmptyState title="No pending reviews" description="New submissions will appear here for moderation." />
               </div>
@@ -113,12 +107,12 @@ export default function ReviewsPage() {
                       <TR key={row.id}>
                         <TD>{row.supplierName || "Supplier"}</TD>
                         <TD>
-                          <Badge variant="brand">{row.rating}/5</Badge>
+                          <span>{row.rating}/5</span>
                         </TD>
                         <TD>{row.reviewerName || "Anonymous"}</TD>
-                        <TD className="max-w-[360px]">{snippet(row.reviewText)}</TD>
+                        <TD className="min-w-0">{snippet(row.reviewText)}</TD>
                         <TD>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Button
                               onClick={() => moderate(row.id, "approve")}
                               disabled={busyId === `approve:${row.id}` || busyId === `reject:${row.id}`}
@@ -126,7 +120,7 @@ export default function ReviewsPage() {
                               Approve
                             </Button>
                             <Button
-                              variant="secondary"
+                              variant="danger"
                               onClick={() => moderate(row.id, "reject")}
                               disabled={busyId === `approve:${row.id}` || busyId === `reject:${row.id}`}
                             >

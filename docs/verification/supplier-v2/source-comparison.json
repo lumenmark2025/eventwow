@@ -1,0 +1,222 @@
+[
+  {
+    "file": "src/supplier/layout/SupplierLayout.jsx",
+    "functions": [
+      {
+        "name": "refreshUnreadCount",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/supplier/pages/SupplierDashboard.jsx",
+    "functions": [
+      {
+        "name": "normalizeSupplierLifecycleStatus",
+        "unchanged": true
+      },
+      {
+        "name": "refreshVerifiedState",
+        "unchanged": true
+      },
+      {
+        "name": "resendVerificationEmail",
+        "unchanged": true
+      },
+      {
+        "name": "checkVerificationNow",
+        "unchanged": true
+      },
+      {
+        "name": "startBundleCheckout",
+        "unchanged": true
+      },
+      {
+        "name": "extract",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/supplier/pages/SupplierEnquiries.jsx",
+    "functions": [
+      {
+        "name": "fmtDate",
+        "unchanged": true
+      },
+      {
+        "name": "authFetch",
+        "unchanged": true
+      },
+      {
+        "name": "load",
+        "unchanged": true
+      },
+      {
+        "name": "declineEnquiry",
+        "unchanged": true
+      },
+      {
+        "name": "createQuote",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/supplier/pages/SupplierNotifications.jsx",
+    "functions": [
+      {
+        "name": "fmtDate",
+        "unchanged": true
+      },
+      {
+        "name": "authFetch",
+        "unchanged": true
+      },
+      {
+        "name": "loadNotifications",
+        "unchanged": true
+      },
+      {
+        "name": "markRead",
+        "unchanged": true
+      },
+      {
+        "name": "openNotification",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/supplier/pages/SupplierListingEditor.jsx",
+    "functions": [
+      {
+        "name": "toBase64",
+        "unchanged": true
+      },
+      {
+        "name": "authFetch",
+        "unchanged": true
+      },
+      {
+        "name": "arraysEqual",
+        "unchanged": true
+      },
+      {
+        "name": "normalizeDraft",
+        "unchanged": true
+      },
+      {
+        "name": "normalizeUkPostcode",
+        "unchanged": true
+      },
+      {
+        "name": "isValidUkPostcode",
+        "unchanged": true
+      },
+      {
+        "name": "getVisibilityState",
+        "unchanged": true
+      },
+      {
+        "name": "loadProfile",
+        "unchanged": true
+      },
+      {
+        "name": "onBeforeUnload",
+        "unchanged": true
+      },
+      {
+        "name": "updateDraft",
+        "unchanged": true
+      },
+      {
+        "name": "toggleCategory",
+        "unchanged": true
+      },
+      {
+        "name": "addService",
+        "unchanged": true
+      },
+      {
+        "name": "removeService",
+        "unchanged": true
+      },
+      {
+        "name": "saveProfile",
+        "unchanged": true
+      },
+      {
+        "name": "uploadImage",
+        "unchanged": true
+      },
+      {
+        "name": "deleteImage",
+        "unchanged": true
+      },
+      {
+        "name": "reorderGallery",
+        "unchanged": true
+      },
+      {
+        "name": "moveGalleryItem",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  },
+  {
+    "file": "src/components/workspace/WorkspaceComponents.jsx",
+    "functions": [
+      {
+        "name": "MetricCard",
+        "unchanged": true
+      },
+      {
+        "name": "StatusBadge",
+        "unchanged": true
+      },
+      {
+        "name": "EmptyState",
+        "unchanged": true
+      },
+      {
+        "name": "ErrorState",
+        "unchanged": true
+      },
+      {
+        "name": "FilterBar",
+        "unchanged": true
+      },
+      {
+        "name": "DataTable",
+        "unchanged": false
+      },
+      {
+        "name": "DashboardCard",
+        "unchanged": true
+      },
+      {
+        "name": "ActivityList",
+        "unchanged": true
+      },
+      {
+        "name": "QuickActions",
+        "unchanged": true
+      },
+      {
+        "name": "ApprovalAlert",
+        "unchanged": true
+      },
+      {
+        "name": "WorkspaceDialog",
+        "unchanged": true
+      }
+    ],
+    "lintUnchanged": true
+  }
+]

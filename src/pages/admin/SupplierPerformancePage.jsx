@@ -1,13 +1,7 @@
+import { FormField, Select, Feedback, Section, Card, CardContent, EmptyState, Input, Skeleton, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Section from "../../components/layout/Section";
-import Badge from "../../components/ui/Badge";
-import { Card, CardContent } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Input from "../../components/ui/Input";
-import Skeleton from "../../components/ui/Skeleton";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 
 async function authGet(url) {
   const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
@@ -79,24 +73,24 @@ export default function SupplierPerformancePage() {
   }, [rows, search, sortBy]);
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader title="Supplier Performance" subtitle="Quote funnel performance by supplier." />
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? <Feedback tone="danger">{error}</Feedback> : null}
 
       <Section
         title="Supplier metrics"
         right={
           <div className="flex flex-wrap items-center gap-2">
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search supplier..." className="min-w-[220px]" />
-            <select
+            <FormField label="Search supplier..."><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search supplier..." className="min-w-0" /></FormField>
+            <FormField label="Sort suppliers"><Select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none"
             >
               <option value="volume">Sort: Volume</option>
               <option value="rate">Sort: Acceptance rate</option>
-            </select>
+            </Select></FormField>
           </div>
         }
       >
@@ -108,7 +102,7 @@ export default function SupplierPerformancePage() {
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
               </div>
-            ) : filtered.length === 0 ? (
+            ) : error ? null : filtered.length === 0 ? (
               <div className="p-5">
                 <EmptyState title="No suppliers found" description="Try a different search filter." />
               </div>
@@ -135,9 +129,9 @@ export default function SupplierPerformancePage() {
                         <TD>{row.quotes_accepted}</TD>
                         <TD>{row.quotes_declined}</TD>
                         <TD>{row.quotes_closed}</TD>
-                        <TD><Badge variant="brand">{formatPercent(row.acceptance_rate)}</Badge></TD>
+                        <TD><span>{formatPercent(row.acceptance_rate)}</span></TD>
                         <TD>{formatSeconds(row.avg_time_to_accept_seconds)}</TD>
-                        <TD className="whitespace-nowrap text-slate-500">
+                        <TD className="whitespace-nowrap ew-muted">
                           {row.last_quote_sent_at ? new Date(row.last_quote_sent_at).toLocaleString() : "-"}
                         </TD>
                       </TR>

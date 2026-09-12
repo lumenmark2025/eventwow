@@ -1,55 +1,63 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
 import { supabase } from "../../lib/supabase";
 
-export default function SupplierLayout({ user, supplier, onSignOut, children }) {
-  const [tab, setTab] = useState("dashboard");
+const supplierNav = [
+  {
+    key: "dashboard",
+    label: "Overview",
+    to: "/supplier/dashboard",
+    group: "Workspace",
+  },
+  {
+    key: "enquiries",
+    label: "Requests",
+    to: "/supplier/enquiries",
+    group: "Work",
+  },
+  { key: "quotes", label: "Quotes", to: "/supplier/quotes", group: "Work" },
+  {
+    key: "bookings",
+    label: "Bookings",
+    to: "/supplier/bookings",
+    group: "Work",
+  },
+  {
+    key: "messages",
+    label: "Messages",
+    to: "/supplier/messages",
+    group: "Communication",
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    to: "/supplier/notifications",
+    group: "Communication",
+  },
+  {
+    key: "listing",
+    label: "Listing / profile",
+    to: "/supplier/listing",
+    group: "Business",
+  },
+];
+
+export default function SupplierLayout({
+  user,
+  supplier,
+  onSignOut,
+  children,
+}) {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const path = (location.pathname || "").toLowerCase();
-
-    if (path.startsWith("/supplier/enquiries")) return setTab("enquiries");
-    if (path.startsWith("/supplier/quotes")) return setTab("quotes");
-    if (path.startsWith("/supplier/messages")) return setTab("messages");
-    if (path.startsWith("/supplier/listing")) return setTab("listing");
-    if (path.startsWith("/supplier/notifications")) return setTab("notifications");
-    if (path.startsWith("/supplier/bookings")) return setTab("bookings");
-    if (path.startsWith("/supplier/dashboard")) return setTab("dashboard");
-
-    if (path === "/supplier" || path === "/supplier/") setTab("dashboard");
-  }, [location.pathname]);
-
-  const nav = useMemo(
-    () => [
-      { key: "dashboard", label: "Dashboard" },
-      { key: "enquiries", label: "Requests" },
-      { key: "quotes", label: "Quotes" },
-      { key: "listing", label: "Listing" },
-      { key: "messages", label: "Messages" },
-      { key: "notifications", label: "Notifications" },
-      { key: "bookings", label: "Bookings" },
-    ],
-    []
-  );
-
-  const go = (nextTab) => {
-    if (nextTab === "dashboard") navigate("/supplier/dashboard");
-    if (nextTab === "enquiries") navigate("/supplier/enquiries");
-    if (nextTab === "quotes") navigate("/supplier/quotes");
-    if (nextTab === "listing") navigate("/supplier/listing");
-    if (nextTab === "messages") navigate("/supplier/messages");
-    if (nextTab === "notifications") navigate("/supplier/notifications");
-    if (nextTab === "bookings") navigate("/supplier/bookings");
-  };
-
   async function refreshUnreadCount() {
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) return;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) return;
@@ -76,12 +84,9 @@ export default function SupplierLayout({ user, supplier, onSignOut, children }) 
       title="Eventwow Supplier"
       user={user}
       supplier={supplier}
-      showBrandMeta={false}
-      navTheme="blue"
+      presentation
       onSignOut={onSignOut}
-      nav={nav}
-      activeKey={tab}
-      onNavigate={go}
+      nav={supplierNav}
       notificationUnreadCount={notificationUnreadCount}
       onNotificationsClick={() => navigate("/supplier/notifications")}
     >

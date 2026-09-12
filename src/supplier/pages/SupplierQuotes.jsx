@@ -1,11 +1,26 @@
-﻿import { useSearchParams } from "react-router-dom";
+import QuoteList from "../components/QuoteList";
+import { useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Skeleton from "../../components/ui/Skeleton";
+import {
+  Button,
+  Input,
+  Textarea,
+  Skeleton,
+  Feedback,
+  FormField,
+} from "../../components/workspace/AdminPrimitives";
+import {
+  StatusBadge,
+  EmptyState,
+} from "../../components/workspace/WorkspaceComponents";
+import { ArrowUp, ArrowDown, Plus } from "lucide-react";
 import EnquirySummaryCard from "../components/EnquirySummaryCard";
 
-const ENABLE_DEPOSIT_PAYMENTS = String(import.meta.env.VITE_ENABLE_DEPOSIT_PAYMENTS || "").toLowerCase() === "true";
+const ENABLE_DEPOSIT_PAYMENTS =
+  String(import.meta.env.VITE_ENABLE_DEPOSIT_PAYMENTS || "").toLowerCase() ===
+  "true";
 
 function fmtDateTime(d) {
   if (!d) return "—";
@@ -36,7 +51,10 @@ function calcLineTotal(qty, unit) {
 }
 
 function isReacceptRequired(quoteLike) {
-  return String(quoteLike?.status || "").toLowerCase() === "sent" && !!quoteLike?.reaccept_required;
+  return (
+    String(quoteLike?.status || "").toLowerCase() === "sent" &&
+    !!quoteLike?.reaccept_required
+  );
 }
 
 function statusText(quoteLike) {
@@ -47,11 +65,9 @@ function statusText(quoteLike) {
 export default function SupplierQuotes({ supplierId }) {
   if (!supplierId) {
     return (
-      <div className="p-4 rounded-lg border bg-white">
-        <p className="text-sm text-red-600">
-          SupplierQuotes error: missing supplierId (cannot load quotes)
-        </p>
-      </div>
+      <Feedback>
+        Quotes are unavailable. Please refresh or sign in again.
+      </Feedback>
     );
   }
 
@@ -98,7 +114,10 @@ export default function SupplierQuotes({ supplierId }) {
   const openIdFromUrl = searchParams.get("open");
 
   const computedTotal = useMemo(() => {
-    return (items || []).reduce((sum, it) => sum + calcLineTotal(it.qty, it.unit_price), 0);
+    return (items || []).reduce(
+      (sum, it) => sum + calcLineTotal(it.qty, it.unit_price),
+      0,
+    );
   }, [items]);
 
   function patchQuoteRow(nextQuoteLike) {
@@ -114,7 +133,7 @@ export default function SupplierQuotes({ supplierId }) {
               ? nextQuoteLike.total_amount
               : row.total_amount,
         };
-      })
+      }),
     );
   }
 
@@ -122,7 +141,8 @@ export default function SupplierQuotes({ supplierId }) {
     if (!supplierId) return;
 
     try {
-      const { data: authRes, error: authErr } = await supabase.auth.getSession();
+      const { data: authRes, error: authErr } =
+        await supabase.auth.getSession();
       if (authErr) throw authErr;
       const token = authRes?.session?.access_token;
       if (!token) return;
@@ -149,7 +169,8 @@ export default function SupplierQuotes({ supplierId }) {
     setLoading(true);
     setErr("");
     try {
-      const { data: authRes, error: authErr } = await supabase.auth.getSession();
+      const { data: authRes, error: authErr } =
+        await supabase.auth.getSession();
       if (authErr) throw authErr;
       const token = authRes?.session?.access_token;
       if (!token) throw new Error("Not authenticated");
@@ -158,7 +179,10 @@ export default function SupplierQuotes({ supplierId }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load quotes");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to load quotes",
+        );
       setRows(Array.isArray(json?.rows) ? json.rows : []);
     } catch (e) {
       setErr(e?.message || "Failed to load quotes");
@@ -201,11 +225,12 @@ export default function SupplierQuotes({ supplierId }) {
         next.delete("open");
         return next;
       },
-      { replace: true }
+      { replace: true },
     );
   }, [openIdFromUrl, setSearchParams]);
 
   async function openQuote(quoteId) {
+    document.getElementById("supplier-quote-detail")?.focus();
     setSelectedQuoteId(quoteId);
     setQuote(null);
     setItems([]);
@@ -224,7 +249,9 @@ export default function SupplierQuotes({ supplierId }) {
       // Load quote (ensure supplier owns it via RLS)
       const { data: q, error: qErr } = await supabase
         .from("quotes")
-        .select("id,status,total_amount,currency_code,enquiry_id,message,notes,quote_text,created_at,sent_at,accepted_at,declined_at,closed_at")
+        .select(
+          "id,status,total_amount,currency_code,enquiry_id,message,notes,quote_text,created_at,sent_at,accepted_at,declined_at,closed_at",
+        )
         .eq("id", quoteId)
         .maybeSingle();
 
@@ -250,14 +277,17 @@ export default function SupplierQuotes({ supplierId }) {
           ...it,
           qty: Number(it.qty ?? 1),
           unit_price: Number(it.unit_price ?? 0),
-        }))
+        })),
       );
 
       setIsDirty(false);
       await loadEnquiryDetail(q.enquiry_id);
       const quoteStatus = String(q?.status || "").toLowerCase();
       if (quoteStatus && quoteStatus !== "draft") {
-        await fetchPublicLinkForQuote(q.id, { copyToClipboard: false, silent: true });
+        await fetchPublicLinkForQuote(q.id, {
+          copyToClipboard: false,
+          silent: true,
+        });
       }
       await loadCredits();
     } catch (e) {
@@ -294,7 +324,10 @@ export default function SupplierQuotes({ supplierId }) {
   useEffect(() => {
     if (!ENABLE_DEPOSIT_PAYMENTS) return;
     const currentStatus = String(quote?.status || "").toLowerCase();
-    if (!quote?.id || !["accepted", "sent", "closed", "declined"].includes(currentStatus)) {
+    if (
+      !quote?.id ||
+      !["accepted", "sent", "closed", "declined"].includes(currentStatus)
+    ) {
       setPayment(null);
       return;
     }
@@ -311,20 +344,29 @@ export default function SupplierQuotes({ supplierId }) {
       return;
     }
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
 
-      const resp = await fetch(`/api/supplier/enquiries/${encodeURIComponent(String(enquiryId))}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const resp = await fetch(
+        `/api/supplier/enquiries/${encodeURIComponent(String(enquiryId))}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load enquiry details");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to load enquiry details",
+        );
       setEnquiryDetail(json?.enquiry || null);
     } catch (e) {
       setEnquiryDetail(null);
-      setQuoteErr((prev) => prev || e?.message || "Failed to load enquiry details");
+      setQuoteErr(
+        (prev) => prev || e?.message || "Failed to load enquiry details",
+      );
     }
   }
 
@@ -337,7 +379,9 @@ export default function SupplierQuotes({ supplierId }) {
   }
 
   function updateItem(id, patch) {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, ...patch } : it)),
+    );
     setIsDirty(true);
     setSaveStatus("idle");
     setQuoteOk("");
@@ -347,7 +391,9 @@ export default function SupplierQuotes({ supplierId }) {
   function addItem() {
     const tempId = `temp_${Math.random().toString(16).slice(2)}`;
     const nextSort =
-      (items?.length ? Math.max(...items.map((i) => Number(i.sort_order || 1))) : 0) + 1;
+      (items?.length
+        ? Math.max(...items.map((i) => Number(i.sort_order || 1)))
+        : 0) + 1;
 
     setItems((prev) => [
       ...(prev || []),
@@ -389,8 +435,14 @@ export default function SupplierQuotes({ supplierId }) {
       const aOrder = Number(a.sort_order);
       const bOrder = Number(b.sort_order);
 
-      const nextA = { ...a, sort_order: Number.isFinite(bOrder) ? bOrder : targetIndex + 1 };
-      const nextB = { ...b, sort_order: Number.isFinite(aOrder) ? aOrder : index + 1 };
+      const nextA = {
+        ...a,
+        sort_order: Number.isFinite(bOrder) ? bOrder : targetIndex + 1,
+      };
+      const nextB = {
+        ...b,
+        sort_order: Number.isFinite(aOrder) ? aOrder : index + 1,
+      };
 
       list[index] = nextB;
       list[targetIndex] = nextA;
@@ -430,7 +482,8 @@ export default function SupplierQuotes({ supplierId }) {
     setSaveStatus("saving");
 
     try {
-      const { data: authRes, error: authErr } = await supabase.auth.getSession();
+      const { data: authRes, error: authErr } =
+        await supabase.auth.getSession();
       if (authErr) throw authErr;
       const token = authRes?.session?.access_token;
       if (!token) throw new Error("Not signed in.");
@@ -440,11 +493,15 @@ export default function SupplierQuotes({ supplierId }) {
         const isTemp = typeof it.id === "string" && it.id.startsWith("temp_");
 
         return {
-          id: isTemp ? null : it.id ?? null,
+          id: isTemp ? null : (it.id ?? null),
           title: String(it.title || "").trim() || "Item",
           qty: Number.isFinite(Number(it.qty)) ? Number(it.qty) : 1,
-          unit_price: Number.isFinite(Number(it.unit_price)) ? Number(it.unit_price) : 0,
-          sort_order: Number.isFinite(Number(it.sort_order)) ? Number(it.sort_order) : idx + 1,
+          unit_price: Number.isFinite(Number(it.unit_price))
+            ? Number(it.unit_price)
+            : 0,
+          sort_order: Number.isFinite(Number(it.sort_order))
+            ? Number(it.sort_order)
+            : idx + 1,
         };
       });
 
@@ -487,15 +544,25 @@ export default function SupplierQuotes({ supplierId }) {
 
       setItems(freshItems);
       setIsDirty(false);
-      setQuoteOk(json?.reacceptRequired ? "Quote updated - customer has been notified and must re-accept." : "Quote updated.");
+      setQuoteOk(
+        json?.reacceptRequired
+          ? "Quote updated - customer has been notified and must re-accept."
+          : "Quote updated.",
+      );
       setSaveStatus("saved");
 
       setTimeout(() => {
         setSaveStatus("idle");
       }, 2000);
-
     } catch (e) {
-      setQuoteErr((e?.message || e?.details || e?.hint || "Failed to save draft.").toString());
+      setQuoteErr(
+        (
+          e?.message ||
+          e?.details ||
+          e?.hint ||
+          "Failed to save draft."
+        ).toString(),
+      );
       setSaveStatus("error");
     } finally {
       setSaving(false);
@@ -523,7 +590,8 @@ export default function SupplierQuotes({ supplierId }) {
     setSaveStatus("idle");
 
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
 
       const accessToken = sessionData?.session?.access_token;
@@ -541,7 +609,8 @@ export default function SupplierQuotes({ supplierId }) {
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         const msg =
-          [json?.error, json?.details].filter(Boolean).join(": ") || "Failed to send quote";
+          [json?.error, json?.details].filter(Boolean).join(": ") ||
+          "Failed to send quote";
         throw new Error(msg);
       }
 
@@ -566,7 +635,10 @@ export default function SupplierQuotes({ supplierId }) {
 
   async function copyCustomerLink() {
     if (!quote?.id || linkBusy) return;
-    await fetchPublicLinkForQuote(quote.id, { copyToClipboard: true, silent: false });
+    await fetchPublicLinkForQuote(quote.id, {
+      copyToClipboard: true,
+      silent: false,
+    });
   }
 
   async function generateDraftText() {
@@ -575,17 +647,21 @@ export default function SupplierQuotes({ supplierId }) {
     setQuoteErr("");
     setQuoteOk("");
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
 
       const resp = await fetch(
         `/api/supplier/enquiries/${encodeURIComponent(String(quote.enquiry_id))}/quote-text-draft`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to generate draft text");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to generate draft text",
+        );
       updateQuoteText(String(json?.draftText || ""));
       setQuoteOk("Draft reply generated.");
     } catch (e) {
@@ -602,7 +678,8 @@ export default function SupplierQuotes({ supplierId }) {
     setQuoteOk("");
 
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
@@ -619,13 +696,16 @@ export default function SupplierQuotes({ supplierId }) {
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         throw new Error(
-          [json?.error, json?.details].filter(Boolean).join(": ") || "Failed to open thread"
+          [json?.error, json?.details].filter(Boolean).join(": ") ||
+            "Failed to open thread",
         );
       }
 
       const threadId = String(json?.threadId || "").trim();
       if (!threadId) throw new Error("No threadId returned");
-      window.location.assign(`/supplier/messages?thread=${encodeURIComponent(threadId)}`);
+      window.location.assign(
+        `/supplier/messages?thread=${encodeURIComponent(threadId)}`,
+      );
     } catch (e) {
       setQuoteErr(e?.message || "Failed to open messages.");
     }
@@ -643,7 +723,8 @@ export default function SupplierQuotes({ supplierId }) {
     }
 
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
@@ -660,7 +741,8 @@ export default function SupplierQuotes({ supplierId }) {
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         throw new Error(
-          [json?.error, json?.details].filter(Boolean).join(": ") || "Failed to create link"
+          [json?.error, json?.details].filter(Boolean).join(": ") ||
+            "Failed to create link",
         );
       }
 
@@ -676,7 +758,9 @@ export default function SupplierQuotes({ supplierId }) {
         await navigator.clipboard.writeText(absoluteUrl);
       }
       if (!silent) {
-        setQuoteOk(copyToClipboard ? "Customer link copied." : "Customer link ready.");
+        setQuoteOk(
+          copyToClipboard ? "Customer link copied." : "Customer link ready.",
+        );
       }
     } catch (e) {
       if (!silent) {
@@ -710,9 +794,14 @@ export default function SupplierQuotes({ supplierId }) {
 
     setPaymentLoading(true);
     try {
-      const resp = await fetch(`/api/public-payment-status?token=${encodeURIComponent(token)}`);
+      const resp = await fetch(
+        `/api/public-payment-status?token=${encodeURIComponent(token)}`,
+      );
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load payment status");
+      if (!resp.ok)
+        throw new Error(
+          json?.details || json?.error || "Failed to load payment status",
+        );
       setPayment(json?.payment || null);
     } catch {
       setPayment(null);
@@ -726,8 +815,14 @@ export default function SupplierQuotes({ supplierId }) {
     if (String(quote?.status || "").toLowerCase() !== "accepted") return;
 
     const pounds = Number(depositAmountInput);
-    const amountTotal = Number.isFinite(pounds) ? Math.round(pounds * 100) : NaN;
-    if (!Number.isInteger(amountTotal) || amountTotal < 1000 || amountTotal > 500000) {
+    const amountTotal = Number.isFinite(pounds)
+      ? Math.round(pounds * 100)
+      : NaN;
+    if (
+      !Number.isInteger(amountTotal) ||
+      amountTotal < 1000 ||
+      amountTotal > 500000
+    ) {
       setQuoteErr("Deposit must be between £10 and £5,000.");
       return;
     }
@@ -737,7 +832,8 @@ export default function SupplierQuotes({ supplierId }) {
     setQuoteOk("");
 
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
@@ -757,13 +853,18 @@ export default function SupplierQuotes({ supplierId }) {
 
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error([json?.error, json?.details].filter(Boolean).join(": ") || "Failed to request deposit");
+        throw new Error(
+          [json?.error, json?.details].filter(Boolean).join(": ") ||
+            "Failed to request deposit",
+        );
       }
 
       if (json?.payment) {
         setPayment(json.payment);
       }
-      setQuoteOk("Deposit requested. Share the customer quote link for payment.");
+      setQuoteOk(
+        "Deposit requested. Share the customer quote link for payment.",
+      );
 
       const quoteToken = getQuoteTokenFromPublicUrl(publicQuoteUrl);
       if (quoteToken) {
@@ -778,7 +879,9 @@ export default function SupplierQuotes({ supplierId }) {
 
   async function closeQuote() {
     if (!quote?.id || closing) return;
-    const confirmed = window.confirm("Close this quote? Customers won't be able to accept it.");
+    const confirmed = window.confirm(
+      "Close this quote? Customers won't be able to accept it.",
+    );
     if (!confirmed) return;
 
     setClosing(true);
@@ -786,7 +889,8 @@ export default function SupplierQuotes({ supplierId }) {
     setQuoteOk("");
 
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
@@ -806,14 +910,18 @@ export default function SupplierQuotes({ supplierId }) {
           await openQuote(quote.id);
         }
         throw new Error(
-          [json?.error, json?.details].filter(Boolean).join(": ") || "Failed to close quote"
+          [json?.error, json?.details].filter(Boolean).join(": ") ||
+            "Failed to close quote",
         );
       }
 
       if (json?.quote) {
         setQuote(json.quote);
         patchQuoteRow(json.quote);
-        await fetchPublicLinkForQuote(json.quote.id, { copyToClipboard: false, silent: true });
+        await fetchPublicLinkForQuote(json.quote.id, {
+          copyToClipboard: false,
+          silent: true,
+        });
       }
       setQuoteOk("Quote closed.");
       await loadList();
@@ -832,7 +940,8 @@ export default function SupplierQuotes({ supplierId }) {
     setQuoteOk("");
 
     try {
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionErr } =
+        await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
@@ -852,7 +961,8 @@ export default function SupplierQuotes({ supplierId }) {
           await openQuote(quote.id);
         }
         throw new Error(
-          [json?.error, json?.details].filter(Boolean).join(": ") || "Failed to reopen quote"
+          [json?.error, json?.details].filter(Boolean).join(": ") ||
+            "Failed to reopen quote",
         );
       }
 
@@ -874,464 +984,553 @@ export default function SupplierQuotes({ supplierId }) {
       <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Skeleton className="h-[520px]" />
-          <Skeleton className="h-[520px]" />
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
         </div>
       </div>
     );
   }
-  if (err) return <div className="text-sm text-red-600">{err}</div>;
+  if (err)
+    return (
+      <div className="ew-page-stack">
+        <PageHeader title="Quotes" />
+        <Feedback onRetry={loadList}>{err}</Feedback>
+      </div>
+    );
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Quotes"
-        subtitle="Build clean quotes, send confidently, and manage close/reopen states."
-        actions={[{ key: "refresh", label: "Refresh", variant: "secondary", size: "sm", onClick: loadList }]}
+        subtitle="Review quotes, update details and send them to customers."
+        actions={[
+          {
+            key: "refresh",
+            label: "Refresh",
+            variant: "secondary",
+            size: "sm",
+            onClick: loadList,
+          },
+        ]}
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* List */}
-      <div className="rounded-2xl border bg-white p-4 sm:p-5 space-y-3">
-        <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-lg font-semibold">Quotes</h2>
-            <div className="text-xs text-gray-600">
-              Credits:{" "}
-              <span className="font-medium">
-                {supplierCredits === null ? "—" : supplierCredits}
-              </span>{" "}
-              (1 credit per quote sent)
-            </div>
+      <div className="ew-page-stack">
+        <QuoteList
+          rows={rows}
+          supplierCredits={supplierCredits}
+          selectedQuoteId={selectedQuoteId}
+          openQuote={openQuote}
+          statusText={statusText}
+          money={money}
+          fmtDateTime={fmtDateTime}
+        />
+        {/* Detail / editor */}
+        <div
+          className="ew-panel"
+          id="supplier-quote-detail"
+          role="region"
+          aria-label="Quote detail"
+          tabIndex={-1}
+        >
+          <div className="ew-panel-heading">
+            <h2>Quote detail</h2>
           </div>
-          <button onClick={loadList} className="w-full sm:w-auto border rounded-lg px-4 py-2.5 bg-white text-sm">
-            Refresh
-          </button>
-        </div>
+          <div className="ew-form-section-body">
+            {!selectedQuoteId ? (
+              <EmptyState
+                title="Select a quote"
+                description="Choose a customer in the list to view and edit their quote."
+              />
+            ) : quoteLoading ? (
+              <p role="status" className="ew-form-help">
+                Loading quote…
+              </p>
+            ) : !quote ? (
+              <div className="space-y-2">
+                {quoteErr ? (
+                  <Feedback tone="danger">{quoteErr}</Feedback>
+                ) : null}
+                <div className="text-sm text-gray-600">Quote not found.</div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {String(quote?.status || "").toLowerCase() === "accepted" ? (
+                  <Feedback tone="success">
+                    Accepted on {fmtDateTime(quote?.accepted_at)}. If you edit
+                    and save this quote, customer acceptance will reset.
+                  </Feedback>
+                ) : null}
+                {isReacceptRequired(quote) ? (
+                  <Feedback tone="warning">
+                    Updated - awaiting acceptance. Customer re-acceptance is
+                    required.
+                  </Feedback>
+                ) : null}
+                {String(quote?.status || "").toLowerCase() === "declined" ? (
+                  <Feedback tone="danger">
+                    Declined on {fmtDateTime(quote?.declined_at)}. You can edit
+                    and save to issue an updated quote.
+                  </Feedback>
+                ) : null}
+                {String(quote?.status || "").toLowerCase() === "closed" ? (
+                  <Feedback tone="warning">
+                    Closed on {fmtDateTime(quote?.closed_at)}. You can edit and
+                    save to reopen as sent.
+                  </Feedback>
+                ) : null}
 
-        {rows.length === 0 ? (
-          <div className="text-sm text-gray-600">No quotes yet.</div>
-        ) : (
-          <div className="space-y-2 max-h-[560px] overflow-auto">
-            {rows.map((q) => {
-              const isActive = selectedQuoteId === q.id;
-              return (
-                <button
-                  key={q.id}
-                  onClick={() => openQuote(q.id)}
-                  className={
-                    "w-full text-left rounded-xl border p-4 hover:bg-gray-50 " +
-                    (isActive ? "border-black" : "")
-                  }
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="font-medium">
-                        {q.customer?.name || q.enquiries?.customer_name || "Unknown customer"}
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        {q.event_location_label || q.enquiries?.location_label || "Location not provided"}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        Guests: {q.enquiry?.guestCount ?? q.enquiries?.guest_count ?? "—"} · Date: {q.enquiry?.eventDate || q.enquiries?.event_date || "—"}
-                        {(q.enquiry?.startTime || q.enquiries?.start_time) ? ` · Time: ${q.enquiry?.startTime || q.enquiries?.start_time}` : ""}
-                      </div>
+                <EnquirySummaryCard enquiry={enquiryDetail} />
+
+                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                  <div>
+                    <div className="text-sm text-gray-600">Quote</div>
+                    <div className="text-lg font-semibold">
+                      {quote.id.slice(0, 8)}…
                     </div>
-                    <div className="text-sm">status: {statusText(q)}</div>
+                    <div className="text-xs text-gray-500">
+                      Status:{" "}
+                      <StatusBadge status={statusText(quote)}>
+                        {statusText(quote).replaceAll("_", " ")}
+                      </StatusBadge>{" "}
+                      · Created: {fmtDateTime(quote.created_at)}
+                    </div>
                   </div>
-
-                  <div className="text-sm text-gray-600">
-                    {q.total_amount !== null && q.total_amount !== undefined
-                      ? `Total: £${money(q.total_amount)}`
-                      : "Total: £0.00"}
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600">Total</div>
+                    <div className="text-2xl font-semibold">
+                      £
+                      {money(
+                        isDirty
+                          ? computedTotal
+                          : (quote?.total_amount ?? computedTotal),
+                      )}
+                    </div>
                   </div>
-
-                  <div className="text-xs text-gray-500 mt-1">
-                    Created: {fmtDateTime(q.created_at)}
-                    {q.sent_at ? ` · Sent: ${fmtDateTime(q.sent_at)}` : ""}
-                    {q.accepted_at ? ` · Accepted: ${fmtDateTime(q.accepted_at)}` : ""}
-                    {q.declined_at ? ` · Declined: ${fmtDateTime(q.declined_at)}` : ""}
-                    {q.closed_at ? ` · Closed: ${fmtDateTime(q.closed_at)}` : ""}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="text-xs text-gray-500">
-          Quotes can be edited at any stage. Sending a quote uses 1 credit.
-        </div>
-      </div>
-
-      {/* Detail / editor */}
-      <div className="rounded-2xl border bg-white p-4 sm:p-5">
-        {!selectedQuoteId ? (
-          <div className="text-sm text-gray-600">Select a quote to view and edit.</div>
-        ) : quoteLoading ? (
-          <div className="text-sm text-gray-600">Loading quote…</div>
-        ) : !quote ? (
-          <div className="space-y-2">
-            {quoteErr ? <div className="text-sm text-red-600">{quoteErr}</div> : null}
-            <div className="text-sm text-gray-600">Quote not found.</div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {String(quote?.status || "").toLowerCase() === "accepted" ? (
-              <div className="text-sm rounded-lg border border-green-200 bg-green-50 text-green-800 p-3">
-                Accepted on {fmtDateTime(quote?.accepted_at)}. If you edit and save this quote, customer acceptance will reset.
-              </div>
-            ) : null}
-            {isReacceptRequired(quote) ? (
-              <div className="text-sm rounded-lg border border-amber-200 bg-amber-50 text-amber-800 p-3">
-                Updated - awaiting acceptance. Customer re-acceptance is required.
-              </div>
-            ) : null}
-            {String(quote?.status || "").toLowerCase() === "declined" ? (
-              <div className="text-sm rounded-lg border border-red-200 bg-red-50 text-red-800 p-3">
-                Declined on {fmtDateTime(quote?.declined_at)}. You can edit and save to issue an updated quote.
-              </div>
-            ) : null}
-            {String(quote?.status || "").toLowerCase() === "closed" ? (
-              <div className="text-sm rounded-lg border border-gray-300 bg-gray-50 text-gray-800 p-3">
-                Closed on {fmtDateTime(quote?.closed_at)}. You can edit and save to reopen as sent.
-              </div>
-            ) : null}
-
-            <EnquirySummaryCard enquiry={enquiryDetail} />
-
-            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-              <div>
-                <div className="text-sm text-gray-600">Quote</div>
-                <div className="text-lg font-semibold">{quote.id.slice(0, 8)}…</div>
-                <div className="text-xs text-gray-500">
-                  Status: <span className="font-medium">{statusText(quote)}</span> · Created:{" "}
-                  {fmtDateTime(quote.created_at)}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-600">Total</div>
-                <div className="text-2xl font-semibold">
-                  £{money(isDirty ? computedTotal : (quote?.total_amount ?? computedTotal))}
-                </div>
-              </div>
-            </div>
-
-            {quoteOk ? <div className="text-sm text-green-700">{quoteOk}</div> : null}
-            {quoteErr ? <div className="text-sm text-red-600">{quoteErr}</div> : null}
-            {publicQuoteUrl ? (
-              <div className="text-sm">
-                Customer link:{" "}
-                <a className="text-blue-700 underline break-all" href={publicQuoteUrl} target="_blank" rel="noreferrer">
-                  {publicQuoteUrl}
-                </a>
-              </div>
-            ) : null}
-
-            {ENABLE_DEPOSIT_PAYMENTS && String(quote?.status || "").toLowerCase() === "accepted" ? (
-              <div className="rounded-xl border bg-gray-50 p-3 sm:p-4 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="font-medium">Deposit</div>
-                  {paymentLoading ? (
-                    <span className="text-xs text-gray-500">Loading...</span>
-                  ) : payment ? (
-                    <span className="text-xs rounded-full border px-2.5 py-1 bg-white">
-                      {String(payment.status || "requires_payment")}
-                    </span>
-                  ) : (
-                    <span className="text-xs rounded-full border px-2.5 py-1 bg-white">Not requested</span>
-                  )}
                 </div>
 
-                {payment ? (
-                  <div className="text-sm text-gray-700 space-y-1">
-                    <div>Amount: £{moneyMinor(payment.amount_total)}</div>
-                    <div>Paid: £{moneyMinor(payment.amount_paid)}</div>
-                    {payment.paid_at ? <div>Paid at: {fmtDateTime(payment.paid_at)}</div> : null}
+                {quoteOk ? <Feedback tone="success">{quoteOk}</Feedback> : null}
+                {quoteErr ? (
+                  <Feedback tone="danger">{quoteErr}</Feedback>
+                ) : null}
+                {publicQuoteUrl ? (
+                  <div className="text-sm">
+                    Customer link:{" "}
+                    <a
+                      className="ew-link break-all"
+                      href={publicQuoteUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {publicQuoteUrl}
+                    </a>
                   </div>
                 ) : null}
 
-                {!payment || ["failed", "canceled"].includes(String(payment?.status || "").toLowerCase()) ? (
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-600">Request a deposit from £10 to £5,000.</div>
-                    <div className="flex flex-wrap gap-2">
-                      {[50, 100, 200].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          className="border rounded-lg px-3 py-2 bg-white text-sm"
-                          onClick={() => setDepositAmountInput(String(preset))}
-                          disabled={paymentSaving}
+                {ENABLE_DEPOSIT_PAYMENTS &&
+                String(quote?.status || "").toLowerCase() === "accepted" ? (
+                  <div className="ew-form-subsection space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-medium">Deposit</div>
+                      {paymentLoading ? (
+                        <span className="text-xs text-gray-500">
+                          Loading...
+                        </span>
+                      ) : payment ? (
+                        <StatusBadge
+                          status={String(payment.status || "requires_payment")}
                         >
-                          £{preset}
-                        </button>
-                      ))}
+                          {String(
+                            payment.status || "requires_payment",
+                          ).replaceAll("_", " ")}
+                        </StatusBadge>
+                      ) : (
+                        <StatusBadge status="Not requested" />
+                      )}
                     </div>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="number"
-                        min={10}
-                        max={5000}
-                        step="1"
-                        className="w-full sm:w-44 border rounded-lg px-3 py-2"
-                        value={depositAmountInput}
-                        onChange={(e) => setDepositAmountInput(e.target.value)}
-                        disabled={paymentSaving}
-                      />
-                      <button
-                        type="button"
-                        className="border rounded-lg px-4 py-2.5 bg-white disabled:opacity-50"
-                        onClick={requestDeposit}
-                        disabled={paymentSaving}
-                      >
-                        {paymentSaving ? "Requesting..." : "Request deposit"}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
 
-                {payment?.checkout_url && ["requires_payment", "pending", "failed", "canceled"].includes(String(payment.status || "").toLowerCase()) ? (
-                  <div className="text-xs text-gray-600">
-                    Customer pays from the public quote page link.
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
+                    {payment ? (
+                      <div className="text-sm text-gray-700 space-y-1">
+                        <div>Amount: £{moneyMinor(payment.amount_total)}</div>
+                        <div>Paid: £{moneyMinor(payment.amount_paid)}</div>
+                        {payment.paid_at ? (
+                          <div>Paid at: {fmtDateTime(payment.paid_at)}</div>
+                        ) : null}
+                      </div>
+                    ) : null}
 
-            {isDirty ? (
-              <div className="text-sm text-amber-700">
-                Unsaved changes — click “Save changes” before sending.
-              </div>
-            ) : null}
-
-            {saveStatus === "saving" ? (
-              <div className="text-xs text-gray-600">Saving…</div>
-            ) : null}
-            {saveStatus === "saved" ? (
-              <div className="text-xs text-green-700">Saved</div>
-            ) : null}
-
-            {/* Items */}
-            <div className="rounded-xl border bg-gray-50 p-3 sm:p-4">
-              <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <label className="text-sm font-medium text-slate-900" htmlFor="quote-text">
-                    Message to customer
-                  </label>
-                  <button
-                    type="button"
-                    className="border rounded-md px-3 py-1.5 bg-white text-xs disabled:opacity-50"
-                    onClick={generateDraftText}
-                    disabled={draftBusy}
-                  >
-                    {draftBusy ? "Generating..." : "Generate draft reply (coming soon)"}
-                  </button>
-                </div>
-                <p className="mb-2 text-xs text-slate-500">
-                  Explain what is included, setup details, timings, and any options.
-                </p>
-                <textarea
-                  id="quote-text"
-                  value={quoteText}
-                  onChange={(e) => updateQuoteText(e.target.value)}
-                  rows={5}
-                  maxLength={4000}
-                  disabled={saving || sending}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                  placeholder="Write a message to the customer..."
-                />
-                <div className="mt-1 text-right text-xs text-slate-500">{quoteText.length}/4000</div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Quote items</div>
-                <button
-                  className="w-full sm:w-auto border rounded-lg px-4 py-2.5 bg-white text-sm disabled:opacity-50"
-                  onClick={addItem}
-                  disabled={saving || sending}
-                  type="button"
-                >
-                  + Add item
-                </button>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {(items || []).length === 0 ? (
-                  <div className="text-sm text-gray-600">No items yet. Add one.</div>
-                ) : (
-                  items.map((it) => (
-                    <div key={it.id} className="rounded-lg border bg-white p-3">
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
-                        <div className="md:col-span-6">
-                          <label className="text-xs text-gray-600">Title</label>
-                          <input
-                            className="w-full border rounded-lg px-3 py-2"
-                            value={it.title || ""}
-                            disabled={saving || sending}
-                            onChange={(e) => updateItem(it.id, { title: e.target.value })}
-                          />
+                    {!payment ||
+                    ["failed", "canceled"].includes(
+                      String(payment?.status || "").toLowerCase(),
+                    ) ? (
+                      <div className="space-y-2">
+                        <div className="text-xs text-gray-600">
+                          Request a deposit from £10 to £5,000.
                         </div>
+                        <div className="flex flex-wrap gap-2">
+                          {[50, 100, 200].map((preset) => (
+                            <Button
+                              variant="secondary"
+                              key={preset}
+                              type="button"
 
-                        <div className="md:col-span-2">
-                          <label className="text-xs text-gray-600">Qty</label>
-                          <input
+                              onClick={() =>
+                                setDepositAmountInput(String(preset))
+                              }
+                              disabled={paymentSaving}
+                            >
+                              £{preset}
+                            </Button>
+                          ))}
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Input
                             type="number"
+                            min={10}
+                            max={5000}
                             step="1"
-                            className="w-full border rounded-lg px-3 py-2"
-                            min={1}
-                            value={it.qty ?? 1}
-                            disabled={saving || sending}
-                            onChange={(e) => updateItem(it.id, { qty: Number(e.target.value) })}
-                          />
-                        </div>
 
-                        <div className="md:col-span-2">
-                          <label className="text-xs text-gray-600">Unit price (£)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            className="w-full border rounded-lg px-3 py-2"
-                            min={0}
-                            value={it.unit_price ?? 0}
-                            disabled={saving || sending}
+                            aria-label="Deposit amount (£)"
+                            value={depositAmountInput}
                             onChange={(e) =>
-                              updateItem(it.id, { unit_price: Number(e.target.value) })
+                              setDepositAmountInput(e.target.value)
                             }
+                            disabled={paymentSaving}
                           />
-                        </div>
+                          <Button
+                            variant="secondary"
+                            type="button"
 
-                        <div className="md:col-span-2">
-                          <div className="text-xs text-gray-600">Line total</div>
-                          <div className="font-medium">£{money(calcLineTotal(it.qty, it.unit_price))}</div>
+                            onClick={requestDeposit}
+                            disabled={paymentSaving}
+                          >
+                            {paymentSaving
+                              ? "Requesting..."
+                              : "Request deposit"}
+                          </Button>
                         </div>
                       </div>
+                    ) : null}
 
-                      <div className="mt-2 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-                        <div className="text-xs text-gray-500">Sort: {it.sort_order ?? 1}</div>
-                        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                          <button
-                            type="button"
-                            className="border rounded-md px-3 py-2 bg-white text-sm disabled:opacity-50"
-                            disabled={saving || sending}
-                            onClick={() => moveItem(it.id, "up")}
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            className="border rounded-md px-3 py-2 bg-white text-sm disabled:opacity-50"
-                            disabled={saving || sending}
-                            onClick={() => moveItem(it.id, "down")}
-                          >
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            className="border rounded-lg px-4 py-2 bg-white text-sm disabled:opacity-50"
-                            disabled={saving || sending}
-                            onClick={() => removeItem(it.id)}
-                          >
-                            Remove
-                          </button>
-                        </div>
+                    {payment?.checkout_url &&
+                    [
+                      "requires_payment",
+                      "pending",
+                      "failed",
+                      "canceled",
+                    ].includes(String(payment.status || "").toLowerCase()) ? (
+                      <div className="text-xs text-gray-600">
+                        Customer pays from the public quote page link.
                       </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {isDirty ? (
+                  <div role="status" className="ew-form-help">
+                    Unsaved changes — click “Save changes” before sending.
+                  </div>
+                ) : null}
+
+                {saveStatus === "saving" ? (
+                  <div className="text-xs text-gray-600">Saving…</div>
+                ) : null}
+                {saveStatus === "saved" ? (
+                  <div className="text-xs text-green-700">Saved</div>
+                ) : null}
+
+                {/* Items */}
+                <div className="ew-form-subsection">
+                  <div className="ew-form-subsection">
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                      <label
+                        className="text-sm font-medium text-slate-900"
+                        htmlFor="quote-text"
+                      >
+                        Message to customer
+                      </label>
+                      <Button
+                        variant="secondary"
+                        type="button"
+
+                        onClick={generateDraftText}
+                        disabled={draftBusy}
+                      >
+                        {draftBusy
+                          ? "Generating..."
+                          : "Generate draft reply (coming soon)"}
+                      </Button>
                     </div>
-                  ))
-                )}
+                    <p className="mb-2 text-xs text-slate-500">
+                      Explain what is included, setup details, timings, and any
+                      options.
+                    </p>
+                    <Textarea
+                      id="quote-text"
+                      value={quoteText}
+                      onChange={(e) => updateQuoteText(e.target.value)}
+                      rows={5}
+                      maxLength={4000}
+                      disabled={saving || sending}
+
+                      placeholder="Write a message to the customer..."
+                    />
+                    <div className="mt-1 text-right text-xs text-slate-500">
+                      {quoteText.length}/4000
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-medium">Quote items</div>
+                    <Button
+                      variant="secondary"
+
+                      onClick={addItem}
+                      disabled={saving || sending}
+                      type="button"
+                    >
+                      <Plus size={16} aria-hidden="true" /> Add item
+                    </Button>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {(items || []).length === 0 ? (
+                      <div className="text-sm text-gray-600">
+                        No items yet. Add one.
+                      </div>
+                    ) : (
+                      items.map((it) => (
+                        <div key={it.id} className="ew-form-subsection">
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+                            <FormField label="Title" className="md:col-span-6">
+                              <Input
+                                value={it.title || ""}
+                                disabled={saving || sending}
+                                onChange={(e) =>
+                                  updateItem(it.id, { title: e.target.value })
+                                }
+                              />
+                            </FormField>
+
+                            <FormField label="Qty" className="md:col-span-2">
+                              <Input
+                                type="number"
+                                step="1"
+
+                                min={1}
+                                value={it.qty ?? 1}
+                                disabled={saving || sending}
+                                onChange={(e) =>
+                                  updateItem(it.id, {
+                                    qty: Number(e.target.value),
+                                  })
+                                }
+                              />
+                            </FormField>
+
+                            <FormField
+                              label="Unit price (£)"
+                              className="md:col-span-2"
+                            >
+                              <Input
+                                type="number"
+                                step="0.01"
+
+                                min={0}
+                                value={it.unit_price ?? 0}
+                                disabled={saving || sending}
+                                onChange={(e) =>
+                                  updateItem(it.id, {
+                                    unit_price: Number(e.target.value),
+                                  })
+                                }
+                              />
+                            </FormField>
+
+                            <div className="md:col-span-2">
+                              <div className="text-xs text-gray-600">
+                                Line total
+                              </div>
+                              <div className="font-medium">
+                                £{money(calcLineTotal(it.qty, it.unit_price))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-2 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+                            <div className="text-xs text-gray-500">
+                              Sort: {it.sort_order ?? 1}
+                            </div>
+                            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                              <Button
+                                variant="secondary"
+                                type="button"
+
+                                disabled={saving || sending}
+                                aria-label={`Move ${it.title || "item"} up`}
+                                onClick={() => moveItem(it.id, "up")}
+                              >
+                                <ArrowUp size={16} aria-hidden="true" />
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                type="button"
+
+                                disabled={saving || sending}
+                                aria-label={`Move ${it.title || "item"} down`}
+                                onClick={() => moveItem(it.id, "down")}
+                              >
+                                <ArrowDown size={16} aria-hidden="true" />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                type="button"
+
+                                disabled={saving || sending}
+                                onClick={() => removeItem(it.id)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {hasItemValidationError ? (
+                  <Feedback>Fix item fields before saving.</Feedback>
+                ) : null}
+
+                <div className="ew-form-actions">
+                  <Button
+                    variant="primary"
+                    type="button"
+
+                    disabled={
+                      saving ||
+                      sending ||
+                      closing ||
+                      reopening ||
+                      hasItemValidationError
+                    }
+                    onClick={saveDraft}
+                  >
+                    {saving ? "Saving…" : "Save changes"}
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    type="button"
+
+                    disabled={
+                      String(quote.status).toLowerCase() !== "draft" ||
+                      saving ||
+                      sending ||
+                      closing ||
+                      reopening ||
+                      isDirty
+                    }
+                    onClick={sendQuote}
+                  >
+                    {sending ? "Sending…" : "Send quote (uses 1 credit)"}
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    type="button"
+
+                    disabled={
+                      String(quote.status).toLowerCase() !== "sent" ||
+                      linkBusy ||
+                      saving ||
+                      sending ||
+                      closing ||
+                      reopening
+                    }
+                    onClick={copyCustomerLink}
+                  >
+                    {linkBusy ? "Copying..." : "Copy customer link"}
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    type="button"
+
+                    disabled={
+                      !["sent", "accepted", "declined", "closed"].includes(
+                        String(quote.status).toLowerCase(),
+                      ) ||
+                      saving ||
+                      sending ||
+                      closing ||
+                      reopening
+                    }
+                    onClick={openMessages}
+                  >
+                    Open messages
+                  </Button>
+
+                  <Button
+                    variant="danger"
+                    type="button"
+
+                    disabled={
+                      String(quote.status).toLowerCase() !== "sent" ||
+                      closing ||
+                      saving ||
+                      sending ||
+                      reopening
+                    }
+                    onClick={closeQuote}
+                  >
+                    {closing ? "Closing..." : "Close quote"}
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    type="button"
+
+                    disabled={
+                      String(quote.status).toLowerCase() !== "closed" ||
+                      reopening ||
+                      saving ||
+                      sending ||
+                      closing
+                    }
+                    onClick={reopenQuote}
+                  >
+                    {reopening ? "Reopening..." : "Reopen quote"}
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    type="button"
+
+                    onClick={() => {
+                      if (isDirty) {
+                        const ok = window.confirm(
+                          "You have unsaved changes. Discard and reload?",
+                        );
+                        if (!ok) return;
+                      }
+                      openQuote(quote.id);
+                    }}
+                    disabled={saving || sending || closing || reopening}
+                  >
+                    Reload
+                  </Button>
+                </div>
+
+                <div className="text-xs text-gray-500">
+                  If this quote was previously accepted, saving changes resets
+                  acceptance and requires customer re-acceptance.
+                </div>
               </div>
-            </div>
-
-            {/* Actions */}
-            {hasItemValidationError ? (
-              <div className="text-sm text-red-600">Fix item fields before saving.</div>
-            ) : null}
-
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                className="w-full border rounded-lg px-4 py-2.5 bg-black text-white disabled:opacity-50"
-                disabled={
-                  saving ||
-                  sending ||
-                  closing ||
-                  reopening ||
-                  hasItemValidationError
-                }
-                onClick={saveDraft}
-              >
-                {saving ? "Saving…" : "Save changes"}
-              </button>
-
-              <button
-                type="button"
-                className="w-full border rounded-lg px-4 py-2.5 bg-white disabled:opacity-50"
-                disabled={
-                  String(quote.status).toLowerCase() !== "draft" || saving || sending || closing || reopening || isDirty
-                }
-                onClick={sendQuote}
-              >
-                {sending ? "Sending…" : "Send quote (uses 1 credit)"}
-              </button>
-
-              <button
-                type="button"
-                className="w-full border rounded-lg px-4 py-2.5 bg-white disabled:opacity-50"
-                disabled={String(quote.status).toLowerCase() !== "sent" || linkBusy || saving || sending || closing || reopening}
-                onClick={copyCustomerLink}
-              >
-                {linkBusy ? "Copying..." : "Copy customer link"}
-              </button>
-
-              <button
-                type="button"
-                className="w-full border rounded-lg px-4 py-2.5 bg-white disabled:opacity-50"
-                disabled={!["sent", "accepted", "declined", "closed"].includes(String(quote.status).toLowerCase()) || saving || sending || closing || reopening}
-                onClick={openMessages}
-              >
-                Open messages
-              </button>
-
-              <button
-                type="button"
-                className="w-full border rounded-lg px-4 py-2.5 bg-white disabled:opacity-50"
-                disabled={String(quote.status).toLowerCase() !== "sent" || closing || saving || sending || reopening}
-                onClick={closeQuote}
-              >
-                {closing ? "Closing..." : "Close quote"}
-              </button>
-
-              <button
-                type="button"
-                className="w-full border rounded-lg px-4 py-2.5 bg-white disabled:opacity-50"
-                disabled={String(quote.status).toLowerCase() !== "closed" || reopening || saving || sending || closing}
-                onClick={reopenQuote}
-              >
-                {reopening ? "Reopening..." : "Reopen quote"}
-              </button>
-
-              <button
-                type="button"
-                className="w-full border rounded-lg px-4 py-2.5 bg-white"
-                onClick={() => {
-                  if (isDirty) {
-                    const ok = window.confirm("You have unsaved changes. Discard and reload?");
-                    if (!ok) return;
-                  }
-                  openQuote(quote.id);
-                }}
-                disabled={saving || sending || closing || reopening}
-              >
-                Reload
-              </button>
-            </div>
-
-            <div className="text-xs text-gray-500">
-              If this quote was previously accepted, saving changes resets acceptance and requires customer re-acceptance.
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
-

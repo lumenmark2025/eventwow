@@ -1,15 +1,17 @@
+import { LayoutDashboard, Store, Building2, Inbox, CreditCard, ChartNoAxesCombined, Tags, Image, BadgeCheck, Star, ClipboardCheck } from "lucide-react";
+
 export const adminNavItems = [
-  { key: "dashboard", label: "Dashboard", to: "/admin/dashboard" },
-  { key: "credits-ledger", label: "Credits Ledger", to: "/admin/credits-ledger" },
-  { key: "performance", label: "Performance", to: "/admin/performance" },
-  { key: "venues", label: "Venues", to: "/admin/venues" },
-  { key: "venue-hero-images", label: "Venue Hero Images", to: "/admin/venues/hero-images" },
-  { key: "categories", label: "Categories", to: "/admin/categories" },
-  { key: "venue-claims", label: "Venue claims", to: "/admin/venue-claims" },
-  { key: "reviews", label: "Reviews", to: "/admin/reviews" },
-  { key: "supplier-applications", label: "Supplier Applications", to: "/admin/supplier-applications" },
-  { key: "suppliers", label: "Suppliers", to: "/admin/suppliers" },
-  { key: "enquiries", label: "Enquiries", to: "/admin/enquiries" },
+  { key: "dashboard", label: "Overview", to: "/admin/dashboard", icon: LayoutDashboard, group: "Workspace" },
+  { key: "suppliers", label: "Suppliers", to: "/admin/suppliers", icon: Store, group: "Platform" },
+  { key: "supplier-applications", label: "Supplier applications", to: "/admin/supplier-applications", icon: ClipboardCheck, group: "Platform" },
+  { key: "venues", label: "Venues", to: "/admin/venues", icon: Building2, group: "Platform" },
+  { key: "venue-claims", label: "Venue claims", to: "/admin/venue-claims", icon: BadgeCheck, group: "Platform" },
+  { key: "enquiries", label: "Enquiries", to: "/admin/enquiries", icon: Inbox, group: "Platform" },
+  { key: "reviews", label: "Reviews", to: "/admin/reviews", icon: Star, group: "Platform" },
+  { key: "categories", label: "Categories", to: "/admin/categories", icon: Tags, group: "Content" },
+  { key: "venue-hero-images", label: "Venue hero images", to: "/admin/venues/hero-images", icon: Image, group: "Content" },
+  { key: "credits-ledger", label: "Credits ledger", to: "/admin/credits-ledger", icon: CreditCard, group: "Finance" },
+  { key: "performance", label: "Performance", to: "/admin/performance", icon: ChartNoAxesCombined, group: "Finance" },
 ];
 
 export function getAdminPageTitle(pathname) {

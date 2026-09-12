@@ -1,0 +1,18 @@
+[
+  "quotes-list: 360/768/1024/1440px, document overflow and axe passed",
+  "quote-detail: 360/768/1024/1440px, document overflow and axe passed",
+  "bookings-list: 360/768/1024/1440px, document overflow and axe passed",
+  "booking-detail: 360/768/1024/1440px, document overflow and axe passed",
+  "booking-edit: 360/768/1024/1440px, document overflow and axe passed",
+  "booking-calendar: 360/768/1024/1440px, document overflow and axe passed",
+  "booking-week: 360/768/1024/1440px, document overflow and axe excluding verified pre-existing week-header/all-day ARIA structure defects passed",
+  "messages-list: 360/768/1024/1440px, document overflow and axe passed",
+  "message-thread: 360/768/1024/1440px, document overflow and axe passed",
+  "quote-reaccept: 360/768/1024/1440px, document overflow and axe passed",
+  "Quotes: filters, validation, add/reorder items, totals, exact save/send/public-link/close/reopen/thread payloads, failed save preserves draft, insufficient credits, close cancellation, accepted-edit reacceptance and original Messages URL",
+  "booking-sources: 360/768/1024/1440px, document overflow and axe passed",
+  "Bookings: origin/date/status contracts, default/custom sources, exact create/edit/share/revoke payloads, required-date validation, failed save retained form, cancelled transition, paid flags and busy controls",
+  "Messages: URL-selected thread, empty/whitespace/pending disables, failed send retains composer, exact trimmed body/thread/client-ID payload, local success updates without refetch",
+  "Quotes/Bookings/Messages: loading/empty/error at all four widths, retries; detail loading/error/missing and empty conversation history",
+  "Keyboard: booking row, Radix edit dialog Tab containment/Escape/focus return, calendar navigation/event selection and persisted view; all three routes preserve signed-out/Admin/Customer/Venue guards"
+]

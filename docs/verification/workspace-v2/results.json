@@ -1,0 +1,19 @@
+[
+  "dashboard: populated at 360/768/1024/1440, no overflow, shared geometry",
+  "enquiries: populated at 360/768/1024/1440, no overflow, shared geometry",
+  "suppliers: populated at 360/768/1024/1440, no overflow, shared geometry",
+  "venues: populated at 360/768/1024/1440, no overflow, shared geometry",
+  "design-system: populated at 360/768/1024/1440, no overflow, shared geometry",
+  "Enquiries: search, status filter, keyboard detail, back and creation payload retained (fixture)",
+  "Suppliers: local filtering, create dialog, unchanged creation payload, editor opens (fixture)",
+  "Venues: filters, cancel/confirm draft deletion, create draft payload and editor route retained (fixture)",
+  "Mobile drawer navigation, account menu, Ctrl K search, dialog focus trap/Escape/restore pass",
+  "All four admin screens: loading state; errors do not masquerade as zero metrics",
+  "All four admin screens: empty state; errors do not masquerade as zero metrics",
+  "All four admin screens: error state; errors do not masquerade as zero metrics",
+  "Dashboard: partial service failure preserves successful panels and unavailable metrics use —",
+  "supplier: existing Admin guard outcome preserved; no Admin page module requested",
+  "venue_owner: existing Admin guard outcome preserved; no Admin page module requested",
+  "customer: existing Admin guard outcome preserved; no Admin page module requested",
+  "none: existing Admin guard outcome preserved; no Admin page module requested"
+]

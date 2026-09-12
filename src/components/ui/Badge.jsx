@@ -9,7 +9,7 @@ export default function Badge({ variant = "neutral", className = "", children })
     danger: "bg-rose-50 text-rose-700 border-rose-200",
   };
   return (
-    <span
+    <span data-ui="badge" data-variant={variant}
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium",
         map[variant] || map.neutral,

@@ -1,4 +1,13 @@
-import { useMemo } from "react";
+import {
+  cloneElement,
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+import { Button } from "../workspace/AdminPrimitives";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import format from "date-fns/format";
 import parse from "date-fns/parse";
@@ -30,7 +39,11 @@ function parseDateTime(dateValue, timeValue = "00:00") {
   if (!dateText) return null;
   const timeText = safe(timeValue) || "00:00";
 
-  const parsed = parse(`${dateText} ${timeText}`, "yyyy-MM-dd HH:mm", new Date());
+  const parsed = parse(
+    `${dateText} ${timeText}`,
+    "yyyy-MM-dd HH:mm",
+    new Date(),
+  );
   if (!Number.isNaN(parsed.getTime())) return parsed;
 
   const fallback = new Date(`${dateText}T${timeText}:00`);
@@ -59,22 +72,71 @@ function CalendarEventPill({ event }) {
   const typeLabel = origin === "eventwow" ? "Enquiry" : "Booking";
   const title = event?.title || "Booking";
 
-  const baseClass =
-    "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium leading-4";
-  const toneClass =
-    origin === "eventwow"
-      ? "bg-blue-700 text-white"
-      : "bg-slate-600 text-white";
-  const cancelledClass = status === "cancelled" ? "opacity-60 line-through" : "";
-
   return (
-    <span className={`${baseClass} ${toneClass} ${cancelledClass}`}>
-      <span className="rounded-full bg-white/20 px-1.5 py-[1px] text-[10px] uppercase tracking-wide">
-        {typeLabel}
-      </span>
-      <span className="truncate">{title}</span>
+    <span className={status === "cancelled" ? "line-through" : ""}>
+      <span className="font-semibold">{typeLabel}: </span>
+      {title}
+      {status === "cancelled" ? " (cancelled)" : ""}
     </span>
   );
+}
+
+const CalendarViewContext = createContext("month");
+
+function CalendarEventWrapper({ children }) {
+  const view = useContext(CalendarViewContext);
+  const control = cloneElement(children, { tabIndex: 0, role: "button" });
+  // Month events sit in the library's table row, so retain a cell around the control.
+  return view === "month" ? <div role="gridcell">{control}</div> : control;
+}
+
+const CalendarToolbarHost = createContext(null);
+
+function CalendarToolbar({ label, onNavigate, onView, view }) {
+  const host = useContext(CalendarToolbarHost);
+  return host
+    ? createPortal(
+        <div className="rbc-toolbar">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              aria-label="Previous calendar period"
+              onClick={() => onNavigate("PREV")}
+            >
+              <ChevronLeft size={16} aria-hidden="true" />
+            </Button>
+            <Button variant="secondary" onClick={() => onNavigate("TODAY")}>
+              Today
+            </Button>
+            <Button
+              variant="secondary"
+              aria-label="Next calendar period"
+              onClick={() => onNavigate("NEXT")}
+            >
+              <ChevronRight size={16} aria-hidden="true" />
+            </Button>
+          </div>
+          <strong className="rbc-toolbar-label">{label}</strong>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={view === "month" ? "primary" : "secondary"}
+              aria-pressed={view === "month"}
+              onClick={() => onView("month")}
+            >
+              Month
+            </Button>
+            <Button
+              variant={view === "week" ? "primary" : "secondary"}
+              aria-pressed={view === "week"}
+              onClick={() => onView("week")}
+            >
+              Week
+            </Button>
+          </div>
+        </div>,
+        host,
+      )
+    : null;
 }
 
 export default function BookingsCalendar({
@@ -87,10 +149,14 @@ export default function BookingsCalendar({
   onNavigate,
   onView,
 }) {
+  const [toolbarHost, setToolbarHost] = useState(null);
   const events = useMemo(() => {
     return (rows || [])
       .map((booking) => {
-        const start = parseDateTime(booking.event_date, booking.start_time || "00:00");
+        const start = parseDateTime(
+          booking.event_date,
+          booking.start_time || "00:00",
+        );
         if (!start) return null;
 
         const hasStartTime = !!safe(booking.start_time);
@@ -103,7 +169,9 @@ export default function BookingsCalendar({
           allDay = true;
           end = addDays(start, 1);
         } else if (hasEndTime) {
-          end = parseDateTime(booking.event_date, booking.end_time) || addHours(start, 2);
+          end =
+            parseDateTime(booking.event_date, booking.end_time) ||
+            addHours(start, 2);
         } else {
           end = addHours(start, 2);
         }
@@ -121,8 +189,11 @@ export default function BookingsCalendar({
   }, [rows]);
 
   const busyCount = useMemo(
-    () => (rows || []).filter((row) => String(row.status || "").toLowerCase() === "confirmed").length,
-    [rows]
+    () =>
+      (rows || []).filter(
+        (row) => String(row.status || "").toLowerCase() === "confirmed",
+      ).length,
+    [rows],
   );
 
   function handleRangeChange(nextRange) {
@@ -134,100 +205,99 @@ export default function BookingsCalendar({
     });
   }
 
+  const busyDates = useMemo(
+    () =>
+      new Set(
+        (rows || [])
+          .filter(
+            (row) => String(row.status || "").toLowerCase() === "confirmed",
+          )
+          .map((row) => safe(row.event_date)),
+      ),
+    [rows],
+  );
+
   function eventPropGetter(event) {
     const booking = event?.resource || {};
     const origin = String(booking.origin_type || "").toLowerCase();
     const status = String(booking.status || "").toLowerCase();
-
-    let backgroundColor = origin === "eventwow" ? "#0f766e" : "#475569";
-    let color = "#ffffff";
-    let opacity = 1;
-
-    if (status === "cancelled") {
-      backgroundColor = "#64748b";
-      opacity = 0.55;
-    }
-
     return {
-      style: {
-        backgroundColor,
-        color,
-        borderRadius: "8px",
-        border: "none",
-        opacity,
-        fontSize: "12px",
-        padding: "2px 6px",
-      },
+      className:
+        status === "cancelled"
+          ? "ew-calendar-cancelled"
+          : origin === "eventwow"
+            ? ""
+            : "ew-calendar-external",
     };
   }
 
   function dayPropGetter(day) {
-    const dayKey = format(day, "yyyy-MM-dd");
-    const isBusy = (rows || []).some((row) => {
-      const sameDate = safe(row.event_date) === dayKey;
-      const confirmed = String(row.status || "").toLowerCase() === "confirmed";
-      return sameDate && confirmed;
-    });
-
-    if (!isBusy || currentView !== "month") return {};
-
-    return {
-      style: {
-        backgroundColor: "rgba(15, 118, 110, 0.06)",
-      },
-    };
+    if (currentView !== "month" || !busyDates.has(format(day, "yyyy-MM-dd")))
+      return {};
+    return { className: "ew-calendar-busy" };
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-slate-600">
-            <span className="h-2.5 w-2.5 rounded-full bg-blue-700" />
-            Eventwow
-          </span>
-          <span className="inline-flex items-center gap-1 text-slate-600">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-600" />
-            External
-          </span>
-          <span className="inline-flex items-center gap-1 text-slate-600">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-500/70" />
-            Cancelled
-          </span>
-        </div>
-        <p className="text-xs text-slate-500">Busy = at least one confirmed booking ({busyCount})</p>
-      </div>
-
-      <div className="min-h-[700px] overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          view={currentView}
-          onView={onView}
-          views={["month", "week"]}
-          date={currentDate}
-          onNavigate={onNavigate}
-          onRangeChange={handleRangeChange}
-          onSelectEvent={(event) => onSelectBooking?.(event?.resource?.id || event?.id)}
-          onSelectSlot={(slotInfo) => {
-            if (!slotInfo?.start) return;
-            const dayKey = format(slotInfo.start, "yyyy-MM-dd");
-            const firstMatch = (rows || []).find((row) => safe(row.event_date) === dayKey);
-            if (firstMatch?.id) onSelectBooking?.(firstMatch.id);
-          }}
-          selectable
-          eventPropGetter={eventPropGetter}
-          dayPropGetter={dayPropGetter}
-          components={{
-            event: CalendarEventPill,
-          }}
-          popup
-          style={{ minHeight: 680 }}
-          className={loading ? "opacity-60" : ""}
-        />
-      </div>
+    <div className="ew-calendar space-y-3">
+      <p className="ew-form-help">
+        Eventwow enquiries and external bookings. Cancelled events are labelled
+        and struck through. Busy = at least one confirmed booking ({busyCount}).
+      </p>
+      <p className="ew-form-help">
+        On narrow screens, scroll the calendar horizontally or use the booking
+        list above.
+      </p>
+      <div ref={setToolbarHost} />
+      <CalendarViewContext.Provider value={currentView}>
+        <CalendarToolbarHost.Provider value={toolbarHost}>
+          <div
+            className="ew-calendar-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="Booking calendar grid"
+          >
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              view={currentView}
+              onView={onView}
+              views={["month", "week"]}
+              date={currentDate}
+              onNavigate={onNavigate}
+              onRangeChange={handleRangeChange}
+              onSelectEvent={(event) =>
+                onSelectBooking?.(event?.resource?.id || event?.id)
+              }
+              onKeyPressEvent={(event, keyboardEvent) => {
+                if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ")
+                  return;
+                keyboardEvent.preventDefault();
+                onSelectBooking?.(event?.resource?.id || event?.id);
+              }}
+              onSelectSlot={(slotInfo) => {
+                if (!slotInfo?.start) return;
+                const dayKey = format(slotInfo.start, "yyyy-MM-dd");
+                const firstMatch = (rows || []).find(
+                  (row) => safe(row.event_date) === dayKey,
+                );
+                if (firstMatch?.id) onSelectBooking?.(firstMatch.id);
+              }}
+              selectable
+              eventPropGetter={eventPropGetter}
+              dayPropGetter={dayPropGetter}
+              components={{
+                event: CalendarEventPill,
+                eventWrapper: CalendarEventWrapper,
+                toolbar: CalendarToolbar,
+              }}
+              popup
+              className={loading ? "opacity-60" : ""}
+            />
+          </div>
+        </CalendarToolbarHost.Provider>
+      </CalendarViewContext.Provider>
     </div>
   );
 }

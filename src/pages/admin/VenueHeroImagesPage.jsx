@@ -1,10 +1,6 @@
+import { EmptyState, Feedback, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Table, TBody, TD, TH, THead, TR } from "../../components/workspace/AdminPrimitives";
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
-import Input from "../../components/ui/Input";
-import { Table, TBody, TD, TH, THead, TR } from "../../components/ui/Table";
 import { supabase } from "../../lib/supabase";
 
 async function adminFetch(path, options = {}) {
@@ -172,10 +168,10 @@ export default function VenueHeroImagesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="ew-page-stack">
       <PageHeader
         title="Venue Hero Images"
-        subtitle="Generate AI placeholder hero images for venues missing hero_image_url."
+        subtitle="Generate placeholder imagery for venues without a hero image."
         actions={[
           {
             key: "generate",
@@ -186,8 +182,8 @@ export default function VenueHeroImagesPage() {
         ]}
       />
 
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
-      {success ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</div> : null}
+      {error ? <Feedback tone="danger" onRetry={loadPreview}>{error}</Feedback> : null}
+      {success ? <Feedback tone="success">{success}</Feedback> : null}
 
       <Card>
         <CardHeader>
@@ -196,8 +192,8 @@ export default function VenueHeroImagesPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="neutral">Missing hero_image_url: {missingCount}</Badge>
-            {progressText ? <Badge variant="brand">{progressText}</Badge> : null}
+            <span className="ew-result-count">Venues missing imagery: {loading || error ? "—" : missingCount}</span>
+            {progressText ? <span role="status">{progressText}</span> : null}
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="space-y-1 text-sm text-slate-700">
@@ -222,22 +218,19 @@ export default function VenueHeroImagesPage() {
             </label>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <label className="ew-checkbox-label">
               <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
               Dry run
             </label>
-            <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <label className="ew-checkbox-label">
               <input type="checkbox" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />
-              Overwrite existing hero_image_url
+              Overwrite existing images
             </label>
             <Button type="button" variant="secondary" onClick={loadPreview} disabled={loading || running}>
               Refresh count
             </Button>
           </div>
-          <p className="text-xs text-slate-500">
-            Requires server env vars: AI_API_KEY (or OPENAI_API_KEY), SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
-            Uses storage bucket <code>venue-hero-images</code> and writes to <code>venues.hero_image_url</code>.
-          </p>
+          <p className="ew-form-help">Review generated placeholder images before using them on public listings.</p>
         </CardContent>
       </Card>
 
@@ -248,9 +241,9 @@ export default function VenueHeroImagesPage() {
         </CardHeader>
         <CardContent className="pt-0">
           {loading ? (
-            <p className="py-4 text-sm text-slate-600">Loading venues...</p>
-          ) : rows.length === 0 ? (
-            <p className="py-4 text-sm text-slate-600">No venues found for preview.</p>
+            <p role="status" className="ew-inline-note">Loading venues...</p>
+          ) : error ? null : rows.length === 0 ? (
+            <EmptyState title="No venues found for preview" description="Venues missing imagery will appear here." />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -269,8 +262,8 @@ export default function VenueHeroImagesPage() {
                       <TD className="font-medium text-slate-900">{row.name}</TD>
                       <TD>{row.town || "-"}</TD>
                       <TD>{statusBadge(row.status)}</TD>
-                      <TD className="max-w-[420px] truncate text-xs text-slate-600">{row.url || row.heroImageUrl || "-"}</TD>
-                      <TD className="max-w-[320px] truncate text-xs text-rose-700">{row.message || "-"}</TD>
+                      <TD className="min-w-0 truncate text-xs text-slate-600">{row.url || row.heroImageUrl || "-"}</TD>
+                      <TD className="min-w-0 truncate text-xs text-rose-700">{row.message || "-"}</TD>
                     </TR>
                   ))}
                 </TBody>
