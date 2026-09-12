@@ -1,0 +1,60 @@
+TAP version 13
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# supplier-get-public-link crashed: Error: Quote link has been revoked; it cannot be reused.
+#     at ensureQuotePublicLink (file:///home/mark/workspaces/eventwow-dev/api/_lib/quotePublicLinks.js:26:19)
+#     at async handler (file:///home/mark/workspaces/eventwow-dev/api/supplier-get-public-link.js:107:18)
+#     at async invoke (file:///home/mark/workspaces/eventwow-dev/scripts/fixtures/workflow-backend.mjs:342:3)
+#     at async TestContext.<anonymous> (file:///home/mark/workspaces/eventwow-dev/scripts/verify-customer-supplier-workflow.mjs:584:19)
+#     at async Test.run (node:internal/test_runner/test:1054:7)
+#     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+#   status: 409
+# }
+# Subtest: Customer detail excludes drafts AND their item/token/thread content
+ok 1 - Customer detail excludes drafts AND their item/token/thread content
+  ---
+  duration_ms: 54.27942
+  type: 'test'
+  ...
+# Subtest: Latest message windows preserve newest replies in chronological display order
+ok 2 - Latest message windows preserve newest replies in chronological display order
+  ---
+  duration_ms: 22.772096
+  type: 'test'
+  ...
+# Subtest: Connected enquiry → quote decisions → bookings → two-way persisted fixture messages
+ok 3 - Connected enquiry → quote decisions → bookings → two-way persisted fixture messages
+  ---
+  duration_ms: 124.58522
+  type: 'test'
+  ...
+# 353 real Supabase-client requests exercised against isolated state; no external network requests.
+# Subtest: Decision links prepare before sending, fail safely, and recover concurrent historical lookups
+ok 4 - Decision links prepare before sending, fail safely, and recover concurrent historical lookups
+  ---
+  duration_ms: 11.834519
+  type: 'test'
+  ...
+# Subtest: Customer message API rejects mismatched quote/enquiry ownership before reading or writing messages
+ok 5 - Customer message API rejects mismatched quote/enquiry ownership before reading or writing messages
+  ---
+  duration_ms: 5.399812
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 369.1687

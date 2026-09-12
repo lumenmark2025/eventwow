@@ -13,6 +13,7 @@ import supplierDetail from "../api/supplier/enquiries/[id].js";
 import startQuote from "../api/supplier-start-quote-from-enquiry.js";
 import saveQuote from "../api/supplier-save-draft-quote.js";
 import sendQuote from "../api/supplier-send-quote.js";
+import publicQuote from "../api/public-quote.js";
 import quoteLink from "../api/supplier-get-public-link.js";
 import supplierQuotes from "../api/supplier/quotes.js";
 import acceptQuote from "../api/public-quote-accept.js";
@@ -92,6 +93,18 @@ test("Customer detail excludes drafts AND their item/token/thread content", asyn
       !db.requests.some((r) => r.query.quote_id?.includes(quote.id)),
       "Draft relations must not be fetched",
     );
+    for (const method of ["GET", "POST"]) {
+      const before = db.requests.length;
+      const denied = await invoke(customerMessages, {
+        method,
+        query: { threadId: thread.id },
+        body: { body: "Should not send" },
+      });
+      assert.equal(denied.status, 404);
+      assert.ok(
+        !db.requests.slice(before).some((r) => r.path === "/rest/v1/messages"),
+      );
+    }
     assert.equal(
       (
         await invoke(customerDetail, {
@@ -276,13 +289,11 @@ test("Connected enquiry → quote decisions → bookings → two-way persisted f
       (await ok(supplierList, { role: "supplier" })).rows[0].status,
       "quoted",
     );
-    // Existing limitation: send itself does not create the public decision token.
-    assert.equal(
-      (await ok(customerDetail, { query: { id } })).quotes[0].quoteToken,
-      null,
-    );
-    t.diagnostic(
-      "Existing send/link gap reproduced: Customer decision token is absent until Supplier opens/copies the public link.",
+    const immediateToken = (await ok(customerDetail, { query: { id } }))
+      .quotes[0].quoteToken;
+    assert.ok(
+      immediateToken,
+      "Sent quotes must be immediately actionable without Supplier reopening",
     );
     const { token } = await ok(quoteLink, {
       role: "supplier",
@@ -293,6 +304,7 @@ test("Connected enquiry → quote decisions → bookings → two-way persisted f
       (await ok(customerDetail, { query: { id } })).quotes[0].quoteToken,
       token,
     );
+    assert.equal(token, immediateToken);
     await ok(acceptQuote, { role: null, method: "POST", body: { token } });
     assert.equal(
       (await ok(supplierQuotes, { role: "supplier" })).rows[0].status,
@@ -494,6 +506,113 @@ test("Connected enquiry → quote decisions → bookings → two-way persisted f
     t.diagnostic(
       `${db.requests.length} real Supabase-client requests exercised against isolated state; no external network requests.`,
     );
+  } finally {
+    restore();
+  }
+});
+
+test("Decision links prepare before sending, fail safely, and recover concurrent historical lookups", async () => {
+  const db = workflowBackend(),
+    restore = db.install();
+  try {
+    const { quote } = seedThread(db);
+    quote.status = "draft";
+    db.tables.quote_items.push({
+      id: uid(),
+      quote_id: quote.id,
+      title: "Catering",
+      qty: 1,
+      unit_price: 100,
+    });
+    const credits = db.tables.suppliers[0].credits_balance;
+    const send = () =>
+      invoke(sendQuote, {
+        role: "supplier",
+        method: "POST",
+        body: { quote_id: quote.id },
+      });
+    for (const method of ["GET", "POST"]) {
+      db.faults.push({
+        table: "quote_public_links",
+        method,
+        message: "Link service unavailable",
+      });
+      const before = db.requests.length;
+      assert.equal((await send()).status, 500);
+      assert.equal(quote.status, "draft");
+      assert.equal(db.tables.suppliers[0].credits_balance, credits);
+      assert.ok(
+        !db.requests
+          .slice(before)
+          .some(
+            (r) =>
+              r.path === "/rest/v1/rpc/apply_credit_delta" ||
+              (r.path === "/rest/v1/quotes" && r.method === "PATCH"),
+          ),
+      );
+    }
+    // A link prepared before a failed credit debit cannot open the draft publicly.
+    db.faults.push({
+      table: "rpc/apply_credit_delta",
+      method: "POST",
+      message: "INSUFFICIENT_CREDITS",
+    });
+    assert.equal((await send()).status, 409);
+    assert.equal(db.tables.quotes[0].status, "draft");
+    const prepared = db.tables.quote_public_links[0];
+    assert.ok(prepared.token);
+    assert.equal(
+      (
+        await invoke(publicQuote, {
+          role: null,
+          query: { token: prepared.token },
+        })
+      ).status,
+      404,
+    );
+    // Neither sending nor the recovery endpoint silently reactivates revoked links.
+    prepared.revoked_at = new Date().toISOString();
+    assert.equal((await send()).status, 409);
+    assert.equal(db.tables.suppliers[0].credits_balance, credits);
+    db.tables.quotes[0].status = "sent";
+    const getLink = () =>
+      invoke(quoteLink, {
+        role: "supplier",
+        method: "POST",
+        body: { quote_id: quote.id },
+      });
+    assert.equal((await getLink()).status, 409);
+    assert.ok(prepared.revoked_at);
+    // Historical sent quotes without a link use the existing endpoint; concurrent
+    // creators must reuse the winning unique quote_id row without token rotation.
+    db.tables.quote_public_links.length = 0;
+    const [first, second] = await Promise.all([getLink(), getLink()]);
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal(first.data.token, second.data.token);
+    assert.equal(db.tables.quote_public_links.length, 1);
+    assert.equal((await getLink()).data.token, first.data.token);
+    assert.deepEqual(db.blocked, []);
+  } finally {
+    restore();
+  }
+});
+
+test("Customer message API rejects mismatched quote/enquiry ownership before reading or writing messages", async () => {
+  const db = workflowBackend(),
+    restore = db.install();
+  try {
+    const { quote, thread } = seedThread(db);
+    quote.enquiry_id = uid();
+    for (const method of ["GET", "POST"]) {
+      const denied = await invoke(customerMessages, {
+        method,
+        query: { threadId: thread.id },
+        body: { body: "Not this customer's quote" },
+      });
+      assert.equal(denied.status, 404);
+    }
+    assert.ok(!db.requests.some((r) => r.path === "/rest/v1/messages"));
   } finally {
     restore();
   }

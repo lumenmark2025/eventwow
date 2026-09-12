@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { notifyQuoteSent } from "./_lib/notifications.js";
+import { ensureQuotePublicLink } from "./_lib/quotePublicLinks.js";
 
 /**
  * POST /api/supplier-send-quote
@@ -140,6 +141,17 @@ export default async function handler(req, res) {
         ok: false,
         error: "Cannot send quote",
         details: "Supplier has insufficient credits",
+      });
+    }
+
+    // Prepare the decision capability before publishing/spending credits. Public
+    // quote/thread endpoints reject draft status, including after credit rollback.
+    // Failure here leaves both quote status and balance untouched.
+    try {
+      await ensureQuotePublicLink(supabaseAdmin, quote.id, userId);
+    } catch (linkError) {
+      return res.status(linkError.status || 500).json({
+        ok: false, error: "Cannot send quote", details: linkError.message,
       });
     }
 

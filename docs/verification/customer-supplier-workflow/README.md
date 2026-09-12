@@ -1,5 +1,7 @@
 # Customer-to-Supplier workflow verification — 12 September 2026
 
+**Follow-up:** [Security and reliability remediation](../customer-supplier-security/README.md) prepares and locally verifies the focused RLS migration, fixes send-token sequencing, and synchronizes notification/thread state. The original findings below remain a historical snapshot; live migration deployment and staging sign-off are still pending.
+
 Branch `ui-v2-design-system`, starting commit `74c8887af0e1682ac7d7b467fe2f5db908a2de03`. This pass verifies existing workflows and changes only two API reads. No screen, route, guard, schema, pricing, credit mutation, quote decision, booking mutation or message-send code changed.
 
 **This is not a live end-to-end sign-off.** Local tests connect the real React pages, API handlers and installed Supabase JS client through an isolated, stateful Auth/PostgREST transport. The transport models the operations used by these handlers and the credit RPC boundary; it does not emulate PostgreSQL transactions, RLS, triggers, email delivery or real Auth. Browser contexts share the same synthetic stored records, rather than receiving independent canned success responses. No external network is allowed by that transport.

@@ -21,16 +21,21 @@ async function loadOwnedThread(admin, me, threadId) {
   if (!threadResp.data) return { code: 404, error: "Thread not found", details: null, thread: null };
 
   let enquiryId = threadResp.data.enquiry_id || null;
-  if (!enquiryId && threadResp.data.quote_id) {
+  if (threadResp.data.quote_id) {
     const quoteResp = await admin
       .from("quotes")
-      .select("id,enquiry_id")
+      .select("id,enquiry_id,status")
       .eq("id", threadResp.data.quote_id)
       .maybeSingle();
     if (quoteResp.error) {
       return { code: 500, error: "Quote lookup failed", details: quoteResp.error.message, thread: null };
     }
-    enquiryId = quoteResp.data?.enquiry_id || null;
+    const quote = quoteResp.data;
+    if (!quote || !["sent", "accepted", "declined", "closed"].includes(quote.status) ||
+        (enquiryId && enquiryId !== quote.enquiry_id)) {
+      return { code: 404, error: "Thread not found", details: null, thread: null };
+    }
+    enquiryId = quote.enquiry_id || null;
   }
   if (!enquiryId) return { code: 403, error: "Forbidden", details: "Thread is not linked to an enquiry", thread: null };
 

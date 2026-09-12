@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
+import { SupplierNotificationContext } from "./SupplierNotificationContext";
 import { supabase } from "../../lib/supabase";
 
 const supplierNav = [
@@ -54,7 +55,7 @@ export default function SupplierLayout({
   const location = useLocation();
   const navigate = useNavigate();
 
-  async function refreshUnreadCount() {
+  async function refreshUnreadCount(isCurrent) {
     try {
       const { data: sessionData, error: sessionErr } =
         await supabase.auth.getSession();
@@ -67,7 +68,7 @@ export default function SupplierLayout({
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) return;
+      if (!resp.ok || !isCurrent()) return;
       setNotificationUnreadCount(Number(json?.unread_count || 0));
     } catch {
       // ignore unread refresh errors
@@ -75,7 +76,13 @@ export default function SupplierLayout({
   }
 
   useEffect(() => {
-    refreshUnreadCount();
+    // The inbox already loads this count; reuse it and cancel stale route reads.
+    if (location.pathname === "/supplier/notifications") return;
+    let active = true;
+    refreshUnreadCount(() => active);
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, user?.id]);
 
@@ -90,7 +97,9 @@ export default function SupplierLayout({
       notificationUnreadCount={notificationUnreadCount}
       onNotificationsClick={() => navigate("/supplier/notifications")}
     >
-      {children}
+      <SupplierNotificationContext.Provider value={setNotificationUnreadCount}>
+        {children}
+      </SupplierNotificationContext.Provider>
     </AppShell>
   );
 }

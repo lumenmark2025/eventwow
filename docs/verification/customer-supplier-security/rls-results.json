@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "engine": "PostgreSQL 17 + PostgREST 12.2.12 + installed Supabase JS",
+  "migration": "20260912143031_customer_quote_visibility.sql",
+  "liveProjectModified": false,
+  "checks": [
+    "baseline: Customer can read owned drafts; anon can enumerate decision tokens",
+    "Customer/other Customer: correct rows by both ownership paths; no drafts/items/tokens/draft-linked or mismatched messages",
+    "Supplier own drafts/items intact, unrelated Supplier rows denied; Admin and service-role access intact",
+    "Anonymous reads and Customer quote/token writes denied",
+    "Draft update, send/accept/re-accept/decline/close transitions retain correct direct-query visibility"
+  ]
+}

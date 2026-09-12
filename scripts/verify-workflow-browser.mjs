@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
-import { workflowBackend, invoke } from "./fixtures/workflow-backend.mjs";
+import { workflowBackend, invoke, uid } from "./fixtures/workflow-backend.mjs";
 const base = process.env.WORKSPACE_TEST_URL || "http://127.0.0.1:5173";
 const output =
   process.env.WORKFLOW_SCREENSHOTS || "/tmp/eventwow-connected-workflow";
@@ -208,15 +208,11 @@ try {
     exact: true,
   });
   await accept.waitFor();
-  assert.equal(await accept.isDisabled(), true);
-  // Existing recovery path: reopening a sent quote creates its missing decision link.
-  await s.page.goto(`${base}/supplier/quotes`);
-  await s.page
-    .getByRole("button", { name: "Fixture Customer", exact: true })
-    .click();
-  await s.page.getByRole("link", { name: /\/quote\// }).waitFor();
-  await c.page.reload();
-  await accept.waitFor();
+  assert.equal(
+    await accept.isDisabled(),
+    false,
+    "Send must provide decisions without reopening Supplier quote",
+  );
   await accept.click();
   await c.page.getByText("accepted", { exact: true }).waitFor();
   assert.equal(db.tables.supplier_bookings[0].status, "confirmed");
@@ -249,6 +245,13 @@ try {
     .getByRole("log")
     .getByText("Please arrive at 17:00.", { exact: true })
     .waitFor();
+  const initialMessageReads = calls.filter(
+    (r) => r.path === "/api/supplier-thread",
+  ).length;
+  assert.ok(
+    initialMessageReads <= 4,
+    "Initial thread effect must not be duplicated by the thread-list loader (including StrictMode/auth remounts)",
+  );
   await s.page.getByLabel("Message", { exact: true }).fill("We will be there.");
   await s.page
     .getByRole("button", { name: "Send message", exact: true })
@@ -270,6 +273,72 @@ try {
     .waitFor();
   await c.page.screenshot({ path: `${output}/customer-conversation.png` });
   await s.page.screenshot({ path: `${output}/supplier-conversation.png` });
+  // Delay a different conversation's response, then switch back. A stale response
+  // must never put another thread's history under the current participant header.
+  const secondThreadId = uid(),
+    secondQuoteId = uid();
+  db.tables.quotes.push({ ...db.tables.quotes[0], id: secondQuoteId });
+  db.tables.message_threads.push({
+    ...db.tables.message_threads[0],
+    id: secondThreadId,
+    quote_id: secondQuoteId,
+  });
+  db.tables.messages.push({
+    id: uid(),
+    thread_id: secondThreadId,
+    body: "Alternate conversation fixture.",
+    sender_type: "customer",
+    created_at: new Date().toISOString(),
+  });
+  await s.page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await s.page
+    .locator(".ew-thread-choice")
+    .filter({ hasText: "Alternate conversation fixture." })
+    .waitFor();
+  let releaseDelayed, startedDelayed;
+  const delayed = new Promise((resolve) => {
+    releaseDelayed = resolve;
+  });
+  const started = new Promise((resolve) => {
+    startedDelayed = resolve;
+  });
+  const delayedRoute = `**/api/supplier-thread?threadId=${secondThreadId}`;
+  await s.page.route(delayedRoute, async (route) => {
+    startedDelayed();
+    await delayed;
+    await route.fallback();
+  });
+  await s.page
+    .locator(".ew-thread-choice")
+    .filter({ hasText: "Alternate conversation fixture." })
+    .click();
+  await started;
+  await s.page
+    .locator(".ew-thread-choice")
+    .filter({ hasText: "We will be there." })
+    .click();
+  await s.page
+    .getByRole("log")
+    .getByText("We will be there.", { exact: true })
+    .waitFor();
+  const response = s.page.waitForResponse((r) =>
+    r.url().includes(`/api/supplier-thread?threadId=${secondThreadId}`),
+  );
+  releaseDelayed();
+  await response;
+  await s.page.waitForTimeout(150);
+  assert.equal(
+    await s.page
+      .getByRole("log")
+      .getByText("Alternate conversation fixture.", { exact: true })
+      .count(),
+    0,
+  );
+  await s.page
+    .getByRole("log")
+    .getByText("We will be there.", { exact: true })
+    .waitFor();
+  await s.page.unroute(delayedRoute);
   await s.page.goto(`${base}/supplier/notifications`);
   await s.page
     .getByRole("button", { name: "Mark all read", exact: true })
@@ -285,12 +354,17 @@ try {
     path: `${output}/notification-count-after-read.png`,
   });
   const customerRequests = calls.filter((r) => r.role === "customer");
+  await s.page
+    .getByRole("button", { name: "Open notifications", exact: true })
+    .waitFor();
   const topbarAfterRead = await s.page
     .getByRole("button", { name: /Open notifications/ })
     .getAttribute("aria-label");
-  // Characterize the existing independent topbar count; reloading refreshes it.
-  assert.match(topbarAfterRead, /unread/);
-  await s.page.reload();
+  assert.equal(
+    topbarAfterRead,
+    "Open notifications",
+    "Inbox and topbar count must agree without reload",
+  );
   await s.page
     .getByRole("button", { name: "Open notifications", exact: true })
     .waitFor();
@@ -332,8 +406,10 @@ try {
           "Real pages and API handlers; Auth/PostgREST/RPC transport simulated",
         calls,
         customerRequestCount: customerRequests.length,
-        supplierThreadReads: messageReads,
-        knownStaleTopbarAfterRead: topbarAfterRead,
+        supplierInitialThreadReads: initialMessageReads,
+        supplierTotalThreadReads: messageReads,
+        staleThreadResponseIgnored: true,
+        topbarAfterRead: topbarAfterRead,
         simulatedSessionRefreshAndLogout: "passed; live Auth not exercised",
         errors,
         unexpected,
@@ -343,7 +419,7 @@ try {
     ),
   );
   console.log(
-    `Connected browser workflow passed (${calls.length} API calls; Supplier initial thread reads: ${messageReads}).`,
+    `Connected browser workflow passed (${calls.length} API calls; Supplier initial thread reads: ${initialMessageReads}).`,
   );
 } catch (error) {
   for (const ctx of browser.contexts())

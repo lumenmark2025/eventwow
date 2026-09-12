@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
 import {
   Card,
@@ -91,6 +91,8 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
   const [messageBody, setMessageBody] = useState("");
   const [search, setSearch] = useState("");
 
+  const threadRequest = useRef(0);
+
   async function loadThreads() {
     if (!supplierId) return;
 
@@ -108,15 +110,6 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
 
       const rows = json?.threads || [];
       setThreads(rows);
-
-      const preferred = selectedThreadId || initialThreadId;
-      if (preferred) {
-        const exists = rows.some((x) => x.id === preferred);
-        if (exists) {
-          setSelectedThreadId(preferred);
-          await loadThread(preferred);
-        }
-      }
     } catch (e) {
       setErr(e?.message || "Failed to load threads");
     } finally {
@@ -127,6 +120,7 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
   async function loadThread(threadId) {
     if (!threadId) return;
 
+    const request = ++threadRequest.current;
     setThreadLoading(true);
     setErr("");
 
@@ -141,6 +135,7 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
         );
       }
 
+      if (request !== threadRequest.current) return;
       setThreadData({ thread: json.thread, messages: json.messages || [] });
       setThreads((prev) =>
         prev.map((row) =>
@@ -150,10 +145,11 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
         ),
       );
     } catch (e) {
+      if (request !== threadRequest.current) return;
       setThreadData(null);
       setErr(e?.message || "Failed to load thread");
     } finally {
-      setThreadLoading(false);
+      if (request === threadRequest.current) setThreadLoading(false);
     }
   }
 
@@ -164,9 +160,7 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
 
   useEffect(() => {
     if (!selectedThreadId) return;
-    if (threadData?.thread?.id === selectedThreadId) return;
     loadThread(selectedThreadId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedThreadId]);
 
   const filteredThreads = useMemo(() => {
@@ -277,7 +271,10 @@ export default function SupplierMessages({ supplierId, initialThreadId = "" }) {
             key: "refresh",
             label: "Refresh",
             variant: "secondary",
-            onClick: loadThreads,
+            onClick: () => {
+              loadThreads();
+              loadThread(selectedThreadId);
+            },
             disabled: threadsLoading || threadLoading || sending,
           },
         ]}

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { ensureQuotePublicLink } from "./_lib/quotePublicLinks.js";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -103,51 +104,7 @@ export default async function handler(req, res) {
       return res.status(409).json({ ok: false, error: "Cannot create link", details: "Quote must be sent first" });
     }
 
-    let link = null;
-    const { data: existing, error: linkErr } = await supabaseAdmin
-      .from("quote_public_links")
-      .select("id,token")
-      .eq("quote_id", quote.id)
-      .maybeSingle();
-
-    if (linkErr) {
-      return res.status(500).json({ ok: false, error: "Link lookup failed", details: linkErr.message });
-    }
-
-    if (existing) {
-      link = existing;
-    } else {
-      const { data: inserted, error: insertErr } = await supabaseAdmin
-        .from("quote_public_links")
-        .insert([
-          {
-            quote_id: quote.id,
-            created_by_user: userId,
-          },
-        ])
-        .select("id,token")
-        .single();
-
-      if (insertErr) {
-        const isConflict = insertErr.code === "23505";
-        if (!isConflict) {
-          return res.status(500).json({ ok: false, error: "Failed to create link", details: insertErr.message });
-        }
-
-        const { data: conflictExisting, error: conflictErr } = await supabaseAdmin
-          .from("quote_public_links")
-          .select("id,token")
-          .eq("quote_id", quote.id)
-          .maybeSingle();
-
-        if (conflictErr || !conflictExisting) {
-          return res.status(500).json({ ok: false, error: "Failed to load link", details: conflictErr?.message || "Unknown error" });
-        }
-        link = conflictExisting;
-      } else {
-        link = inserted;
-      }
-    }
+    const link = await ensureQuotePublicLink(supabaseAdmin, quote.id, userId);
 
     const { path, url } = buildPublicUrl(req, link.token);
 
@@ -159,6 +116,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("supplier-get-public-link crashed:", err);
-    return res.status(500).json({ ok: false, error: "Internal Server Error", details: String(err?.message || err) });
+    return res.status(err?.status || 500).json({ ok: false, error: "Failed to create link", details: String(err?.message || err) });
   }
 }

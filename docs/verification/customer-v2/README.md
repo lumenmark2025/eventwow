@@ -68,3 +68,5 @@ Live authentication/ownership enforcement, token validity and quote races, booki
 ## Subsequent workflow investigation
 
 See [Customer-to-Supplier verification](../customer-supplier-workflow/README.md) for connected real-handler/browser tests and two API fixes. Customer detail now excludes drafts, but live RLS still permits owned draft rows through direct Data API access; no policy change was made. Supplier history now returns the latest 500 messages. The send/link handoff, live integration and history/refresh limitations remain documented blockers or follow-up work there.
+
+The subsequent [security remediation](../customer-supplier-security/README.md) now includes a tested, unapplied policy migration and fixes the send/link handoff and Supplier badge/thread defects. Consult that record for current deployment requirements.

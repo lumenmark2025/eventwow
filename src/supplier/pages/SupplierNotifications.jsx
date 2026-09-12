@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
 import { Button, Feedback } from "../../components/workspace/AdminPrimitives";
@@ -6,6 +6,8 @@ import {
   DataTable,
   StatusBadge,
 } from "../../components/workspace/WorkspaceComponents";
+
+import { SupplierNotificationContext } from "../layout/SupplierNotificationContext";
 
 const DEFAULT_NOTIFICATION_LIMIT = 5;
 
@@ -19,6 +21,7 @@ function fmtDate(value) {
 }
 
 export default function SupplierNotifications() {
+  const publishUnreadCount = useContext(SupplierNotificationContext);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
   const [err, setErr] = useState("");
@@ -59,7 +62,9 @@ export default function SupplierNotifications() {
       }
 
       setRows(json?.notifications || []);
-      setUnreadCount(Number(json?.unread_count || 0));
+      const count = Number(json?.unread_count || 0);
+      setUnreadCount(count);
+      publishUnreadCount(count);
     } catch (e) {
       const message = String(e?.message || "");
       if (message.toLowerCase().includes("failed to fetch")) {
