@@ -1,0 +1,97 @@
+{
+  "fixtureLatencyMs": {
+    "normal": 200,
+    "slowPanel": 1200
+  },
+  "results": [
+    {
+      "role": "supplier",
+      "firstMetricMs": 2440,
+      "completeMs": 2440,
+      "trace": [
+        {
+          "path": "/rest/v1/user_profiles?select=role&user_id=eq.00000000-0000-4000-8000-000000000001",
+          "method": "GET",
+          "startMs": 128
+        },
+        {
+          "path": "/rest/v1/suppliers?select=id%2Cbusiness_name%2Ccredits_balance%2Cis_published%2Cstatus%2Conboarding_status%2Cadmin_notes&auth_user_id=eq.00000000-0000-4000-8000-000000000001",
+          "method": "GET",
+          "startMs": 346
+        },
+        {
+          "path": "/api/supplier-notifications?limit=1",
+          "method": "GET",
+          "startMs": 984
+        },
+        {
+          "path": "/rest/v1/credit_transactions?select=id%2Cchange%2Creason%2Ccreated_at&supplier_id=eq.supplier-1&order=created_at.desc&limit=20",
+          "method": "GET",
+          "startMs": 985
+        },
+        {
+          "path": "/rest/v1/enquiry_suppliers?select=id&supplier_id=eq.supplier-1",
+          "method": "HEAD",
+          "startMs": 986
+        },
+        {
+          "path": "/rest/v1/enquiry_suppliers?select=id&supplier_id=eq.supplier-1&supplier_status=not.in.%28declined%29",
+          "method": "HEAD",
+          "startMs": 986
+        },
+        {
+          "path": "/rest/v1/quotes?select=id&supplier_id=eq.supplier-1&status=in.%28sent%2Caccepted%2Cdeclined%2Cclosed%29",
+          "method": "HEAD",
+          "startMs": 987
+        },
+        {
+          "path": "/rest/v1/quotes?select=id&supplier_id=eq.supplier-1&status=eq.accepted",
+          "method": "HEAD",
+          "startMs": 988
+        },
+        {
+          "path": "/rest/v1/supplier_bookings?select=id&supplier_id=eq.supplier-1&event_date=gte.2026-09-12&status=in.%28draft%2Cconfirmed%29",
+          "method": "HEAD",
+          "startMs": 988
+        },
+        {
+          "path": "/api/supplier-performance",
+          "method": "GET",
+          "startMs": 1215
+        },
+        {
+          "path": "/api/supplier/ranking",
+          "method": "GET",
+          "startMs": 1215
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "firstMetricMs": 1925,
+      "completeMs": 1925,
+      "trace": [
+        {
+          "path": "/rest/v1/user_profiles?select=role&user_id=eq.00000000-0000-4000-8000-000000000001",
+          "method": "GET",
+          "startMs": 106
+        },
+        {
+          "path": "/api/admin-quote-funnel",
+          "method": "GET",
+          "startMs": 700
+        },
+        {
+          "path": "/api/admin-supplier-metrics",
+          "method": "GET",
+          "startMs": 701
+        },
+        {
+          "path": "/api/admin-credits-ledger?limit=8&offset=0",
+          "method": "GET",
+          "startMs": 702
+        }
+      ]
+    }
+  ]
+}

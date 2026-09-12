@@ -28,7 +28,11 @@ const percent = (value) =>
   value == null ? "—" : `${(Number(value) * 100).toFixed(1)}%`;
 
 export default function AdminDashboardPage() {
-  const [state, setState] = useState({ loading: true, data: [], errors: [] });
+  const [state, setState] = useState({
+    pending: endpoints.map(() => true),
+    data: [],
+    errors: [],
+  });
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
@@ -39,32 +43,40 @@ export default function AdminDashboardPage() {
         if (error) throw error;
         const token = data?.session?.access_token;
         if (!token) throw new Error("Not authenticated");
-        const results = await Promise.allSettled(
-          endpoints.map(async (url) => {
-            const response = await fetch(url, {
-              headers: { Authorization: `Bearer ${token}` },
-              signal: controller.signal,
-            });
-            const json = await response.json();
-            if (!response.ok)
-              throw new Error(json?.details || json?.error || "Request failed");
-            return json;
+        await Promise.all(
+          endpoints.map(async (url, index) => {
+            let value = null;
+            let message = "";
+            try {
+              const response = await fetch(url, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal: controller.signal,
+              });
+              const json = await response.json();
+              if (!response.ok)
+                throw new Error(
+                  json?.details || json?.error || "Request failed",
+                );
+              value = json;
+            } catch (error) {
+              message = error.message;
+            }
+            if (!controller.signal.aborted)
+              setState((previous) => {
+                const data = [...previous.data];
+                const errors = [...previous.errors];
+                const pending = [...previous.pending];
+                data[index] = value;
+                errors[index] = message;
+                pending[index] = false;
+                return { data, errors, pending };
+              });
           }),
         );
-        if (!controller.signal.aborted)
-          setState({
-            loading: false,
-            data: results.map((result) =>
-              result.status === "fulfilled" ? result.value : null,
-            ),
-            errors: results.map((result) =>
-              result.status === "rejected" ? result.reason.message : "",
-            ),
-          });
       } catch (error) {
         if (!controller.signal.aborted)
           setState({
-            loading: false,
+            pending: endpoints.map(() => false),
             data: [],
             errors: endpoints.map(() => error.message),
           });
@@ -74,10 +86,11 @@ export default function AdminDashboardPage() {
     return () => controller.abort();
   }, [refresh]);
   const retry = () => {
-    setState({ loading: true, data: [], errors: [] });
+    setState({ pending: endpoints.map(() => true), data: [], errors: [] });
     setRefresh((value) => value + 1);
   };
-  const { loading, data, errors } = state;
+  const { pending, data, errors } = state;
+  const loading = pending.some(Boolean);
   const funnel = data[0]?.totals;
   const suppliers = data[1]?.rows;
   const ledger = data[2]?.rows;
@@ -111,7 +124,7 @@ export default function AdminDashboardPage() {
           hint="Last 30 days"
           tone="purple"
           icon={Store}
-          loading={loading}
+          loading={pending[1]}
         />
         <MetricCard
           label="Credits issued"
@@ -119,7 +132,7 @@ export default function AdminDashboardPage() {
           hint="From the latest 8 ledger entries"
           tone="green"
           icon={CreditCard}
-          loading={loading}
+          loading={pending[2]}
         />
         <MetricCard
           label="Quotes sent"
@@ -127,7 +140,7 @@ export default function AdminDashboardPage() {
           hint="Last 30 days"
           tone="blue"
           icon={Send}
-          loading={loading}
+          loading={pending[0]}
         />
         <MetricCard
           label="Acceptance rate"
@@ -135,14 +148,14 @@ export default function AdminDashboardPage() {
           hint="Last 30 days"
           tone="orange"
           icon={ChartNoAxesCombined}
-          loading={loading}
+          loading={pending[0]}
         />
       </div>
       <div className="ew-dashboard-grid">
         <DashboardCard title="Supplier performance" to="/admin/performance">
           <DataTable
             caption="Supplier acceptance leaderboard, last 30 days"
-            loading={loading}
+            loading={pending[1]}
             error={errors[1]}
             onRetry={retry}
             rows={leaderboard}
@@ -172,7 +185,7 @@ export default function AdminDashboardPage() {
           to="/admin/credits-ledger"
         >
           <ActivityList
-            loading={loading}
+            loading={pending[2]}
             error={errors[2]}
             onRetry={retry}
             items={(ledger || []).map((row) => ({
@@ -203,7 +216,7 @@ export default function AdminDashboardPage() {
             ) : (
               <DataTable
                 caption="Quote outcomes in the last 30 days"
-                loading={loading}
+                loading={pending[0]}
                 rows={
                   funnel
                     ? [

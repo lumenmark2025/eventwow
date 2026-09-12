@@ -64,13 +64,24 @@ export default async function handler(req, res) {
       return res.status(404).json({ ok: false, error: "Supplier not found" });
     }
 
-    const perfResp = await admin
-      .from("supplier_performance_30d")
-      .select(
-        "supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at"
-      )
-      .eq("supplier_id", supplier.id)
-      .maybeSingle();
+    // These reads depend on the publication gate, but not on each other.
+    const [perfResp, reviewStatsResp, reviewsResp] = await Promise.all([
+      admin
+        .from("supplier_performance_30d")
+        .select(
+          "supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at"
+        )
+        .eq("supplier_id", supplier.id)
+        .maybeSingle(),
+      admin.from("supplier_review_stats").select("average_rating,review_count").eq("supplier_id", supplier.id).maybeSingle(),
+      admin
+        .from("supplier_reviews")
+        .select("rating,review_text,reviewer_name,created_at")
+        .eq("supplier_id", supplier.id)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
 
     if (perfResp.error) {
       const code = String(perfResp.error.code || "");
@@ -85,16 +96,6 @@ export default async function handler(req, res) {
       }
     }
 
-    const [reviewStatsResp, reviewsResp] = await Promise.all([
-      admin.from("supplier_review_stats").select("average_rating,review_count").eq("supplier_id", supplier.id).maybeSingle(),
-      admin
-        .from("supplier_reviews")
-        .select("rating,review_text,reviewer_name,created_at")
-        .eq("supplier_id", supplier.id)
-        .eq("is_approved", true)
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
     if (reviewStatsResp.error) {
       return res.status(500).json({
         ok: false,

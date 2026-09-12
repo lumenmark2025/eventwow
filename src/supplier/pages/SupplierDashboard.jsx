@@ -61,6 +61,7 @@ export default function SupplierDashboard({ supplier }) {
   const [verificationErr, setVerificationErr] = useState("");
 
   const [loading, setLoading] = useState(true);
+  const [servicesLoading, setServicesLoading] = useState(true);
   const [err, setErr] = useState("");
 
   const [stats, setStats] = useState({
@@ -189,6 +190,7 @@ export default function SupplierDashboard({ supplier }) {
 
   useEffect(() => {
     if (!supplierId) return;
+    let active = true;
 
     (async () => {
       setLoading(true);
@@ -239,6 +241,8 @@ export default function SupplierDashboard({ supplier }) {
             .in("status", ["draft", "confirmed"]),
         ]);
 
+        if (!active) return;
+
         function extract(result, label) {
           if (result.status !== "fulfilled") {
             console.error(
@@ -281,9 +285,27 @@ export default function SupplierDashboard({ supplier }) {
             ? Number(bookingsResp.count || 0)
             : null,
         });
+      } catch (ex) {
+        if (active) setErr(ex?.message || "Failed to load dashboard.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [supplierId, supplierCreditsBalance]);
 
+  useEffect(() => {
+    if (!supplierId) return;
+    let active = true;
+    // Optional service panels can load alongside the dashboard counts.
+    (async () => {
+      setServicesLoading(true);
+      try {
         const { data: sessionData, error: sessionErr } =
           await supabase.auth.getSession();
+        if (!active) return;
         if (sessionErr) throw sessionErr;
         const accessToken = sessionData?.session?.access_token;
         if (accessToken) {
@@ -306,6 +328,7 @@ export default function SupplierDashboard({ supplier }) {
               return json;
             }),
           ]);
+          if (!active) return;
           setPerformance(
             perfResult.status === "fulfilled"
               ? perfResult.value?.performance || null
@@ -332,11 +355,14 @@ export default function SupplierDashboard({ supplier }) {
           );
         }
       } catch (ex) {
-        setErr(ex?.message || "Failed to load dashboard.");
+        if (active) setErr(ex?.message || "Failed to load dashboard.");
       } finally {
-        setLoading(false);
+        if (active) setServicesLoading(false);
       }
     })();
+    return () => {
+      active = false;
+    };
   }, [supplierId, supplierCreditsBalance]);
 
   useEffect(() => {
@@ -377,7 +403,7 @@ export default function SupplierDashboard({ supplier }) {
             label: "Refresh",
             variant: "secondary",
             onClick: () => window.location.reload(),
-            disabled: loading,
+            disabled: loading || servicesLoading,
           },
         ]}
       />
@@ -495,14 +521,12 @@ export default function SupplierDashboard({ supplier }) {
           <ActivityList
             loading={loading}
             error={creditHistoryError}
-            items={creditHistory
-              .slice(0, 8)
-              .map((row) => ({
-                id: row.id,
-                title: row.reason,
-                when: new Date(row.created_at).toLocaleDateString(),
-                value: row.change > 0 ? `+${row.change}` : row.change,
-              }))}
+            items={creditHistory.slice(0, 8).map((row) => ({
+              id: row.id,
+              title: row.reason,
+              when: new Date(row.created_at).toLocaleDateString(),
+              value: row.change > 0 ? `+${row.change}` : row.change,
+            }))}
           />
         </DashboardCard>
         <DashboardCard title="Listing status">
@@ -576,7 +600,7 @@ export default function SupplierDashboard({ supplier }) {
               <div>
                 <dt className="ew-muted">Smoothed acceptance</dt>
                 <dd className="font-semibold">
-                  {!loading && numeric(ranking?.smoothed_acceptance)
+                  {!servicesLoading && numeric(ranking?.smoothed_acceptance)
                     ? `${Math.round(Number(ranking.smoothed_acceptance) * 100)}%`
                     : "—"}
                 </dd>
@@ -584,7 +608,8 @@ export default function SupplierDashboard({ supplier }) {
               <div>
                 <dt className="ew-muted">Typical reply</dt>
                 <dd className="font-semibold">
-                  {!loading && numeric(performance?.typicalResponseHours)
+                  {!servicesLoading &&
+                  numeric(performance?.typicalResponseHours)
                     ? `~${Number(performance.typicalResponseHours).toFixed(Number(performance.typicalResponseHours) < 10 ? 1 : 0)}h`
                     : "—"}
                 </dd>
@@ -592,13 +617,13 @@ export default function SupplierDashboard({ supplier }) {
               <div>
                 <dt className="ew-muted">Base quality</dt>
                 <dd className="font-semibold">
-                  {loading ? "—" : score(ranking?.base_quality)}
+                  {servicesLoading ? "—" : score(ranking?.base_quality)}
                 </dd>
               </div>
               <div>
                 <dt className="ew-muted">Activity</dt>
                 <dd>
-                  {loading
+                  {servicesLoading
                     ? "—"
                     : ranking?.activity_label || "No recent activity data"}
                 </dd>
@@ -606,7 +631,7 @@ export default function SupplierDashboard({ supplier }) {
               <div>
                 <dt className="ew-muted">Response score</dt>
                 <dd className="font-semibold">
-                  {loading ? "—" : score(ranking?.response_score)}
+                  {servicesLoading ? "—" : score(ranking?.response_score)}
                 </dd>
               </div>
             </dl>
@@ -617,7 +642,7 @@ export default function SupplierDashboard({ supplier }) {
                 ))}
               </ul>
             ) : (
-              !loading &&
+              !servicesLoading &&
               !rankingError && (
                 <p className="ew-form-help">No performance tips available.</p>
               )

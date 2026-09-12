@@ -187,13 +187,26 @@ export default async function handler(req, res) {
     }
 
     const supplierIds = supplierRows.map((s) => s.id);
-    const imagesResp =
+    // Independent batch reads; preserve the error precedence below.
+    const [imagesResp, perfResp, reviewStatsResp] = await Promise.all([
       supplierIds.length > 0
-        ? await admin
+        ? admin
             .from("supplier_images")
             .select("id,supplier_id,type,path,sort_order,caption,created_at")
             .in("supplier_id", supplierIds)
-        : { data: [], error: null };
+        : { data: [], error: null },
+      supplierIds.length > 0
+        ? admin
+            .from("supplier_performance_30d")
+            .select(
+              "supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at"
+            )
+            .in("supplier_id", supplierIds)
+        : { data: [], error: null },
+      supplierIds.length > 0
+        ? admin.from("supplier_review_stats").select("supplier_id,average_rating,review_count").in("supplier_id", supplierIds)
+        : { data: [], error: null },
+    ]);
 
     if (imagesResp.error) {
       return res.status(500).json({ ok: false, error: "Failed to load supplier images", details: imagesResp.error.message });
@@ -204,16 +217,6 @@ export default async function handler(req, res) {
       if (!imagesBySupplier.has(img.supplier_id)) imagesBySupplier.set(img.supplier_id, []);
       imagesBySupplier.get(img.supplier_id).push(img);
     }
-
-    const perfResp =
-      supplierIds.length > 0
-        ? await admin
-            .from("supplier_performance_30d")
-            .select(
-              "supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at"
-            )
-            .in("supplier_id", supplierIds)
-        : { data: [], error: null };
 
     if (perfResp.error) {
       const code = String(perfResp.error.code || "");
@@ -232,10 +235,6 @@ export default async function handler(req, res) {
       ((perfResp.data || [])).map((row) => [row.supplier_id, buildPerformanceSignals(row)])
     );
 
-    const reviewStatsResp =
-      supplierIds.length > 0
-        ? await admin.from("supplier_review_stats").select("supplier_id,average_rating,review_count").in("supplier_id", supplierIds)
-        : { data: [], error: null };
     if (reviewStatsResp.error) {
       return res.status(500).json({
         ok: false,

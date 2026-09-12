@@ -1,0 +1,133 @@
+{
+  "chunks": [
+    {
+      "source": "_WorkspaceShell-BZ4SlOtT.js",
+      "file": "assets/WorkspaceShell-BZ4SlOtT.js",
+      "bytes": 56890,
+      "gzipBytes": 20257,
+      "lazy": false
+    },
+    {
+      "source": "index.html",
+      "file": "assets/index-Djt9oxa3.js",
+      "bytes": 436435,
+      "gzipBytes": 128085,
+      "lazy": false
+    },
+    {
+      "source": "src/components/supplier/BookingsCalendar.jsx",
+      "file": "assets/BookingsCalendar-VBq_vYGj.js",
+      "bytes": 216367,
+      "gzipBytes": 66834,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/admin/DashboardPage.jsx",
+      "file": "assets/DashboardPage-CjTgnlas.js",
+      "bytes": 4309,
+      "gzipBytes": 1904,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/admin/EnquiriesPage.jsx",
+      "file": "assets/EnquiriesPage-BrZbjWqn.js",
+      "bytes": 22494,
+      "gzipBytes": 6239,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/admin/SuppliersPage.jsx",
+      "file": "assets/SuppliersPage-ci_FN1Ts.js",
+      "bytes": 35275,
+      "gzipBytes": 8482,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/customer/DashboardPage.jsx",
+      "file": "assets/DashboardPage-CrT2yDWv.js",
+      "bytes": 1700,
+      "gzipBytes": 736,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/customer/EnquiryDetailPage.jsx",
+      "file": "assets/EnquiryDetailPage-Dpz2XjIT.js",
+      "bytes": 10430,
+      "gzipBytes": 3395,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/marketing/HomePage.jsx",
+      "file": "assets/HomePage-7ZRnLkMJ.js",
+      "bytes": 5698,
+      "gzipBytes": 2421,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/marketing/SupplierProfilePage.jsx",
+      "file": "assets/SupplierProfilePage-CVKsljRX.js",
+      "bytes": 5135,
+      "gzipBytes": 2086,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/marketing/SuppliersPage.jsx",
+      "file": "assets/SuppliersPage-DPlgjUwa.js",
+      "bytes": 4065,
+      "gzipBytes": 1868,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/marketing/VenueProfilePage.jsx",
+      "file": "assets/VenueProfilePage-BgLVqRhD.js",
+      "bytes": 3698,
+      "gzipBytes": 1640,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/marketing/VenuesPage.jsx",
+      "file": "assets/VenuesPage-C-HBTmzd.js",
+      "bytes": 2642,
+      "gzipBytes": 1350,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/supplier/BookingsPage.jsx",
+      "file": "assets/BookingsPage-H7wmP7G1.js",
+      "bytes": 23878,
+      "gzipBytes": 6375,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/supplier/DashboardPage.jsx",
+      "file": "assets/DashboardPage-4sgr1qC2.js",
+      "bytes": 11811,
+      "gzipBytes": 4103,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/supplier/EnquiriesPage.jsx",
+      "file": "assets/EnquiriesPage-mS9OBAPP.js",
+      "bytes": 6565,
+      "gzipBytes": 2384,
+      "lazy": true
+    },
+    {
+      "source": "src/pages/supplier/QuotesPage.jsx",
+      "file": "assets/QuotesPage-BrOLxKSi.js",
+      "bytes": 27711,
+      "gzipBytes": 7905,
+      "lazy": true
+    }
+  ],
+  "images": [
+    {
+      "file": "public/images/event-atmosphere-640.webp",
+      "bytes": 100486
+    },
+    {
+      "file": "public/images/event-atmosphere.webp",
+      "bytes": 319444
+    }
+  ]
+}

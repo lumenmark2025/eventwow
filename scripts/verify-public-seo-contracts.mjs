@@ -1,3 +1,7 @@
+import {
+  performanceApiExclusions,
+  verifyPerformanceApiContracts,
+} from "./fixtures/performance-contracts.mjs";
 import { assertAppContract } from "./fixtures/assert-app-contract.mjs";
 /* global process, console */
 // Compare presentation-only changes with the last reviewed profile migration.
@@ -103,6 +107,7 @@ assert.equal(
       "src/lib/marketingMeta.js",
       "src/utils/slugify.js",
       "vercel.json",
+      ...performanceApiExclusions,
     ],
     { encoding: "utf8" },
   ),
@@ -399,3 +404,5 @@ writeFileSync(
 console.log(report.checks.join("\n"));
 
 assertAppContract(baseline);
+
+verifyPerformanceApiContracts();

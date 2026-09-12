@@ -39,21 +39,22 @@ export default async function handler(req, res) {
 
     const venue = venueResp.data;
 
-    const imagesResp = await admin
-      .from("venue_images")
-      .select("id,venue_id,type,path,caption,sort_order,created_at")
-      .eq("venue_id", venue.id)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
+    const [imagesResp, linksResp] = await Promise.all([
+      admin
+        .from("venue_images")
+        .select("id,venue_id,type,path,caption,sort_order,created_at")
+        .eq("venue_id", venue.id)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
+      admin
+        .from("venue_suppliers_link")
+        .select("supplier_id")
+        .eq("venue_id", venue.id),
+    ]);
 
     if (imagesResp.error) {
       return res.status(500).json({ ok: false, error: "Failed to load venue images", details: imagesResp.error.message });
     }
-
-    const linksResp = await admin
-      .from("venue_suppliers_link")
-      .select("supplier_id")
-      .eq("venue_id", venue.id);
 
     if (linksResp.error) {
       return res.status(500).json({ ok: false, error: "Failed to load linked suppliers", details: linksResp.error.message });
@@ -76,7 +77,7 @@ export default async function handler(req, res) {
     const publicSuppliers = suppliersResp.data || [];
     const publicIds = publicSuppliers.map((s) => s.id);
 
-    const [supplierImagesResp, perfResp] = await Promise.all([
+    const [supplierImagesResp, perfResp, reviewStatsResp] = await Promise.all([
       publicIds.length > 0
         ? admin
             .from("supplier_images")
@@ -89,14 +90,13 @@ export default async function handler(req, res) {
             .select("supplier_id,invites_count,quotes_sent_count,quotes_accepted_count,acceptance_rate,response_time_seconds_median,last_quote_sent_at,last_active_at")
             .in("supplier_id", publicIds)
         : { data: [], error: null },
-    ]);
-    const reviewStatsResp =
       publicIds.length > 0
-        ? await admin
+        ? admin
             .from("supplier_review_stats")
             .select("supplier_id,average_rating,review_count")
             .in("supplier_id", publicIds)
-        : { data: [], error: null };
+        : { data: [], error: null },
+    ]);
 
     if (supplierImagesResp.error) {
       return res.status(500).json({ ok: false, error: "Failed to load supplier images", details: supplierImagesResp.error.message });

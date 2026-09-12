@@ -1,3 +1,7 @@
+import {
+  performanceApiExclusions,
+  verifyPerformanceApiContracts,
+} from "./fixtures/performance-contracts.mjs";
 /* global process, console */
 // Actual routes and static renderer output; isolated transport, no live writes.
 import assert from "node:assert/strict";
@@ -52,7 +56,16 @@ assertAppContract(baseline);
 assert.equal(
   execFileSync(
     "git",
-    ["diff", baseline, "--", "api/", "supabase/", "src/lib/", "vercel.json"],
+    [
+      "diff",
+      baseline,
+      "--",
+      "api/",
+      "supabase/",
+      "src/lib/",
+      "vercel.json",
+      ...performanceApiExclusions,
+    ],
     { encoding: "utf8" },
   ),
   "",
@@ -325,3 +338,5 @@ await writeFile(
 console.log(
   `Final sweep: ${report.length} responsive/axe checks; content/meta/routes, FAQ keyboard, email handoff, global loading/error/reload, not-found/redirect, JS-disabled static home/profile checks passed.`,
 );
+
+verifyPerformanceApiContracts();

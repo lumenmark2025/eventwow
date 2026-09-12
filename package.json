@@ -22,7 +22,8 @@
     "test:public-journey": "node scripts/verify-public-journey-contracts.mjs && node scripts/verify-public-journey-v2.mjs",
     "test:prerender-build": "node scripts/verify-prerender-build.mjs",
     "test:final-sweep": "node scripts/verify-public-seo-contracts.mjs && node scripts/verify-final-v2-sweep.mjs",
-    "test:auth": "node scripts/verify-auth-contracts.mjs && node scripts/verify-auth-v2.mjs"
+    "test:auth": "node scripts/verify-auth-contracts.mjs && node scripts/verify-auth-v2.mjs",
+    "test:performance": "node scripts/verify-performance-bundles.mjs && node scripts/verify-performance-api.mjs && node scripts/verify-performance-browser.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

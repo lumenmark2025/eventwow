@@ -1,0 +1,97 @@
+{
+  "fixtureLatencyMs": {
+    "normal": 200,
+    "slowPanel": 1200
+  },
+  "results": [
+    {
+      "role": "supplier",
+      "firstMetricMs": 1247,
+      "completeMs": 2220,
+      "trace": [
+        {
+          "path": "/rest/v1/user_profiles?select=role&user_id=eq.00000000-0000-4000-8000-000000000001",
+          "method": "GET",
+          "startMs": 124
+        },
+        {
+          "path": "/rest/v1/suppliers?select=id%2Cbusiness_name%2Ccredits_balance%2Cis_published%2Cstatus%2Conboarding_status%2Cadmin_notes&auth_user_id=eq.00000000-0000-4000-8000-000000000001",
+          "method": "GET",
+          "startMs": 341
+        },
+        {
+          "path": "/api/supplier-performance",
+          "method": "GET",
+          "startMs": 1008
+        },
+        {
+          "path": "/api/supplier/ranking",
+          "method": "GET",
+          "startMs": 1008
+        },
+        {
+          "path": "/api/supplier-notifications?limit=1",
+          "method": "GET",
+          "startMs": 1008
+        },
+        {
+          "path": "/rest/v1/credit_transactions?select=id%2Cchange%2Creason%2Ccreated_at&supplier_id=eq.supplier-1&order=created_at.desc&limit=20",
+          "method": "GET",
+          "startMs": 1012
+        },
+        {
+          "path": "/rest/v1/enquiry_suppliers?select=id&supplier_id=eq.supplier-1",
+          "method": "HEAD",
+          "startMs": 1013
+        },
+        {
+          "path": "/rest/v1/enquiry_suppliers?select=id&supplier_id=eq.supplier-1&supplier_status=not.in.%28declined%29",
+          "method": "HEAD",
+          "startMs": 1013
+        },
+        {
+          "path": "/rest/v1/quotes?select=id&supplier_id=eq.supplier-1&status=in.%28sent%2Caccepted%2Cdeclined%2Cclosed%29",
+          "method": "HEAD",
+          "startMs": 1024
+        },
+        {
+          "path": "/rest/v1/quotes?select=id&supplier_id=eq.supplier-1&status=eq.accepted",
+          "method": "HEAD",
+          "startMs": 1024
+        },
+        {
+          "path": "/rest/v1/supplier_bookings?select=id&supplier_id=eq.supplier-1&event_date=gte.2026-09-12&status=in.%28draft%2Cconfirmed%29",
+          "method": "HEAD",
+          "startMs": 1025
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "firstMetricMs": 958,
+      "completeMs": 1931,
+      "trace": [
+        {
+          "path": "/rest/v1/user_profiles?select=role&user_id=eq.00000000-0000-4000-8000-000000000001",
+          "method": "GET",
+          "startMs": 109
+        },
+        {
+          "path": "/api/admin-quote-funnel",
+          "method": "GET",
+          "startMs": 721
+        },
+        {
+          "path": "/api/admin-supplier-metrics",
+          "method": "GET",
+          "startMs": 721
+        },
+        {
+          "path": "/api/admin-credits-ledger?limit=8&offset=0",
+          "method": "GET",
+          "startMs": 722
+        }
+      ]
+    }
+  ]
+}

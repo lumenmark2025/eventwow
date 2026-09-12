@@ -1,0 +1,201 @@
+{
+  "simulatedQueryDelayMs": 50,
+  "results": [
+    {
+      "route": "/api/public-suppliers",
+      "queries": 4,
+      "beforeMs": 255,
+      "afterMs": 105,
+      "beforePeak": 1,
+      "afterPeak": 3,
+      "beforeTrace": [
+        {
+          "table": "suppliers",
+          "startMs": 34.877206,
+          "endMs": 98.685338
+        },
+        {
+          "table": "supplier_images",
+          "startMs": 100.585372,
+          "endMs": 151.286923
+        },
+        {
+          "table": "supplier_performance_30d",
+          "startMs": 151.706994,
+          "endMs": 202.259963
+        },
+        {
+          "table": "supplier_review_stats",
+          "startMs": 202.78811399999998,
+          "endMs": 253.445658
+        }
+      ],
+      "afterTrace": [
+        {
+          "table": "suppliers",
+          "startMs": 1.8176109999999994,
+          "endMs": 52.59570200000002
+        },
+        {
+          "table": "supplier_performance_30d",
+          "startMs": 53.274347000000034,
+          "endMs": 103.807884
+        },
+        {
+          "table": "supplier_review_stats",
+          "startMs": 53.35869700000001,
+          "endMs": 104.24526600000002
+        },
+        {
+          "table": "supplier_images",
+          "startMs": 53.40530700000005,
+          "endMs": 104.63889
+        }
+      ]
+    },
+    {
+      "route": "/api/public-supplier",
+      "queries": 5,
+      "beforeMs": 203,
+      "afterMs": 154,
+      "beforePeak": 2,
+      "afterPeak": 3,
+      "beforeTrace": [
+        {
+          "table": "suppliers",
+          "startMs": 0.7345060000000103,
+          "endMs": 50.374739999999974
+        },
+        {
+          "table": "supplier_images",
+          "startMs": 50.64075200000002,
+          "endMs": 100.97502399999996
+        },
+        {
+          "table": "supplier_performance_30d",
+          "startMs": 101.210059,
+          "endMs": 151.53853600000002
+        },
+        {
+          "table": "supplier_reviews",
+          "startMs": 151.81453899999997,
+          "endMs": 202.160031
+        },
+        {
+          "table": "supplier_review_stats",
+          "startMs": 151.85399499999994,
+          "endMs": 202.34512499999994
+        }
+      ],
+      "afterTrace": [
+        {
+          "table": "suppliers",
+          "startMs": 0.7153200000000197,
+          "endMs": 51.22786599999995
+        },
+        {
+          "table": "supplier_images",
+          "startMs": 51.435491999999954,
+          "endMs": 101.78375399999993
+        },
+        {
+          "table": "supplier_review_stats",
+          "startMs": 102.33745499999998,
+          "endMs": 152.8216
+        },
+        {
+          "table": "supplier_reviews",
+          "startMs": 102.38815299999999,
+          "endMs": 153.089475
+        },
+        {
+          "table": "supplier_performance_30d",
+          "startMs": 102.42590899999993,
+          "endMs": 153.33007199999997
+        }
+      ]
+    },
+    {
+      "route": "/api/public-venue",
+      "queries": 7,
+      "beforeMs": 305,
+      "afterMs": 204,
+      "beforePeak": 2,
+      "afterPeak": 3,
+      "beforeTrace": [
+        {
+          "table": "venues",
+          "startMs": 0.7511650000001282,
+          "endMs": 50.439760000000206
+        },
+        {
+          "table": "venue_images",
+          "startMs": 50.654691000000184,
+          "endMs": 100.98156900000004
+        },
+        {
+          "table": "venue_suppliers_link",
+          "startMs": 101.20379600000001,
+          "endMs": 151.500808
+        },
+        {
+          "table": "suppliers",
+          "startMs": 151.7946800000002,
+          "endMs": 202.21764300000018
+        },
+        {
+          "table": "supplier_performance_30d",
+          "startMs": 202.72001,
+          "endMs": 253.25686200000018
+        },
+        {
+          "table": "supplier_images",
+          "startMs": 202.7709400000001,
+          "endMs": 253.5815980000002
+        },
+        {
+          "table": "supplier_review_stats",
+          "startMs": 253.7790460000001,
+          "endMs": 304.20522200000005
+        }
+      ],
+      "afterTrace": [
+        {
+          "table": "venues",
+          "startMs": 0.7445729999999458,
+          "endMs": 51.2867940000001
+        },
+        {
+          "table": "venue_suppliers_link",
+          "startMs": 51.55697000000009,
+          "endMs": 101.9533570000001
+        },
+        {
+          "table": "venue_images",
+          "startMs": 51.585195999999996,
+          "endMs": 102.27587900000003
+        },
+        {
+          "table": "suppliers",
+          "startMs": 102.64610700000003,
+          "endMs": 152.96245599999997
+        },
+        {
+          "table": "supplier_performance_30d",
+          "startMs": 153.34147800000005,
+          "endMs": 203.70533799999998
+        },
+        {
+          "table": "supplier_review_stats",
+          "startMs": 153.39502900000002,
+          "endMs": 203.85805700000014
+        },
+        {
+          "table": "supplier_images",
+          "startMs": 153.42873699999996,
+          "endMs": 203.98627499999998
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,7 @@
+import {
+  performanceApiExclusions,
+  verifyPerformanceApiContracts,
+} from "./fixtures/performance-contracts.mjs";
 import { assertAppContract } from "./fixtures/assert-app-contract.mjs";
 /* global console */
 import assert from "node:assert/strict";
@@ -91,12 +95,28 @@ for (const file of files) {
   );
 }
 assert.equal(
-  execFileSync("git", ["diff", baseline, "--", "api", "supabase", "src/lib"], {
-    encoding: "utf8",
-  }),
+  execFileSync(
+    "git",
+    [
+      "diff",
+      baseline,
+      "--",
+      "api",
+      "supabase",
+      "src/lib",
+      ...performanceApiExclusions,
+    ],
+    {
+      encoding: "utf8",
+    },
+  ),
   "",
   "Backend, guards, routes and token contracts unchanged",
 );
-console.log("PASS API, RLS, token, route and library source unchanged");
+console.log(
+  "PASS Private API, RLS, token, route and library source unchanged; public read scheduling verified separately",
+);
 
 assertAppContract(baseline);
+
+verifyPerformanceApiContracts();
