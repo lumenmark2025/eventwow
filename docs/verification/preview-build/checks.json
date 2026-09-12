@@ -14,5 +14,28 @@
     "matches": 0
   },
   "live_supabase": false,
-  "runtime_schema_rls_api_changes": false
+  "runtime_schema_rls_api_changes": false,
+  "dependency_install_repair": {
+    "removed": [
+      "-",
+      "g",
+      "npm"
+    ],
+    "npm_version": "11.8.0",
+    "node_version": "22.23.2",
+    "workspace_install": "passed",
+    "fresh_install": "passed; lockfile unchanged",
+    "retained_package_identity": "all versions/resolved URLs/integrities unchanged",
+    "removed_lock_entries": 164,
+    "restored_optional_platform_entries": 53,
+    "name_validation": {
+      "checkedNames": 1057,
+      "malformedNames": [],
+      "lockedPackages": 368
+    },
+    "vite": "passed",
+    "prerender_build_cases": 13,
+    "final_sweep_checks": 40,
+    "new_lint_diagnostics": 0
+  }
 }

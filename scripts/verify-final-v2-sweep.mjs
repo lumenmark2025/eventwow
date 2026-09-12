@@ -52,21 +52,48 @@ assertAppContract(baseline);
 assert.equal(
   execFileSync(
     "git",
-    [
-      "diff",
-      baseline,
-      "--",
-      "api/",
-      "supabase/",
-      "src/lib/",
-      "vercel.json",
-      "package-lock.json",
-    ],
+    ["diff", baseline, "--", "api/", "supabase/", "src/lib/", "vercel.json"],
     { encoding: "utf8" },
   ),
   "",
   "Backend, SEO helpers, rewrite and dependency contracts",
 );
+// The install repair removes three unused roots and npm's bundled tree.
+// Preserve the identity of every retained package while allowing npm to restore
+// platform-specific optional entries during clean lockfile regeneration.
+const oldLock = JSON.parse(
+  execFileSync("git", ["show", `${baseline}:package-lock.json`], {
+    encoding: "utf8",
+  }),
+);
+const currentLock = JSON.parse(await readFile("package-lock.json", "utf8"));
+const manifest = JSON.parse(await readFile("package.json", "utf8"));
+for (const name of ["-", "g", "npm"]) {
+  delete oldLock.packages[""].dependencies[name];
+  assert.equal(name in manifest.dependencies, false);
+  assert.equal(`node_modules/${name}` in currentLock.packages, false);
+}
+assert.deepEqual(currentLock.packages[""], oldLock.packages[""]);
+assert.deepEqual(manifest.dependencies, currentLock.packages[""].dependencies);
+for (const [name, previous] of Object.entries(oldLock.packages)) {
+  if (
+    !name ||
+    ["node_modules/-", "node_modules/g", "node_modules/npm"].includes(name) ||
+    name.startsWith("node_modules/npm/")
+  )
+    continue;
+  const current = currentLock.packages[name];
+  assert.ok(current, `${name}: retained dependency`);
+  for (const key of ["version", "resolved", "integrity"])
+    assert.equal(current[key], previous[key], `${name}: ${key}`);
+}
+for (const [name, entry] of Object.entries(currentLock.packages)) {
+  if (name in oldLock.packages) continue;
+  assert.ok(
+    entry.optional && entry.os?.length,
+    `${name}: restored optional platform package`,
+  );
+}
 const browser = await chromium.launch();
 const common = workspaceFixtures(browser, base);
 async function capture(page, name) {

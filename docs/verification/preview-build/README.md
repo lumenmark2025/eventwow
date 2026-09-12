@@ -58,3 +58,22 @@ A skipped Preview has the normal client-rendered Vite application rather than ge
 After push, inspect the Vercel deployment for this branch's exact commit: target Preview, successful Vite output, the skip line when credentials are absent, and final Ready status. Confirm the deployed URL loads and inspect browser/runtime errors with correctly scoped public/runtime configuration. Existing rewrite/deep-link gaps and live auth/quote/RLS staging requirements from the [final sweep](../final-v2-sweep/README.md) remain separate from this build fix.
 
 References: [Vercel system environment variables](https://vercel.com/docs/environment-variables/system-environment-variables), [Vite environment exposure](https://vite.dev/guide/env-and-mode). No Supabase SDK/configuration upgrade is included.
+
+## Dependency-install repair
+
+The Vercel log supplied after the build-policy change showed failure **before Vite**: npm rejected the direct `"-": "^0.0.1"` dependency with `EINVALIDPACKAGENAME`. Reproduced that exact failure using npm 11.8.0 in an isolated directory.
+
+Removed `-`, `g` and `npm` from the application dependencies after checking source, API, scripts and build configuration for imports/requires or runtime use. `g` is an unused globalizing utility; the `npm` package is an unused application dependency. Build scripts continue to invoke the environment-provided npm CLI normally. No legitimate application dependency was replaced.
+
+Regenerated `package-lock.json` through npm 11.8.0, then ran `npm install` in the workspace and again in a fresh temporary directory. The fresh install succeeds and leaves the regenerated lockfile byte-identical. npm removed the three unused roots and npm's bundled subtree (164 lock entries), and restored 53 platform-specific optional entries. Every retained package preserves its version, resolved URL and integrity hash; metadata/platform bookkeeping accounts for the wider lockfile diff.
+
+Verification:
+
+- npm 11.8.0, Node 22.23.2: workspace and fresh-directory `npm install` passed.
+- npm's package-name validator checked 1,057 references across both manifests and all locked package/dependency names: no malformed names.
+- Vite compile passed; entry remains 436.52 kB / 128.11 kB gzip.
+- `test:prerender-build`: all 13 cases passed, including successful credentialless Preview, strict Production failure, fixture-backed Production generation and client-secret canary checks.
+- `test:final-sweep`: source/static checks and all 40 responsive/axe checks passed. Its dependency assertion now permits the explicitly removed roots and restored platform optionals, while retaining identity checks for every other locked package.
+- Lint: 428 existing errors / 12 warnings, zero new diagnostics.
+
+The earlier environment-aware prerender fix remains unchanged. Dependency installation no longer fails on the malformed `-` entry; actual Vercel status must still be checked for the resulting commit.
