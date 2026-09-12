@@ -1,0 +1,221 @@
+{
+  "results": [
+    {
+      "name": "request",
+      "width": 360,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-request",
+      "width": 360,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-list",
+      "width": 360,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-compare",
+      "width": 360,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote-message",
+      "width": 360,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote",
+      "width": 360,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "booking",
+      "width": 360,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "request",
+      "width": 768,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-request",
+      "width": 768,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-list",
+      "width": 768,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-compare",
+      "width": 768,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote-message",
+      "width": 768,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote",
+      "width": 768,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "booking",
+      "width": 768,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "request",
+      "width": 1024,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-request",
+      "width": 1024,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-list",
+      "width": 1024,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-compare",
+      "width": 1024,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote-message",
+      "width": 1024,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote",
+      "width": 1024,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "booking",
+      "width": 1024,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "request",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-request",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-list",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quotes-compare",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote-message",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "booking",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "request-success-empty",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "accepted",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reaccept",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "declined",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote-not-found",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote-link-expired",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "quote-link-revoked",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    },
+    {
+      "name": "enquiry-error",
+      "width": 1440,
+      "accessibility": "pass",
+      "overflow": false
+    }
+  ],
+  "contracts": "payloads, validation, decisions, confirmation, revision, message order and handoffs passed; synthetic fixture transport"
+}

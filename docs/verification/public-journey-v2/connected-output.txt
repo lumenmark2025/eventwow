@@ -1,0 +1,13 @@
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+Connected browser workflow passed (120 API calls; Supplier initial thread reads: 4).

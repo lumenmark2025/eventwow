@@ -1,12 +1,23 @@
+import {
+  JourneyShell as MarketingShell,
+  JourneyCard as Card,
+  JourneyCardContent as CardContent,
+  JourneyInput as Input,
+  JourneySection,
+  JourneyState as EmptyState,
+} from "../../components/marketing/PublicJourneyComponents";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import MarketingShell from "../../components/layout/MarketingShell";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
+
+import {
+  PublicButton as Button,
+  PublicPageHeader,
+  PublicSelect,
+} from "../../components/marketing/PublicComponents";
+
 import Badge from "../../components/ui/Badge";
-import EmptyState from "../../components/ui/EmptyState";
+
 import Skeleton from "../../components/ui/Skeleton";
 import { useMarketingMeta } from "../../lib/marketingMeta";
 
@@ -26,8 +37,12 @@ function parseBudgetAmount(value) {
 function budgetRangeFromAmount(amount, unit) {
   if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return null;
   const safeAmount = Number(amount);
-  const formatted = Number.isInteger(safeAmount) ? safeAmount.toFixed(0) : safeAmount.toFixed(2);
-  return unit === "per_person" ? `£${formatted} per person` : `£${formatted} in total`;
+  const formatted = Number.isInteger(safeAmount)
+    ? safeAmount.toFixed(0)
+    : safeAmount.toFixed(2);
+  return unit === "per_person"
+    ? `£${formatted} per person`
+    : `£${formatted} in total`;
 }
 
 function getPrompt(eventType, categorySlug) {
@@ -47,9 +62,11 @@ function buildSuggestionHints(form) {
   const hints = [];
   if (!form.guest_count) hints.push("add guest count");
   if (!form.event_date) hints.push("add event date");
-  if (!form.venue_name && !form.venue_postcode) hints.push("add venue name or postcode");
+  if (!form.venue_name && !form.venue_postcode)
+    hints.push("add venue name or postcode");
   if (!form.start_time) hints.push("add preferred serving time");
-  if (!form.dietary_requirements) hints.push("add dietary requirements if relevant");
+  if (!form.dietary_requirements)
+    hints.push("add dietary requirements if relevant");
   return hints;
 }
 
@@ -94,14 +111,21 @@ export default function SupplierRequestQuotePage() {
 
   const categoryOptions = context?.activeCategories || [];
   const isSingleCategory = categoryOptions.length === 1;
-  const categorySlug = isSingleCategory ? categoryOptions[0]?.slug || "" : form.enquiry_category_slug;
+  const categorySlug = isSingleCategory
+    ? categoryOptions[0]?.slug || ""
+    : form.enquiry_category_slug;
   const showPowerToggle = categorySlug === "pizza-catering";
-  const prompt = useMemo(() => getPrompt(form.event_type, categorySlug), [form.event_type, categorySlug]);
+  const prompt = useMemo(
+    () => getPrompt(form.event_type, categorySlug),
+    [form.event_type, categorySlug],
+  );
   const suggestions = useMemo(() => buildSuggestionHints(form), [form]);
   const messageLength = String(form.message || "").trim().length;
 
   useMarketingMeta({
-    title: context?.supplierName ? `Request a quote from ${context.supplierName}` : "Request a quote",
+    title: context?.supplierName
+      ? `Request a quote from ${context.supplierName}`
+      : "Request a quote",
     description: context?.supplierName
       ? `Tell us your event details and ${context.supplierName} will send a quote.`
       : "Tell us your event details and receive a quote.",
@@ -115,16 +139,22 @@ export default function SupplierRequestQuotePage() {
       setError("");
       try {
         const resp = await fetch(
-          `/api/public-supplier-request-context?supplierSlug=${encodeURIComponent(String(slug || ""))}`
+          `/api/public-supplier-request-context?supplierSlug=${encodeURIComponent(String(slug || ""))}`,
         );
         const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Supplier unavailable");
+        if (!resp.ok)
+          throw new Error(
+            json?.details || json?.error || "Supplier unavailable",
+          );
         if (!mounted) return;
         setContext(json);
         const firstCategorySlug = (json?.activeCategories || [])[0]?.slug || "";
         setForm((prev) => ({
           ...prev,
-          enquiry_category_slug: json?.activeCategoryCount === 1 ? firstCategorySlug : prev.enquiry_category_slug,
+          enquiry_category_slug:
+            json?.activeCategoryCount === 1
+              ? firstCategorySlug
+              : prev.enquiry_category_slug,
         }));
       } catch (err) {
         if (mounted) setError(err?.message || "Supplier unavailable");
@@ -147,9 +177,14 @@ export default function SupplierRequestQuotePage() {
     const timeout = setTimeout(async () => {
       setVenuesLoading(true);
       try {
-        const resp = await fetch(`/api/public-venues-search?q=${encodeURIComponent(q)}`);
+        const resp = await fetch(
+          `/api/public-venues-search?q=${encodeURIComponent(q)}`,
+        );
         const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Venue search failed");
+        if (!resp.ok)
+          throw new Error(
+            json?.details || json?.error || "Venue search failed",
+          );
         if (!mounted) return;
         setVenueResults(json?.rows || []);
       } catch {
@@ -168,7 +203,12 @@ export default function SupplierRequestQuotePage() {
     if (key === "venue_name") {
       setVenueQuery(String(value || ""));
       setShowVenueResults(true);
-      setForm((prev) => ({ ...prev, venue_name: value, venue_id: "", venue_postcode: "" }));
+      setForm((prev) => ({
+        ...prev,
+        venue_name: value,
+        venue_id: "",
+        venue_postcode: "",
+      }));
       return;
     }
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -203,11 +243,20 @@ export default function SupplierRequestQuotePage() {
       setError("Please provide at least 80 characters in your message.");
       return;
     }
-    if (form.venue_known && !form.venue_name.trim() && !form.venue_postcode.trim()) {
+    if (
+      form.venue_known &&
+      !form.venue_name.trim() &&
+      !form.venue_postcode.trim()
+    ) {
       setError("If venue is known, add venue name or postcode.");
       return;
     }
-    if ((form.event_type === "wedding" || form.event_type === "corporate" || form.event_type === "festival") && !parseGuestCount(form.guest_count)) {
+    if (
+      (form.event_type === "wedding" ||
+        form.event_type === "corporate" ||
+        form.event_type === "festival") &&
+      !parseGuestCount(form.guest_count)
+    ) {
       setError("Guest count is required for this event type.");
       return;
     }
@@ -215,7 +264,9 @@ export default function SupplierRequestQuotePage() {
     setSubmitting(true);
     try {
       const parsedBudgetAmount = parseBudgetAmount(form.budget_amount);
-      const effectiveBudgetUnit = parsedBudgetAmount ? (form.budget_unit || "in_total") : null;
+      const effectiveBudgetUnit = parsedBudgetAmount
+        ? form.budget_unit || "in_total"
+        : null;
       const payload = {
         supplier_id: context?.supplierId,
         full_name: form.full_name,
@@ -228,7 +279,9 @@ export default function SupplierRequestQuotePage() {
         guest_count: parseGuestCount(form.guest_count),
         budget_amount: parsedBudgetAmount,
         budget_unit: effectiveBudgetUnit,
-        budget_range: form.budget_range || budgetRangeFromAmount(parsedBudgetAmount, effectiveBudgetUnit),
+        budget_range:
+          form.budget_range ||
+          budgetRangeFromAmount(parsedBudgetAmount, effectiveBudgetUnit),
         venue_known: !!form.venue_known,
         venue_name: form.venue_name || null,
         venue_id: form.venue_id || null,
@@ -256,7 +309,9 @@ export default function SupplierRequestQuotePage() {
       const json = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         setServerHints(Array.isArray(json?.hints) ? json.hints : []);
-        throw new Error(json?.details || json?.error || "Failed to submit request");
+        throw new Error(
+          json?.details || json?.error || "Failed to submit request",
+        );
       }
       if (!json?.publicToken) throw new Error("Missing enquiry token");
       navigate(`/enquiry/${encodeURIComponent(json.publicToken)}`);
@@ -270,7 +325,7 @@ export default function SupplierRequestQuotePage() {
   if (loading) {
     return (
       <MarketingShell>
-        <div className="space-y-4">
+        <div role="status" aria-label="Loading" className="space-y-4">
           <Skeleton className="h-10 w-72" />
           <Skeleton className="h-[500px] w-full" />
         </div>
@@ -281,128 +336,170 @@ export default function SupplierRequestQuotePage() {
   if (!context) {
     return (
       <MarketingShell>
-        <EmptyState title="Supplier unavailable" description={error || "Please try another supplier."} />
+        <EmptyState
+          page
+          title="Supplier unavailable"
+          description={error || "Please try another supplier."}
+        />
       </MarketingShell>
     );
   }
 
   return (
     <MarketingShell>
-      <section className="mx-auto max-w-4xl space-y-5">
-        <Card className="rounded-3xl">
-          <CardHeader>
-            <CardTitle className="text-2xl tracking-tight">
-              Request a quote from {context.supplierName}
-            </CardTitle>
-            <p className="text-sm text-slate-600">
-              Share structured event details so suppliers can respond with better quotes.
-            </p>
-          </CardHeader>
+      <section className="journey-request space-y-5">
+        <PublicPageHeader
+          title={`Request a quote from ${context.supplierName}`}
+          subtitle="Share structured event details so suppliers can respond with better quotes."
+          breadcrumb="Request a quote"
+        />
+        <Card>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-5">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <Input placeholder="Your name *" value={form.full_name} onChange={(e) => setField("full_name", e.target.value)} required />
-                <Input type="email" placeholder="Email *" value={form.email} onChange={(e) => setField("email", e.target.value)} required />
-                <Input placeholder="Phone" value={form.phone} onChange={(e) => setField("phone", e.target.value)} />
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <select
-                  value={form.event_type}
-                  onChange={(e) => setField("event_type", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-                >
-                  <option value="">Event type</option>
-                  <option value="wedding">Wedding</option>
-                  <option value="corporate">Corporate</option>
-                  <option value="birthday">Birthday</option>
-                  <option value="festival">Festival</option>
-                  <option value="school">School</option>
-                  <option value="other">Other</option>
-                </select>
-
-                {isSingleCategory ? (
-                  <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3">
-                    <span className="text-sm text-slate-600">Category:</span>
-                    <Badge variant="brand">{categoryOptions[0]?.name}</Badge>
-                  </div>
-                ) : (
-                  <select
-                    value={form.enquiry_category_slug}
-                    onChange={(e) => setField("enquiry_category_slug", e.target.value)}
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+              <JourneySection title="Your contact details">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <Input
+                    placeholder="Your name *"
+                    value={form.full_name}
+                    onChange={(e) => setField("full_name", e.target.value)}
+                    required
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Email *"
+                    value={form.email}
+                    onChange={(e) => setField("email", e.target.value)}
+                    required
+                  />
+                  <Input
+                    placeholder="Phone"
+                    value={form.phone}
+                    onChange={(e) => setField("phone", e.target.value)}
+                  />
+                </div>
+              </JourneySection>
+              <JourneySection title="Your event">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <PublicSelect
+                    label="Event type"
+                    value={form.event_type}
+                    onChange={(e) => setField("event_type", e.target.value)}
                   >
-                    <option value="">Select category</option>
-                    {categoryOptions.map((cat) => (
-                      <option key={cat.id} value={cat.slug}>{cat.name}</option>
-                    ))}
-                  </select>
-                )}
+                    <option value="">Event type</option>
+                    <option value="wedding">Wedding</option>
+                    <option value="corporate">Corporate</option>
+                    <option value="birthday">Birthday</option>
+                    <option value="festival">Festival</option>
+                    <option value="school">School</option>
+                    <option value="other">Other</option>
+                  </PublicSelect>
 
-                <select
-                  value={form.contact_preference}
-                  onChange={(e) => setField("contact_preference", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-                >
-                  <option value="email">Email preferred</option>
-                  <option value="phone">Phone preferred</option>
-                  <option value="whatsapp">WhatsApp preferred</option>
-                </select>
-              </div>
+                  {isSingleCategory ? (
+                    <div className="flex min-w-0 items-center gap-2 rounded-xl border journey-border journey-soft px-3">
+                      <span className="journey-body journey-muted">
+                        Category:
+                      </span>
+                      <Badge variant="brand">{categoryOptions[0]?.name}</Badge>
+                    </div>
+                  ) : (
+                    <PublicSelect
+                      label="Category"
+                      value={form.enquiry_category_slug}
+                      onChange={(e) =>
+                        setField("enquiry_category_slug", e.target.value)
+                      }
+                    >
+                      <option value="">Select category</option>
+                      {categoryOptions.map((cat) => (
+                        <option key={cat.id} value={cat.slug}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </PublicSelect>
+                  )}
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="min-w-0">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Date</span>
+                  <PublicSelect
+                    label="Contact preference"
+                    value={form.contact_preference}
+                    onChange={(e) =>
+                      setField("contact_preference", e.target.value)
+                    }
+                  >
+                    <option value="email">Email preferred</option>
+                    <option value="phone">Phone preferred</option>
+                    <option value="whatsapp">WhatsApp preferred</option>
+                  </PublicSelect>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="min-w-0">
+                    <span className="mb-1 block journey-body font-medium journey-text">
+                      Date
+                    </span>
+                    <Input
+                      type="date"
+                      aria-label="Date"
+                      value={form.event_date}
+                      onChange={(e) => setField("event_date", e.target.value)}
+                    />
+                  </label>
+                  <label className="min-w-0">
+                    <span className="mb-1 block journey-body font-medium journey-text">
+                      Time
+                    </span>
+                    <Input
+                      type="time"
+                      aria-label="Time"
+                      value={form.start_time}
+                      onChange={(e) => setField("start_time", e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <Input
-                    type="date"
-                    aria-label="Date"
-                    value={form.event_date}
-                    onChange={(e) => setField("event_date", e.target.value)}
+                    type="number"
+                    min={1}
+                    placeholder="Guest count"
+                    value={form.guest_count}
+                    onChange={(e) => setField("guest_count", e.target.value)}
                   />
-                </label>
-                <label className="min-w-0">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Time</span>
-                  <Input
-                    type="time"
-                    aria-label="Time"
-                    value={form.start_time}
-                    onChange={(e) => setField("start_time", e.target.value)}
-                  />
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <Input type="number" min={1} placeholder="Guest count" value={form.guest_count} onChange={(e) => setField("guest_count", e.target.value)} />
-                <select
-                  value={form.indoor_outdoor}
-                  onChange={(e) => setField("indoor_outdoor", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-                >
-                  <option value="">Indoor/outdoor</option>
-                  <option value="indoor">Indoor</option>
-                  <option value="outdoor">Outdoor</option>
-                  <option value="mixed">Mixed</option>
-                  <option value="unknown">Not sure</option>
-                </select>
-                <select
-                  value={form.urgency}
-                  onChange={(e) => setField("urgency", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-                >
-                  <option value="">Urgency</option>
-                  <option value="flexible">Flexible</option>
-                  <option value="soon">Soon</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-
-              <fieldset className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <legend className="px-1 text-sm font-semibold text-slate-800">Budget</legend>
+                  <PublicSelect
+                    label="Indoor/outdoor"
+                    value={form.indoor_outdoor}
+                    onChange={(e) => setField("indoor_outdoor", e.target.value)}
+                  >
+                    <option value="">Indoor/outdoor</option>
+                    <option value="indoor">Indoor</option>
+                    <option value="outdoor">Outdoor</option>
+                    <option value="mixed">Mixed</option>
+                    <option value="unknown">Not sure</option>
+                  </PublicSelect>
+                  <PublicSelect
+                    label="Urgency"
+                    value={form.urgency}
+                    onChange={(e) => setField("urgency", e.target.value)}
+                  >
+                    <option value="">Urgency</option>
+                    <option value="flexible">Flexible</option>
+                    <option value="soon">Soon</option>
+                    <option value="urgent">Urgent</option>
+                  </PublicSelect>
+                </div>
+              </JourneySection>
+              <fieldset className="journey-form-section">
+                <legend className="px-1 journey-body font-semibold journey-ink">
+                  Budget
+                </legend>
                 <div className="space-y-3">
                   <label className="block min-w-0">
-                    <span className="mb-1 block text-sm text-slate-700">Amount</span>
+                    <span className="mb-1 block journey-body journey-text">
+                      Amount
+                    </span>
                     <div className="relative min-w-0">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">£</span>
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 journey-body journey-muted">
+                        £
+                      </span>
                       <Input
                         type="number"
                         min={1}
@@ -410,7 +507,9 @@ export default function SupplierRequestQuotePage() {
                         inputMode="decimal"
                         placeholder="Enter budget"
                         value={form.budget_amount}
-                        onChange={(e) => setField("budget_amount", e.target.value)}
+                        onChange={(e) =>
+                          setField("budget_amount", e.target.value)
+                        }
                         className="pl-7"
                         aria-label="Budget amount"
                       />
@@ -419,14 +518,24 @@ export default function SupplierRequestQuotePage() {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
-                      variant={form.budget_unit === "per_person" ? "primary" : "secondary"}
+                      aria-pressed={form.budget_unit === "per_person"}
+                      variant={
+                        form.budget_unit === "per_person"
+                          ? "primary"
+                          : "secondary"
+                      }
                       onClick={() => setField("budget_unit", "per_person")}
                     >
                       Per person
                     </Button>
                     <Button
                       type="button"
-                      variant={form.budget_unit === "in_total" ? "primary" : "secondary"}
+                      aria-pressed={form.budget_unit === "in_total"}
+                      variant={
+                        form.budget_unit === "in_total"
+                          ? "primary"
+                          : "secondary"
+                      }
                       onClick={() => setField("budget_unit", "in_total")}
                     >
                       In total
@@ -435,96 +544,152 @@ export default function SupplierRequestQuotePage() {
                 </div>
               </fieldset>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={form.venue_known}
-                    onChange={(e) => setField("venue_known", e.target.checked)}
-                  />
-                  Venue already confirmed
-                </label>
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <div className="relative">
-                    <Input
-                      placeholder="Venue / Location name"
-                      value={form.venue_name}
-                      onChange={(e) => setField("venue_name", e.target.value)}
-                      onFocus={() => setShowVenueResults(true)}
+              <JourneySection title="Venue and requirements">
+                <div className="rounded-xl border journey-border journey-soft p-3">
+                  <label className="inline-flex items-center gap-2 journey-body journey-text">
+                    <input
+                      type="checkbox"
+                      checked={form.venue_known}
+                      onChange={(e) =>
+                        setField("venue_known", e.target.checked)
+                      }
                     />
-                    {showVenueResults && (venueResults.length > 0 || venuesLoading) ? (
-                      <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-                        {venuesLoading ? (
-                          <div className="px-3 py-2 text-sm text-slate-500">Searching venues...</div>
-                        ) : (
-                          venueResults.map((v) => (
-                            <button
-                              key={v.id}
-                              type="button"
-                              onClick={() => selectVenue(v)}
-                              className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
-                            >
-                              <div className="font-medium text-slate-900">{v.name}</div>
-                              <div className="text-xs text-slate-500">
-                                {[v.town, v.postcode].filter(Boolean).join(" - ")}
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    ) : null}
+                    Venue already confirmed
+                  </label>
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="relative">
+                      <Input
+                        placeholder="Venue / Location name"
+                        value={form.venue_name}
+                        onChange={(e) => setField("venue_name", e.target.value)}
+                        onFocus={() => setShowVenueResults(true)}
+                      />
+                      {showVenueResults &&
+                      (venueResults.length > 0 || venuesLoading) ? (
+                        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border journey-border bg-white shadow-lg">
+                          {venuesLoading ? (
+                            <div className="px-3 py-2 journey-body journey-muted">
+                              Searching venues...
+                            </div>
+                          ) : (
+                            venueResults.map((v) => (
+                              <button
+                                key={v.id}
+                                type="button"
+                                onClick={() => selectVenue(v)}
+                                className="block w-full px-3 py-2 text-left journey-body hover:journey-soft"
+                              >
+                                <div className="font-medium journey-ink">
+                                  {v.name}
+                                </div>
+                                <div className="journey-small journey-muted">
+                                  {[v.town, v.postcode]
+                                    .filter(Boolean)
+                                    .join(" - ")}
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                    <Input
+                      placeholder="Venue postcode"
+                      value={form.venue_postcode}
+                      onChange={(e) =>
+                        setField("venue_postcode", e.target.value)
+                      }
+                    />
                   </div>
-                  <Input
-                    placeholder="Venue postcode"
-                    value={form.venue_postcode}
-                    onChange={(e) => setField("venue_postcode", e.target.value)}
-                  />
                 </div>
-              </div>
 
-              {showPowerToggle ? (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-sm font-medium text-slate-800">Is power available on-site?</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Button type="button" variant={form.power_available === true ? "primary" : "secondary"} onClick={() => setField("power_available", true)}>
-                      Yes
-                    </Button>
-                    <Button type="button" variant={form.power_available === false ? "primary" : "secondary"} onClick={() => setField("power_available", false)}>
-                      No
-                    </Button>
-                    <Button type="button" variant={form.power_available === null ? "primary" : "secondary"} onClick={() => setField("power_available", null)}>
-                      Not sure
-                    </Button>
+                {showPowerToggle ? (
+                  <div className="rounded-xl border journey-border journey-soft p-3">
+                    <p className="journey-body font-medium journey-ink">
+                      Is power available on-site?
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        aria-pressed={form.power_available === true}
+                        variant={
+                          form.power_available === true
+                            ? "primary"
+                            : "secondary"
+                        }
+                        onClick={() => setField("power_available", true)}
+                      >
+                        Yes
+                      </Button>
+                      <Button
+                        type="button"
+                        aria-pressed={form.power_available === false}
+                        variant={
+                          form.power_available === false
+                            ? "primary"
+                            : "secondary"
+                        }
+                        onClick={() => setField("power_available", false)}
+                      >
+                        No
+                      </Button>
+                      <Button
+                        type="button"
+                        aria-pressed={form.power_available === null}
+                        variant={
+                          form.power_available === null
+                            ? "primary"
+                            : "secondary"
+                        }
+                        onClick={() => setField("power_available", null)}
+                      >
+                        Not sure
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
 
-              <Input
-                placeholder="Dietary requirements (optional)"
-                value={form.dietary_requirements}
-                onChange={(e) => setField("dietary_requirements", e.target.value)}
-              />
-
-              <div>
-                <p className="mb-1 text-sm text-slate-600">{prompt}</p>
-                <textarea
-                  className="min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-                  placeholder="Include guest count, venue details, budget guidance, and timing."
-                  value={form.message}
-                  onChange={(e) => setField("message", e.target.value)}
+                <Input
+                  placeholder="Dietary requirements (optional)"
+                  value={form.dietary_requirements}
+                  onChange={(e) =>
+                    setField("dietary_requirements", e.target.value)
+                  }
                 />
-                <p className={`mt-1 text-xs ${messageLength < 80 ? "text-amber-700" : "text-slate-500"}`}>
-                  Minimum 80 characters. Current: {messageLength}
-                </p>
-              </div>
-
-              {(suggestions.length > 0 || serverHints.length > 0) ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  Suggestions: {Array.from(new Set([...suggestions, ...serverHints])).join(" | ")}
+              </JourneySection>
+              <JourneySection title="Tell the supplier more">
+                <div>
+                  <p className="mb-1 journey-body journey-muted">{prompt}</p>
+                  <textarea
+                    aria-label="Event details"
+                    aria-describedby="request-message-help"
+                    className="min-h-[140px] w-full rounded-xl border journey-border bg-white px-3 py-2 journey-body shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
+                    placeholder="Include guest count, venue details, budget guidance, and timing."
+                    value={form.message}
+                    onChange={(e) => setField("message", e.target.value)}
+                  />
+                  <p
+                    id="request-message-help"
+                    className={`mt-1 journey-small ${messageLength < 80 ? "journey-warning" : "journey-muted"}`}
+                  >
+                    Minimum 80 characters. Current: {messageLength}
+                  </p>
+                </div>
+              </JourneySection>
+              {suggestions.length > 0 || serverHints.length > 0 ? (
+                <div className="rounded-xl border journey-warning-border journey-warning-surface px-3 py-2 journey-body journey-warning">
+                  Suggestions:{" "}
+                  {Array.from(new Set([...suggestions, ...serverHints])).join(
+                    " | ",
+                  )}
                 </div>
               ) : null}
 
-              {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+              {error ? (
+                <p role="alert" className="journey-body journey-danger">
+                  {error}
+                </p>
+              ) : null}
 
               <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={submitting}>

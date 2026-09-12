@@ -1,0 +1,11 @@
+
+> eventwow-admin@0.0.0 test:public-journey
+> node scripts/verify-public-journey-contracts.mjs && node scripts/verify-public-journey-v2.mjs
+
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/RequestPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierRequestQuotePage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/EnquiryQuotesPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/BookingAccessPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/PublicQuotePage.jsx
+PASS API, RLS, token, route and library source unchanged
+PASS public journey: 36 responsive/state/accessibility checks plus action payloads

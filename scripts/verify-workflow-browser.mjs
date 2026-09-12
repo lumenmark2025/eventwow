@@ -28,6 +28,9 @@ const routes = {
   "/api/supplier/quotes": "supplier/quotes.js",
   "/api/customer/enquiries": "customer/enquiries/index.js",
   "/api/customer/threads/get-or-create": "customer/threads/get-or-create.js",
+  "/api/public-quote": "public-quote.js",
+  "/api/public-thread": "public-thread.js",
+  "/api/public-send-message": "public-send-message.js",
   "/api/public-quote-accept": "public-quote-accept.js",
   "/api/public-quote-decline": "public-quote-decline.js",
   "/api/supplier-get-thread": "supplier-get-thread.js",
@@ -133,7 +136,15 @@ async function context(role) {
     const body = req.postDataJSON() || {};
     calls.push({ role, path: url.pathname, method: req.method(), body });
     const result = await invoke(handler, {
-      role: url.pathname.startsWith("/api/public-quote-") ? null : role,
+      role:
+        [
+          "/api/public-quote",
+          "/api/public-thread",
+          "/api/public-send-message",
+        ].includes(url.pathname) ||
+        url.pathname.startsWith("/api/public-quote-")
+          ? null
+          : role,
       method: req.method(),
       query,
       body,
@@ -391,6 +402,88 @@ try {
     calls.filter((r) => r.path.startsWith("/api/customer/")).length,
     callsBeforeGuard,
   );
+  // The same stored quote is now viewed through the migrated anonymous route.
+  const decisionToken = db.tables.quote_public_links[0].token;
+  const storedQuote = db.tables.quotes[0];
+  await c.page.goto(`${base}/quote/${decisionToken}`);
+  await c.page
+    .getByRole("heading", { name: "Your Quote", exact: true })
+    .waitFor();
+  await c.page.getByText("We will be there.", { exact: true }).waitFor();
+  assert.equal(
+    await c.page
+      .getByRole("button", { name: "Accept quote", exact: true })
+      .count(),
+    0,
+  );
+  const saveHandler = (await import("../api/supplier-save-draft-quote.js"))
+    .default;
+  const revised = await invoke(saveHandler, {
+    role: "supplier",
+    method: "POST",
+    body: {
+      quote_id: storedQuote.id,
+      items: [
+        { title: "Revised catering", qty: 80, unit_price: 15, sort_order: 1 },
+      ],
+      quote_text: "Revised evening service.",
+    },
+  });
+  assert.equal(revised.status, 200);
+  assert.equal(db.tables.supplier_bookings[0].status, "draft");
+  await c.page.reload();
+  await c.page
+    .getByText(
+      "This quote has been updated since you accepted it. Please review and accept again to confirm.",
+    )
+    .waitFor();
+  c.page.once("dialog", (dialog) => dialog.accept());
+  await c.page
+    .getByRole("button", { name: "Accept quote", exact: true })
+    .click();
+  await c.page.getByText("Quote accepted.", { exact: true }).waitFor();
+  assert.equal(db.tables.supplier_bookings[0].status, "confirmed");
+  assert.equal(db.tables.supplier_bookings[0].value_gross, 1200);
+  await c.page
+    .getByPlaceholder("Send a message to your supplier...")
+    .fill("Anonymous recipient reply.");
+  await c.page
+    .getByRole("button", { name: "Send message", exact: true })
+    .click();
+  await c.page.getByText("Message sent.", { exact: true }).waitFor();
+  await c.page.reload();
+  await c.page
+    .getByText("Anonymous recipient reply.", { exact: true })
+    .waitFor();
+  await s.page.goto(`${base}/supplier/messages?thread=${threadId}`);
+  await s.page
+    .getByRole("log")
+    .getByText("Anonymous recipient reply.", { exact: true })
+    .waitFor();
+  await c.page.goto(`${base}/enquiry/${db.tables.enquiries[0].public_token}`);
+  await c.page
+    .getByRole("heading", { name: "Your quotes", exact: true })
+    .waitFor();
+  // Real revoked/draft/missing-token enforcement, not canned browser responses.
+  db.tables.quote_public_links[0].revoked_at = new Date().toISOString();
+  await c.page.goto(`${base}/quote/${decisionToken}`);
+  await c.page
+    .getByRole("heading", { name: "Quote not found", exact: true })
+    .waitFor();
+  db.tables.quote_public_links[0].revoked_at = null;
+  storedQuote.status = "draft";
+  await c.page.reload();
+  await c.page
+    .getByRole("heading", { name: "Quote not found", exact: true })
+    .waitFor();
+  assert.equal(
+    await c.page.getByText("Revised evening service.", { exact: true }).count(),
+    0,
+  );
+  await c.page.goto(`${base}/quote/invalid-token`);
+  await c.page
+    .getByRole("heading", { name: "Quote not found", exact: true })
+    .waitFor();
   const messageReads = calls.filter(
     (r) => r.path === "/api/supplier-thread",
   ).length;
@@ -409,6 +502,8 @@ try {
         supplierInitialThreadReads: initialMessageReads,
         supplierTotalThreadReads: messageReads,
         staleThreadResponseIgnored: true,
+        publicJourney:
+          "Anonymous view, revised acceptance/booking, persistent message handoff, revoked/draft/missing-token denial",
         topbarAfterRead: topbarAfterRead,
         simulatedSessionRefreshAndLogout: "passed; live Auth not exercised",
         errors,

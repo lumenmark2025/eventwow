@@ -1,0 +1,102 @@
+{
+  "branch": "ui-v2-design-system",
+  "baseline": "1bd6257cbc09315f70647382a24c614049d38ff6",
+  "lint": {
+    "errors": 429,
+    "warnings": 12,
+    "newDiagnostics": []
+  },
+  "vite": {
+    "passed": true,
+    "artifacts": [
+      "dist/assets/PublicJourneyComponents-DO5QMA6d.css       6.32 kB \u2502 gzip:   1.42 kB",
+      "dist/assets/index-BFDEg4KQ.css                        21.45 kB \u2502 gzip:   4.90 kB",
+      "dist/assets/PublicJourneyComponents-Db8NFgWf.js        2.11 kB \u2502 gzip:   0.85 kB",
+      "dist/assets/index-DQ8dtUak.js                        433.70 kB \u2502 gzip: 126.86 kB"
+    ]
+  },
+  "tests": {
+    "public": {
+      "result": "passed",
+      "lastLines": [
+        "home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "Search/category/location/sort/clear query contracts, profile URLs, absent ratings/response metrics, failed images/options recovery and Radix keyboard/focus/navigation passed",
+        "Public access remains available signed out and under Admin/Supplier/Venue/Customer sessions; no workspace data fetched"
+      ]
+    },
+    "customer": {
+      "result": "passed",
+      "lastLines": [
+        "messages-failHistory: 360/768/1024/1440px, overflow and axe passed",
+        "messages-emptyMessages: 360/768/1024/1440px, overflow and axe passed",
+        "messages-loadingMessages: 360/768/1024/1440px, overflow and axe passed",
+        "List/detail loading/empty/error/retry at all widths; missing/mismatched enquiry hides actions; targets failure retains loaded quotes; empty suppliers/quotes and message loading/empty/no-quote/no-thread/history-failure states passed",
+        "Mobile navigation/command keyboard controls; signed-out/Admin/Supplier/Venue guards on all three routes without Customer API calls passed"
+      ]
+    },
+    "supplier-workflows": {
+      "result": "passed",
+      "lastLines": [
+        "booking-sources: 360/768/1024/1440px, document overflow and axe passed",
+        "Bookings: origin/date/status contracts, default/custom sources, exact create/edit/share/revoke payloads, required-date validation, failed save retained form, cancelled transition, paid flags and busy controls",
+        "Messages: URL-selected thread, empty/whitespace/pending disables, failed send retains composer, exact trimmed body/thread/client-ID payload, local success updates without refetch",
+        "Quotes/Bookings/Messages: loading/empty/error at all four widths, retries; detail loading/error/missing and empty conversation history",
+        "Keyboard: booking row, Radix edit dialog Tab containment/Escape/focus return, calendar navigation/event selection and persisted view; all three routes preserve signed-out/Admin/Customer/Venue guards"
+      ]
+    },
+    "workspace": {
+      "result": "passed",
+      "lastLines": [
+        "supplier: existing Admin guard outcome preserved; no Admin page module requested",
+        "venue_owner: existing Admin guard outcome preserved; no Admin page module requested",
+        "customer: existing Admin guard outcome preserved; no Admin page module requested",
+        "none: existing Admin guard outcome preserved; no Admin page module requested",
+        "Screenshots: /tmp/eventwow-workspace-v2"
+      ]
+    },
+    "quote-rls": {
+      "result": "passed",
+      "lastLines": [
+        "baseline: Customer can read owned drafts; anon can enumerate decision tokens",
+        "Customer/other Customer: correct rows by both ownership paths; no drafts/items/tokens/draft-linked or mismatched messages",
+        "Supplier own drafts/items intact, unrelated Supplier rows denied; Admin and service-role access intact",
+        "Anonymous reads and Customer quote/token writes denied",
+        "Draft update, send/accept/re-accept/decline/close transitions retain correct direct-query visibility"
+      ]
+    },
+    "customer-supplier-handlers": {
+      "result": "passed",
+      "lastLines": [
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "Connected browser workflow passed (80 API calls; Supplier initial thread reads: 4)."
+      ]
+    },
+    "connected-public-workflow": {
+      "result": "passed",
+      "lastLines": [
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "Connected browser workflow passed (120 API calls; Supplier initial thread reads: 4)."
+      ]
+    },
+    "public-journey": {
+      "result": "passed",
+      "responsiveStateAccessibilityChecks": 36,
+      "widths": [
+        360,
+        768,
+        1024,
+        1440
+      ],
+      "keyboard": "Tab containment, Escape and focus return; keyboard venue selection; scrollable comparison",
+      "sourceContracts": "all workflow statements and field/action constraints unchanged"
+    }
+  }
+}

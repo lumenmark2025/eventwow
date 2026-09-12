@@ -1,0 +1,801 @@
+{
+  "passed": true,
+  "scope": "Real pages and API handlers; Auth/PostgREST/RPC transport simulated",
+  "calls": [
+    {
+      "role": "customer",
+      "path": "/api/public/enquiries",
+      "method": "POST",
+      "body": {
+        "full_name": "Fixture Customer",
+        "email": "customer@example.test",
+        "phone": "",
+        "event_type": "corporate",
+        "enquiry_category_slug": "",
+        "event_date": "2026-12-12",
+        "start_time": "18:00",
+        "guest_count": 80,
+        "budget_range": "£1200 in total",
+        "budget_amount": 1200,
+        "budget_unit": "in_total",
+        "venue_known": false,
+        "venue_name": "Manchester",
+        "venue_postcode": "",
+        "venue_id": "",
+        "indoor_outdoor": "",
+        "power_available": null,
+        "dietary_requirements": "",
+        "contact_preference": "email",
+        "urgency": "",
+        "message": "We are organising a community celebration with seasonal catering for eighty guests. Please include setup, vegetarian options and serving staff for the evening.",
+        "source_page": "/request",
+        "structured_answers": {}
+      }
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-enquiry-quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-enquiry-quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-enquiries",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-enquiries",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-enquiries",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-enquiries",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-start-quote-from-enquiry",
+      "method": "POST",
+      "body": {
+        "enquiryId": "79189d3f-9ed9-4961-af37-d17d8eb9d710"
+      }
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-credits",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-credits",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-credits",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-save-draft-quote",
+      "method": "POST",
+      "body": {
+        "quote_id": "4a475406-10ad-4997-a6b3-f488c9506e3f",
+        "items": [
+          {
+            "id": null,
+            "title": "Seasonal catering",
+            "qty": 80,
+            "unit_price": 12.5,
+            "sort_order": 1
+          }
+        ],
+        "quote_text": ""
+      }
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-send-quote",
+      "method": "POST",
+      "body": {
+        "quote_id": "4a475406-10ad-4997-a6b3-f488c9506e3f",
+        "quote_text": ""
+      }
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710/messaging-targets",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote-accept",
+      "method": "POST",
+      "body": {
+        "token": "a9af1d26-6fe7-4a9d-8e41-cfd9d6e7a7ad"
+      }
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/enquiries/79189d3f-9ed9-4961-af37-d17d8eb9d710",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-credits",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-credits",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-credits",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-credits",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier/quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/threads/get-or-create",
+      "method": "POST",
+      "body": {
+        "enquiry_id": "79189d3f-9ed9-4961-af37-d17d8eb9d710",
+        "supplier_id": "0d95faf6-892c-4320-a807-dc7da4204a08",
+        "quote_id": "4a475406-10ad-4997-a6b3-f488c9506e3f"
+      }
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/threads/a1845e90-9ca4-4f50-9f75-364b2a15a42d/messages",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/threads/a1845e90-9ca4-4f50-9f75-364b2a15a42d/messages",
+      "method": "POST",
+      "body": {
+        "body": "Please arrive at 17:00."
+      }
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-send-message",
+      "method": "POST",
+      "body": {
+        "threadId": "a1845e90-9ca4-4f50-9f75-364b2a15a42d",
+        "body": "We will be there.",
+        "clientMessageId": "ef0d3dbd-b972-4239-8c04-506b57cd5ef9"
+      }
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/threads/get-or-create",
+      "method": "POST",
+      "body": {
+        "enquiry_id": "79189d3f-9ed9-4961-af37-d17d8eb9d710",
+        "supplier_id": "0d95faf6-892c-4320-a807-dc7da4204a08",
+        "quote_id": "4a475406-10ad-4997-a6b3-f488c9506e3f"
+      }
+    },
+    {
+      "role": "customer",
+      "path": "/api/customer/threads/a1845e90-9ca4-4f50-9f75-364b2a15a42d/messages",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications-mark-read",
+      "method": "POST",
+      "body": {
+        "all": true
+      }
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote-accept",
+      "method": "POST",
+      "body": {
+        "token": "a9af1d26-6fe7-4a9d-8e41-cfd9d6e7a7ad",
+        "note": ""
+      }
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-send-message",
+      "method": "POST",
+      "body": {
+        "token": "a9af1d26-6fe7-4a9d-8e41-cfd9d6e7a7ad",
+        "body": "Anonymous recipient reply.",
+        "clientMessageId": "36a4e7f0-5d78-4a59-bf63-51819eafe40d"
+      }
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-threads",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "supplier",
+      "path": "/api/supplier-notifications",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-enquiry-quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-enquiry-quotes",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-quote",
+      "method": "GET",
+      "body": {}
+    },
+    {
+      "role": "customer",
+      "path": "/api/public-thread",
+      "method": "GET",
+      "body": {}
+    }
+  ],
+  "customerRequestCount": 26,
+  "supplierInitialThreadReads": 4,
+  "supplierTotalThreadReads": 11,
+  "staleThreadResponseIgnored": true,
+  "publicJourney": "Anonymous view, revised acceptance/booking, persistent message handoff, revoked/draft/missing-token denial",
+  "topbarAfterRead": "Open notifications",
+  "simulatedSessionRefreshAndLogout": "passed; live Auth not exercised",
+  "errors": [],
+  "unexpected": []
+}

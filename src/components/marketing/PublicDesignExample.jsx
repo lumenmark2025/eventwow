@@ -1,3 +1,10 @@
+import {
+  JourneySection,
+  JourneyInput,
+  JourneyCard,
+  JourneyCardContent,
+  JourneyModal,
+} from "./PublicJourneyComponents";
 import { useState } from "react";
 import MarketingHeader from "./MarketingHeader";
 import MarketingFooter from "./MarketingFooter";
@@ -26,6 +33,7 @@ import {
 // Deliberately synthetic, rendered only on the unlinked design-system reference.
 export default function PublicDesignExample() {
   const [query, setQuery] = useState("");
+  const [journeyOpen, setJourneyOpen] = useState(false);
   return (
     <section
       className="public-v2 public-design-example"
@@ -145,6 +153,33 @@ export default function PublicDesignExample() {
             totalPages={1}
             onPage={() => {}}
           />
+        </section>
+        <section
+          className="public-journey"
+          aria-label="Request and quote patterns"
+        >
+          <PublicSectionHeader
+            title="Request and quote journey"
+            description="Shared sections, readable controls and accessible messaging. Synthetic examples only."
+          />
+          <JourneyCard>
+            <JourneyCardContent>
+              <JourneySection title="Example event details">
+                <JourneyInput placeholder="Example event name" />
+              </JourneySection>
+              <PublicButton onClick={() => setJourneyOpen(true)}>
+                Example message dialog
+              </PublicButton>
+            </JourneyCardContent>
+          </JourneyCard>
+          <JourneyModal
+            open={journeyOpen}
+            onClose={() => setJourneyOpen(false)}
+            title="Example conversation"
+          >
+            <p>No messages yet.</p>
+            <JourneyInput placeholder="Example message" />
+          </JourneyModal>
         </section>
         <PublicCallout />
       </div>
