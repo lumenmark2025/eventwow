@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
-import { Card, CardContent } from "../../components/ui/Card";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
-import Badge from "../../components/ui/Badge";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
-import { toPublicImageUrl } from "../../lib/publicImageUrl";
 import { useMarketingMeta } from "../../lib/marketingMeta";
-import { formatVenueGuestCapacity, getVenueConfidenceLabels } from "../../lib/venueDisplay";
+import { publicGet } from "../../lib/publicRequest";
+import {
+  PublicPageHeader,
+  PublicSearch,
+  PublicSelect,
+  PublicFilterPanel,
+  MarketplaceResults,
+  PublicResultsState,
+  PublicCallout,
+  VenueCard,
+} from "../../components/marketing/PublicComponents";
 
 export default function VenuesPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [retry, setRetry] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
@@ -24,7 +28,8 @@ export default function VenuesPage() {
 
   useMarketingMeta({
     title: "Event venues near you | Eventwow",
-    description: "Discover event venues across the UK and compare options by location, style, and guest capacity.",
+    description:
+      "Discover event venues across the UK and compare options by location, style, and guest capacity.",
     path: `/venues${location.search || ""}`,
     canonicalPath: "/venues",
   });
@@ -44,9 +49,7 @@ export default function VenuesPage() {
       setLoading(true);
       setError("");
       try {
-        const resp = await fetch(`/api/public-venues?${queryString}`);
-        const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load venues");
+        const json = await publicGet(`/api/public-venues?${queryString}`);
         if (!mounted) return;
         setRows(json?.rows || []);
         setTotalCount(Number(json?.totalCount || 0));
@@ -63,106 +66,82 @@ export default function VenuesPage() {
     return () => {
       mounted = false;
     };
-  }, [queryString]);
+  }, [queryString, retry]);
 
   function setParam(key, value) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (!value || String(value).trim() === "") next.delete(key);
-      else next.set(key, value);
-      return next;
-    }, { replace: true });
+    setSearchParams(
+      () => {
+        // URL changes precede React commits. Preserve the latest filter when
+        // controls change rapidly instead of merging a previous render snapshot.
+        const next = new URLSearchParams(window.location.search);
+        if (!value || String(value).trim() === "") next.delete(key);
+        else next.set(key, value);
+        return next;
+      },
+      { replace: true },
+    );
   }
 
+  const clear = () => setSearchParams({}, { replace: true });
   return (
     <MarketingShell>
-      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
-        <h1 className="text-4xl font-semibold tracking-tight">Event venues near you</h1>
-        <p className="mt-3 text-base text-white/90">Find venue spaces and supplier-ready locations for your event.</p>
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
-          <div className="md:col-span-8">
-            <Input
-              value={q}
-              onChange={(e) => setParam("q", e.target.value)}
-              placeholder="Search venues by name or location"
-              aria-label="Search venues"
-            />
-          </div>
-          <div className="md:col-span-4">
-            <select
+      <PublicPageHeader
+        breadcrumb="Venues"
+        title="Event venues near you"
+        subtitle={
+          loading
+            ? "Finding venues…"
+            : error
+              ? "Results unavailable"
+              : `Showing ${rows.length} of ${totalCount} venues`
+        }
+      />
+      <PublicSearch
+        label="Search venues"
+        value={q}
+        onChange={(e) => setParam("q", e.target.value)}
+        placeholder="Search venues by name or location…"
+      />
+      <MarketplaceResults
+        kind="venues"
+        filters={
+          <PublicFilterPanel onClear={clear} active={!!location.search}>
+            <PublicSelect
+              label="Sort venues"
               value={sort}
               onChange={(e) => setParam("sort", e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-              aria-label="Sort venues"
             >
               <option value="recommended">Recommended</option>
               <option value="newest">Newest</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
-      <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm text-slate-600">{totalCount} venues</p>
-        <Button variant="secondary" onClick={() => setSearchParams({}, { replace: true })}>Clear filters</Button>
-      </div>
-
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
-
-      <section className="mt-4">
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={`venue-sk-${i}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <Skeleton className="h-28 w-full" />
-                <Skeleton className="mt-3 h-5 w-2/3" />
-                <Skeleton className="mt-2 h-4 w-1/2" />
-                <Skeleton className="mt-3 h-12 w-full" />
-              </div>
+            </PublicSelect>
+            <p className="public-meta">
+              Search by venue name or location. Explore each profile for
+              capacity, facilities and event details.
+            </p>
+          </PublicFilterPanel>
+        }
+      >
+        <PublicResultsState
+          kind="venues"
+          loading={loading}
+          error={error}
+          empty={!rows.length}
+          onRetry={() => setRetry((n) => n + 1)}
+          onClear={location.search ? clear : undefined}
+        >
+          <div className="public-venue-grid">
+            {rows.map((venue) => (
+              <VenueCard key={venue.id} venue={venue} />
             ))}
           </div>
-        ) : rows.length === 0 ? (
-          <EmptyState title="No venues found" description="Try removing filters or searching a broader term." />
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {rows.map((venue) => {
-              const hero = toPublicImageUrl(venue.heroImageUrl);
-              const guest = formatVenueGuestCapacity(venue.guestMin, venue.guestMax);
-              const labels = getVenueConfidenceLabels(venue, 1);
-              return (
-                <Card key={venue.id} className="overflow-hidden rounded-2xl">
-                  {hero ? (
-                    <img src={hero} alt={`${venue.name} cover`} className="h-36 w-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="h-36 bg-gradient-to-br from-blue-100 via-indigo-50 to-sky-100" />
-                  )}
-                  <CardContent className="space-y-3 p-4">
-                    <div>
-                      <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">
-                        <Link to={`/venues/${venue.slug}`} className="hover:underline">
-                          {venue.name}
-                        </Link>
-                      </h3>
-                      {venue.locationLabel ? <p className="mt-1 text-xs text-slate-500">{venue.locationLabel}</p> : null}
-                    </div>
-                    <div className="flex min-h-[26px] items-center gap-1.5">
-                      {guest ? <Badge variant="neutral">{guest}</Badge> : null}
-                      {labels[0] ? <Badge variant="brand" className="max-w-[170px] truncate">{labels[0]}</Badge> : null}
-                    </div>
-                    <p className="line-clamp-2 text-sm text-slate-600">{venue.shortDescription || "Venue profile on Eventwow."}</p>
-                    <Button as={Link} to={`/venues/${venue.slug}`} className="w-full">
-                      View venue
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </section>
+        </PublicResultsState>
+      </MarketplaceResults>
+      <PublicCallout
+        title="Planning the rest of your event?"
+        description="Explore catering, entertainment and other event suppliers."
+        to="/suppliers"
+        label="Find suppliers"
+      />
     </MarketingShell>
   );
 }

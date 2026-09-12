@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "results": [
+    "home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+    "suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+    "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+    "Search/category/location/sort/clear query contracts, profile URLs, absent ratings/response metrics, failed images/options recovery and Radix keyboard/focus/navigation passed",
+    "Public access remains available signed out and under Admin/Supplier/Venue/Customer sessions; no workspace data fetched"
+  ]
+}

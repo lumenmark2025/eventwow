@@ -1,3 +1,4 @@
+import PublicDesignExample from "../components/marketing/PublicDesignExample";
 import WorkspaceImage from "../components/workspace/WorkspaceImage";
 import {
   ConversationThread,
@@ -67,6 +68,7 @@ export default function DesignSystemPage() {
           subtitle="EventWow v2 · Synthetic examples for design review only."
           actions={[{ label: "Open dialog", onClick: () => setOpen(true) }]}
         />
+        <PublicDesignExample />
         <FormSection
           title="Admin form pattern"
           description="Shared labels, help, errors and actions. Synthetic form for review."

@@ -172,7 +172,7 @@ Quotes, Bookings and Messages bodies are intentionally still legacy. Supplier si
 See [Supplier verification evidence](verification/supplier-v2/README.md) for screenshots, complete route/state/action coverage and reproducible commands.
 
 - `test:supplier`, `test:workspace` and `test:admin` all passed. Supplier fixtures passed at 360/768/1024/1440px, including keyboard, guard and request-contract checks. Source comparison confirms existing listing/enquiry/notification business logic is unchanged, along with dashboard checkout/email-verification handlers.
-- Vite production build passed (5.62 seconds). Full build still fails at the pre-existing SEO prerender credential requirement.
+- Vite production build passed (4.70 seconds). Full build still fails at the pre-existing SEO prerender credential requirement.
 - Lint remains at **431 errors / 12 warnings**. File/rule comparisons against the Supplier starting snapshot show no added diagnostics; the new Supplier runner is clean.
 - Existing notification topbar count can remain stale after marking read until navigation refreshes it. Listing media responses can replace unsaved copy with the returned server profile. Both behaviours predate this migration and were preserved.
 - Live auth, storage, backend permissions and checkout still require a configured development/staging environment. Browser fixtures do not verify those services.
@@ -329,3 +329,13 @@ Send now creates/reuses its decision token before publication and credit spendin
 The Supplier inbox synchronizes the shell badge without another notifications-route count request. Initial thread reads drop from 8 to 4 in the development fixture by separating list and selected-thread loading. Delayed old conversation responses cannot replace the current selection. Own mutation updates and explicit refresh/reopen remain; no realtime/polling or broad architectural rewrite was introduced. All six existing browser suites and the expanded connected workflow pass. Vite compilation passes; full build retains the SEO credential failure and lint remains 429 errors / 12 warnings with no new diagnostics.
 
 Next: apply the reviewed migration in staging, verify real Customer/Supplier/Admin JWTs and end-to-end side effects, then promote the migration/API/frontend release. Transactional recovery, history pagination/tied cursors and cross-tab live refresh remain separately scoped work. No merge to main.
+
+## Public marketplace foundation — 12 September 2026
+
+Continued from `8bb491d`, using the supplied `docs/reference/frontend/` as the public visual contract. Migrated `/`, `/suppliers` and `/venues`, plus shared MarketingShell/header/footer, search/filter/result states and supplier/venue/category cards. The public system uses Inter and scoped light/navy/orange/pastel tokens with larger desktop typography; workspace geometry is unchanged. Public patterns are represented on `/design-system`.
+
+Existing endpoints, ranking/eligibility, SEO helpers/canonicals/JSON-LD, routes and Supabase calls are preserved. Home retains its existing categories/four-venue feeds and supplier-search destination. Unsupported fake reference metrics/prices/filters/favourites and placeholder destinations are omitted. Clear loading/error/empty and image-failure states replace misleading empty/zero displays. Missing response hours no longer become a fabricated zero-hour signal. Rapid URL filter updates preserve the latest browser query instead of overwriting another just-selected filter.
+
+Home is now lazy, overlapping public GETs are coalesced without settled caching, and imagery reserves layout space. Entry bundle changes from 450.95/131.69 kB to 433.47/126.78 kB (raw/gzip); the self-hosted reference hero adds responsive 99/312 KiB WebP candidates. No API or database refactor is included. Existing 24-result windows and server-side batch processing remain.
+
+See [public verification](verification/public-v2/README.md) for screenshot/state/accessibility evidence, query contracts, performance costs and remaining routes. New public tests, six existing workspace suites and the connected Customer/Supplier workflow pass; Vite compiles and lint retains 429 errors/12 warnings with no new diagnostics. Full SEO prerender still requires configured Supabase credentials. Supplier/venue profiles and category/SEO landings are the next public migration candidates; prior live security-migration/staging requirements remain separate and unchanged.

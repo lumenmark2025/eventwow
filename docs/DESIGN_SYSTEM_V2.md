@@ -503,3 +503,9 @@ A frontend change is complete only when:
 8. existing business logic has not been changed unless the task explicitly requires it
 9. public pages remain fast and image loading is handled responsibly
 10. the result visually matches the `/design-system` reference implementation
+
+## Public implementation reference — September 2026
+
+`docs/reference/frontend/index.html`, `suppliers.html`, `venues.html` and the final XXL overrides in `styles.css` are the canonical public visual reference. Public pages use **Inter throughout**, with a 60px desktop hero, 40px page title, 78px header, light canvas, navy text and coral/orange actions. The reference's dimensions/radii are approved for this public mode; they do not replace workspace geometry. Use darker semantic action/muted tokens where required for AA contrast.
+
+Implementation: `components/marketing/public.css`, `MarketingHeader/Footer`, `PublicComponents`, and SupplierCard's grid/list variants. These reuse existing Button/Input/PageHeader/EmptyState/WorkspaceImage behavior and are represented on `/design-system`. Unsupported reference metrics, filters, favourites and illustrative listings must be omitted. See `docs/verification/public-v2/README.md` for supported backend fields, source imagery, intentional adaptations and verification evidence.

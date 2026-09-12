@@ -1,0 +1,132 @@
+{
+  "startingCommit": "8bb491ddd4aedafab1e90afe70c5b2b68ec3a20c",
+  "public": {
+    "passed": true,
+    "results": [
+      "home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+      "suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+      "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+      "Search/category/location/sort/clear query contracts, profile URLs, absent ratings/response metrics, failed images/options recovery and Radix keyboard/focus/navigation passed",
+      "Public access remains available signed out and under Admin/Supplier/Venue/Customer sessions; no workspace data fetched"
+    ]
+  },
+  "seo": {
+    "passed": true,
+    "paths": [
+      "src/pages/marketing/HomePage.jsx",
+      "src/pages/marketing/SuppliersPage.jsx",
+      "src/pages/marketing/VenuesPage.jsx"
+    ],
+    "checks": [
+      "useMarketingMeta arguments identical as AST",
+      "useStructuredData arguments identical as AST"
+    ]
+  },
+  "lint": {
+    "errors": 429,
+    "warnings": 12,
+    "newDiagnostics": 0
+  },
+  "build": {
+    "vite": "Passed final compilation in 4.70 seconds",
+    "seoPrerender": "Existing missing Supabase credentials failure",
+    "entryKb": 433.47,
+    "entryGzipKb": 126.78,
+    "previousEntryKb": 450.95,
+    "previousEntryGzipKb": 131.69
+  },
+  "existingSuites": {
+    "workspace": {
+      "passed": true,
+      "output": [
+        "All four admin screens: empty state; errors do not masquerade as zero metrics",
+        "All four admin screens: error state; errors do not masquerade as zero metrics",
+        "Dashboard: partial service failure preserves successful panels and unavailable metrics use \u2014",
+        "supplier: existing Admin guard outcome preserved; no Admin page module requested",
+        "venue_owner: existing Admin guard outcome preserved; no Admin page module requested",
+        "customer: existing Admin guard outcome preserved; no Admin page module requested",
+        "none: existing Admin guard outcome preserved; no Admin page module requested",
+        "Screenshots: /tmp/eventwow-workspace-v2"
+      ]
+    },
+    "admin": {
+      "passed": true,
+      "output": [
+        "enquiry-quote-draft: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed",
+        "enquiry-create: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed",
+        "Supplier/venue/enquiry detail and enquiry create forms; disabled credit confirmation; venue save request",
+        "Moderation request failures surface an error and recover through Retry",
+        "Supplier, enquiry and venue detail: loading/error/not-found feedback verified at mobile width; unavailable records do not expose Save or default metrics",
+        "All seven supporting routes: loading state verified",
+        "All seven supporting routes: empty state verified",
+        "All seven supporting routes: error state verified"
+      ]
+    },
+    "supplier": {
+      "passed": true,
+      "output": [
+        "listing: 360/768/1024/1440; axe, overflow, populated layout",
+        "Requests: search, status filtering, quoted/declined disables, details/Escape/focus return, decline payload, original create-quote navigation",
+        "Notifications: mark all/single payloads, pending/zero-unread disables, original open destination",
+        "Listing: labels, initial/save pending disabled states, local Cancel, unchanged postcode validation, failed save retains draft, exact save payload",
+        "Listing media: focusable uploads, JPG/PNG/WEBP and 5MB validation, busy upload disables, hero/gallery uploads, reorder boundaries/order payload, delete payloads; services/categories and Cancel",
+        "All four pages: loading/empty/error at 360/768/1024/1440, retry recovery; unavailable dashboard counts/scores never become false zeroes",
+        "Credit bundles: unchanged payloads/prices, checkout failure/pending states; mobile Radix drawer/Escape/focus return, command search and account menu keyboard controls",
+        "Role guards: signed out/Admin/Customer/Venue blocked from all four Supplier routes; incomplete Supplier still redirects to onboarding"
+      ]
+    },
+    "supplier-workflows": {
+      "passed": true,
+      "output": [
+        "message-thread: 360/768/1024/1440px, document overflow and axe passed",
+        "quote-reaccept: 360/768/1024/1440px, document overflow and axe passed",
+        "Quotes: filters, validation, add/reorder items, totals, exact save/send/public-link/close/reopen/thread payloads, failed save preserves draft, insufficient credits, close cancellation, accepted-edit reacceptance and original Messages URL",
+        "booking-sources: 360/768/1024/1440px, document overflow and axe passed",
+        "Bookings: origin/date/status contracts, default/custom sources, exact create/edit/share/revoke payloads, required-date validation, failed save retained form, cancelled transition, paid flags and busy controls",
+        "Messages: URL-selected thread, empty/whitespace/pending disables, failed send retains composer, exact trimmed body/thread/client-ID payload, local success updates without refetch",
+        "Quotes/Bookings/Messages: loading/empty/error at all four widths, retries; detail loading/error/missing and empty conversation history",
+        "Keyboard: booking row, Radix edit dialog Tab containment/Escape/focus return, calendar navigation/event selection and persisted view; all three routes preserve signed-out/Admin/Customer/Venue guards"
+      ]
+    },
+    "customer": {
+      "passed": true,
+      "output": [
+        "no-suppliers-quotes: 360/768/1024/1440px, overflow and axe passed",
+        "messages-noQuote: 360/768/1024/1440px, overflow and axe passed",
+        "messages-noThread: 360/768/1024/1440px, overflow and axe passed",
+        "messages-failHistory: 360/768/1024/1440px, overflow and axe passed",
+        "messages-emptyMessages: 360/768/1024/1440px, overflow and axe passed",
+        "messages-loadingMessages: 360/768/1024/1440px, overflow and axe passed",
+        "List/detail loading/empty/error/retry at all widths; missing/mismatched enquiry hides actions; targets failure retains loaded quotes; empty suppliers/quotes and message loading/empty/no-quote/no-thread/history-failure states passed",
+        "Mobile navigation/command keyboard controls; signed-out/Admin/Supplier/Venue guards on all three routes without Customer API calls passed"
+      ]
+    },
+    "venue": {
+      "passed": true,
+      "output": [
+        "overview-error: 360/768/1024/1440px, overflow and axe passed",
+        "overview-loading: 360/768/1024/1440px, overflow and axe passed",
+        "editor-empty: 360/768/1024/1440px, overflow and axe passed",
+        "editor-error: 360/768/1024/1440px, overflow and axe passed",
+        "editor-loading: 360/768/1024/1440px, overflow and axe passed",
+        "empty-profile: 360/768/1024/1440px, overflow and axe passed",
+        "Both routes: loading/empty/error and retry at all widths; unowned ID exposes no form; empty profile/gallery, signed/public image URLs and broken-image fallback passed",
+        "Keyboard drawer Tab/Escape/focus return and command search; signed-out/Admin/Supplier/Customer guard redirects without owner API requests; existing venue role alias passed"
+      ]
+    },
+    "workflow": {
+      "passed": true,
+      "output": [
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "Connected browser workflow passed (80 API calls; Supplier initial thread reads: 4)."
+      ]
+    }
+  },
+  "liveWrites": false
+}

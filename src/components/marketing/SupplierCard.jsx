@@ -1,102 +1,85 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardFooter } from "../ui/Card";
-import Badge from "../ui/Badge";
-import Button from "../ui/Button";
+import { Star, ShieldCheck } from "lucide-react";
 import { getFsaBadgeLabel, getFsaBadgePath } from "../../lib/fsaBadge";
-
-function formatResponseHours(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  return `Replies in ~${n.toFixed(n < 10 ? 1 : 0)}h`;
-}
-
-function Stars({ rating }) {
-  const value = Number(rating);
-  const safe = Number.isFinite(value) ? Math.max(0, Math.min(5, value)) : 0;
-  return (
-    <div className="flex items-center gap-0.5" aria-label={`Rating ${safe.toFixed(1)} out of 5`}>
-      {Array.from({ length: 5 }).map((_, idx) => {
-        const filled = idx + 1 <= Math.round(safe);
-        return (
-          <svg key={`star-${idx}`} viewBox="0 0 20 20" className={`h-3.5 w-3.5 ${filled ? "text-amber-500" : "text-slate-300"}`} fill="currentColor" aria-hidden="true">
-            <path d="M10 1.8l2.45 4.96 5.47.8-3.96 3.86.94 5.45L10 14.28l-4.9 2.58.94-5.45L2.08 7.56l5.47-.8L10 1.8z" />
-          </svg>
-        );
-      })}
-    </div>
-  );
-}
-
-export default function SupplierCard({ supplier, showFsa = true }) {
-  const performance = supplier?.performance || {};
-  const replySignal = formatResponseHours(performance.typicalResponseHours);
-  const primaryCategory = Array.isArray(supplier?.categoryBadges) && supplier.categoryBadges.length > 0
-    ? supplier.categoryBadges[0]
+import { ListingImage, PublicButton } from "./PublicComponents";
+export default function SupplierCard({
+  supplier,
+  showFsa = true,
+  layout = "grid",
+}) {
+  const hours = supplier?.performance?.typicalResponseHours;
+  // Missing measurements are not a zero-hour response claim.
+  const replySignal =
+    hours != null && hours !== "" && Number.isFinite(Number(hours))
+      ? `Replies in ~${Number(hours).toFixed(Number(hours) < 10 ? 1 : 0)}h`
+      : null;
+  const primaryCategory = supplier?.categoryBadges?.[0];
+  const rating = Number(supplier?.reviewRating),
+    count = Number(supplier?.reviewCount || 0);
+  const hasReviews =
+    supplier?.reviewRating != null && Number.isFinite(rating) && count > 0;
+  const insured = !!(supplier?.isInsured ?? supplier?.is_insured);
+  const fsaValue = showFsa
+    ? (supplier?.fsaRatingValue ?? supplier?.fsa_rating_value ?? null)
     : null;
-  const reviewRating = Number(supplier?.reviewRating);
-  const reviewCount = Number(supplier?.reviewCount || 0);
-  const hasReviews = Number.isFinite(reviewRating) && reviewCount > 0;
-  const isInsured = !!(supplier?.isInsured ?? supplier?.is_insured);
-  const fsaRatingValue = showFsa ? (supplier?.fsaRatingValue ?? supplier?.fsa_rating_value ?? null) : null;
-  const fsaBadgeSrc = supplier?.fsaRatingBadgeUrl ?? supplier?.fsa_rating_badge_url ?? getFsaBadgePath(fsaRatingValue);
-  const fsaLabel = getFsaBadgeLabel(fsaRatingValue);
-  const meta = [
-    replySignal,
-    hasReviews ? `${reviewRating.toFixed(1)} (${reviewCount})` : null,
-  ].filter(Boolean);
-
+  const fsaLabel = getFsaBadgeLabel(fsaValue);
+  const fsaSrc =
+    supplier?.fsaRatingBadgeUrl ??
+    supplier?.fsa_rating_badge_url ??
+    getFsaBadgePath(fsaValue);
   return (
-    <Card className="overflow-hidden rounded-2xl">
-      {supplier.heroImageUrl ? (
-        <img
-          src={supplier.heroImageUrl}
-          alt={`${supplier.name} cover`}
-          className="h-32 w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div className="h-32 bg-gradient-to-br from-blue-100 via-indigo-50 to-sky-100" />
-      )}
-      <CardContent className="space-y-3">
-        <div>
-          <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-slate-900">
-            <Link to={`/suppliers/${supplier.slug}`} className="hover:underline">
-              {supplier.name}
-            </Link>
-          </h3>
-          {supplier.locationLabel ? <p className="mt-1 text-xs text-slate-500">{supplier.locationLabel}</p> : null}
+    <article
+      className={`public-card public-supplier-card ${layout === "list" ? "public-supplier-row" : ""}`}
+    >
+      <ListingImage src={supplier.heroImageUrl} name={supplier.name} />
+      <div className="public-supplier-main">
+        <h3>
+          <Link to={`/suppliers/${supplier.slug}`}>{supplier.name}</Link>
+        </h3>
+        <p className="public-meta">
+          {[primaryCategory, supplier.locationLabel]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+        {supplier.shortDescription && (
+          <p className="public-card-copy">{supplier.shortDescription}</p>
+        )}
+        <div className="public-supplier-signals">
+          {insured && (
+            <span className="public-confidence">
+              <ShieldCheck size={16} aria-hidden="true" />
+              Insured
+            </span>
+          )}
+          {replySignal && <span>{replySignal}</span>}
+          {fsaLabel && (
+            <span>
+              {fsaSrc && (
+                <img
+                  src={fsaSrc}
+                  alt=""
+                  width="70"
+                  height="32"
+                  loading="lazy"
+                />
+              )}
+              {fsaLabel}
+            </span>
+          )}
         </div>
-        {primaryCategory ? <Badge variant="neutral">{primaryCategory}</Badge> : null}
-        {(isInsured || fsaLabel) ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {isInsured ? <Badge variant="success">Insured</Badge> : null}
-            {fsaLabel ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700">
-                {fsaBadgeSrc ? <img src={fsaBadgeSrc} alt={fsaLabel} className="h-4 w-auto" loading="lazy" /> : null}
-                <span>{fsaRatingValue}</span>
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        {meta.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            {replySignal ? <span>{replySignal}</span> : null}
-            {replySignal && hasReviews ? <span aria-hidden="true">•</span> : null}
-            {hasReviews ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Stars rating={reviewRating} />
-                <span>{reviewRating.toFixed(1)} ({reviewCount})</span>
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        <p className="line-clamp-3 text-sm text-slate-600">{supplier.shortDescription}</p>
-      </CardContent>
-      <CardFooter>
-        <Button as={Link} to={`/suppliers/${supplier.slug}`} className="w-full">
+      </div>
+      <div className="public-supplier-actions">
+        {hasReviews && (
+          <span className="public-rating">
+            <Star size={16} aria-hidden="true" />
+            <strong>{rating.toFixed(1)}</strong>
+            <span>({count} reviews)</span>
+          </span>
+        )}
+        <PublicButton as={Link} to={`/suppliers/${supplier.slug}`}>
           View profile
-        </Button>
-      </CardFooter>
-    </Card>
+        </PublicButton>
+      </div>
+    </article>
   );
 }

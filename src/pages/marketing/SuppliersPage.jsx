@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
 import SupplierCard from "../../components/marketing/SupplierCard";
 import { useMarketingMeta } from "../../lib/marketingMeta";
+
+import { publicGet } from "../../lib/publicRequest";
+import {
+  PublicPageHeader,
+  PublicSearch,
+  PublicSelect,
+  PublicFilterPanel,
+  MarketplaceResults,
+  PublicResultsState,
+  PublicCallout,
+} from "../../components/marketing/PublicComponents";
 
 const SORT_OPTIONS = [
   { value: "recommended", label: "Recommended" },
@@ -16,6 +23,9 @@ const SORT_OPTIONS = [
 export default function SuppliersPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [retry, setRetry] = useState(0);
+  const [optionsRetry, setOptionsRetry] = useState(0);
+  const [optionsError, setOptionsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
@@ -29,7 +39,8 @@ export default function SuppliersPage() {
 
   useMarketingMeta({
     title: "Event suppliers near you | Eventwow",
-    description: "Find trusted event suppliers across the UK and request personalised quotes directly.",
+    description:
+      "Find trusted event suppliers across the UK and request personalised quotes directly.",
     path: `/suppliers${location.search || ""}`,
     canonicalPath: "/suppliers",
   });
@@ -50,7 +61,8 @@ export default function SuppliersPage() {
       .map((row) => String(row?.display_name || "").trim())
       .filter(Boolean);
     const unique = [...new Set(names)];
-    if (category && category !== "All" && !unique.includes(category)) unique.push(category);
+    if (category && category !== "All" && !unique.includes(category))
+      unique.push(category);
     return ["All", ...unique];
   }, [categories, category]);
 
@@ -60,9 +72,7 @@ export default function SuppliersPage() {
       setLoading(true);
       setError("");
       try {
-        const resp = await fetch(`/api/public-suppliers?${queryString}`);
-        const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load suppliers");
+        const json = await publicGet(`/api/public-suppliers?${queryString}`);
         if (!mounted) return;
         setRows(json?.rows || []);
         setTotalCount(Number(json?.totalCount || 0));
@@ -79,124 +89,155 @@ export default function SuppliersPage() {
     return () => {
       mounted = false;
     };
-  }, [queryString]);
+  }, [queryString, retry]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const resp = await fetch("/api/public/categories/options");
-        const json = await resp.json().catch(() => []);
-        if (!resp.ok) throw new Error("Failed to load category options");
+        setOptionsError("");
+        const json = await publicGet("/api/public/categories/options");
         if (!mounted) return;
         setCategories(Array.isArray(json) ? json : []);
       } catch {
-        if (mounted) setCategories([]);
+        if (mounted) {
+          setCategories([]);
+          setOptionsError("Category options are unavailable.");
+        }
       }
     })();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [optionsRetry]);
 
   function setParam(key, value) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (!value || String(value).trim() === "" || (key === "category" && value === "All")) {
-        next.delete(key);
-      } else {
-        next.set(key, value);
-      }
-      return next;
-    }, { replace: true });
+    setSearchParams(
+      () => {
+        // URL changes precede React commits. Preserve the latest filter when
+        // controls change rapidly instead of merging a previous render snapshot.
+        const next = new URLSearchParams(window.location.search);
+        if (
+          !value ||
+          String(value).trim() === "" ||
+          (key === "category" && value === "All")
+        ) {
+          next.delete(key);
+        } else {
+          next.set(key, value);
+        }
+        return next;
+      },
+      { replace: true },
+    );
   }
 
+  const clear = () => setSearchParams({}, { replace: true });
   return (
     <MarketingShell>
-      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
-        <h1 className="text-4xl font-semibold tracking-tight">Event suppliers near you</h1>
-        <p className="mt-3 text-base text-white/90">Find trusted event suppliers and request quotes fast.</p>
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
-          <div className="md:col-span-6">
-            <Input
-              value={q}
-              onChange={(e) => setParam("q", e.target.value)}
-              placeholder="Search by supplier name, category, or location"
-              aria-label="Search suppliers"
-            />
-          </div>
-          <div className="md:col-span-3">
-            <select
+      <PublicPageHeader
+        breadcrumb="Suppliers"
+        title={
+          category !== "All"
+            ? `${category} suppliers${locationFilter ? ` in ${locationFilter}` : ""}`
+            : "Event suppliers near you"
+        }
+        subtitle={
+          loading
+            ? "Finding suppliers…"
+            : error
+              ? "Results unavailable"
+              : `Showing ${rows.length} of ${totalCount} suppliers`
+        }
+      />
+      <PublicSearch
+        label="Search suppliers"
+        placeholder="Search suppliers, services or locations…"
+        value={q}
+        onChange={(e) => setParam("q", e.target.value)}
+      />
+      <MarketplaceResults
+        kind="suppliers"
+        filters={
+          <PublicFilterPanel onClear={clear} active={!!location.search}>
+            <PublicSelect
+              label="Category"
               value={category}
               onChange={(e) => setParam("category", e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-              aria-label="Filter by category"
             >
               {categoryOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>
+                  {option === "All" ? "All categories" : option}
+                </option>
               ))}
-            </select>
-          </div>
-          <div className="md:col-span-3">
-            <select
+            </PublicSelect>
+            {optionsError && (
+              <p role="alert" className="public-meta">
+                {optionsError}{" "}
+                <button
+                  className="public-text-link"
+                  onClick={() => setOptionsRetry((n) => n + 1)}
+                >
+                  Retry categories
+                </button>
+              </p>
+            )}
+            <label className="public-field">
+              <span>Location</span>
+              <input
+                value={locationFilter}
+                placeholder="Town or area"
+                onChange={(e) => setParam("location", e.target.value)}
+              />
+            </label>
+            <PublicSelect
+              label="Sort suppliers"
               value={sort}
               onChange={(e) => setParam("sort", e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-              aria-label="Sort suppliers"
             >
               {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
-            </select>
-          </div>
-        </div>
-      </section>
-
-      <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm text-slate-600">{totalCount} suppliers</p>
-        <Button variant="secondary" onClick={() => setSearchParams({}, { replace: true })}>Clear filters</Button>
-      </div>
-
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
-
-      <section className="mt-4">
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={`sk-${i}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="mt-3 h-5 w-2/3" />
-                <Skeleton className="mt-2 h-4 w-1/2" />
-                <Skeleton className="mt-3 h-12 w-full" />
-                <Skeleton className="mt-3 h-10 w-full" />
-              </div>
-            ))}
-          </div>
-        ) : rows.length === 0 ? (
-          <EmptyState title="No suppliers found" description="Try removing filters or searching a broader term." />
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            </PublicSelect>
+          </PublicFilterPanel>
+        }
+        help={
+          <PublicCallout
+            compact
+            title="Need help choosing?"
+            description="Share your event details and receive personalised supplier quotes."
+          />
+        }
+      >
+        <PublicResultsState
+          kind="suppliers"
+          loading={loading}
+          error={error}
+          empty={!rows.length}
+          onRetry={() => setRetry((n) => n + 1)}
+          onClear={location.search ? clear : undefined}
+        >
+          <div className="public-supplier-list">
             {rows.map((supplier) => (
-              <SupplierCard key={supplier.id} supplier={supplier} showFsa={false} />
+              <SupplierCard
+                key={supplier.id}
+                supplier={supplier}
+                showFsa={false}
+                layout="list"
+              />
             ))}
           </div>
-        )}
-      </section>
-
-      <section className="mt-12 rounded-3xl bg-[radial-gradient(circle_at_top_right,#60a5fa_0%,#2563eb_40%,#1d4ed8_100%)] p-8 text-center text-white shadow-lg">
-        <h2 className="text-4xl font-semibold tracking-tight">Are you an event supplier?</h2>
-        <p className="mx-auto mt-3 max-w-3xl text-base text-white/90">
-          Join Eventwow and receive direct enquiries from customers planning real events. No high commission percentages.
-        </p>
-        <div className="mt-6 flex items-center justify-center">
-          <Button as={Link} to="/supplier/signup" variant="secondary" className="border-white/45 bg-white/10 text-white hover:bg-white/20">
-            Become a supplier
-          </Button>
-        </div>
-      </section>
+        </PublicResultsState>
+      </MarketplaceResults>
+      <PublicCallout />
+      <PublicCallout
+        title="Are you an event supplier?"
+        description="Join EventWow and receive direct enquiries from customers planning events."
+        to="/supplier/signup"
+        label="Become a supplier"
+      />
     </MarketingShell>
   );
 }
