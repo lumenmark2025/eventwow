@@ -278,3 +278,7 @@ The migration is successful when:
 - Codex can add a page without inventing a new design language
 - there is an approved `/design-system` route that acts as the visual source of truth
 - changes to the visual system propagate through the product rather than requiring page-by-page repair
+
+## Final sweep implementation record
+
+The final public informational bodies, shared fallback presentation and static home/list/profile styles now use v2. Proven-unused legacy UI files are removed. See [final sweep verification](verification/final-v2-sweep/README.md) for the exact scope, preserved SEO/runtime contracts, cleanup inventory and staging requirements. This records implementation/fixture verification; configured live QA and the separately documented security/workflow fixes remain release work.

@@ -1,0 +1,65 @@
+{
+  "baseline": "fea139f4c131f21b8322ac90cc6867f949deeee2",
+  "branch": "ui-v2-design-system",
+  "date": "2026-09-12",
+  "fixture_only": true,
+  "widths": [
+    360,
+    768,
+    1024,
+    1440
+  ],
+  "new_responsive_axe_checks": 40,
+  "suites": {
+    "test:final-sweep": "passed",
+    "test:workspace": "passed",
+    "test:admin": "passed",
+    "test:supplier": "passed",
+    "test:supplier-workflows": "passed",
+    "test:venue": "passed",
+    "test:customer": "passed",
+    "test:public": "passed",
+    "test:public-profiles": "passed",
+    "test:public-seo": "passed",
+    "test:public-journey": "passed",
+    "test:auth": "passed",
+    "test:customer-supplier": "passed"
+  },
+  "connected_workflow": {
+    "api_calls": 120,
+    "initial_supplier_thread_reads": 4,
+    "live_email": "not configured; skipped"
+  },
+  "vite": {
+    "result": "passed",
+    "seconds": 5.47,
+    "entry_kb": 436.52,
+    "entry_gzip_kb": 128.11,
+    "baseline_entry_kb": 436.44,
+    "baseline_entry_gzip_kb": 128.11
+  },
+  "full_build": {
+    "vite": "passed",
+    "prerender": "blocked by existing missing Supabase URL/service-role credentials"
+  },
+  "lint": {
+    "errors": 428,
+    "warnings": 12,
+    "added": []
+  },
+  "removed_files": 11,
+  "unchanged": [
+    "App routes/guards/session AST",
+    "API and Supabase sources",
+    "src/lib helpers",
+    "vercel.json",
+    "dependency lockfile",
+    "static head/schema/sitemap/content/URLs"
+  ],
+  "remaining_live_checks": [
+    "Configured full prerender and Vercel direct-link/status delivery",
+    "Prior RLS migration deployment confirmation",
+    "Auth recovery/returns and Supplier review reliability review",
+    "Live email/session/quote/credit/booking/message integrations"
+  ]
+}

@@ -96,7 +96,7 @@ function setRootHtml(template, rootHtml) {
 }
 
 function appShell({ h1, intro, bodyHtml }) {
-  return [
+  return styleSeoLanding([
     '<main class="pr-wrap">',
     '<section class="pr-hero">',
     `<h1>${escapeHtml(h1)}</h1>`,
@@ -104,23 +104,7 @@ function appShell({ h1, intro, bodyHtml }) {
     "</section>",
     bodyHtml,
     "</main>",
-    "<style>",
-    ".pr-wrap{max-width:1120px;margin:0 auto;padding:24px 16px 40px;color:#0f172a;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}",
-    ".pr-hero{padding:20px 0 10px}",
-    ".pr-hero h1{margin:0;font-size:clamp(1.9rem,4vw,2.9rem);line-height:1.1;color:#1e3a8a}",
-    ".pr-hero p{margin:.7rem 0 0;color:#334155;max-width:75ch}",
-    ".pr-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:18px}",
-    ".pr-card{background:#fff;border:1px solid #dbeafe;border-radius:14px;padding:14px}",
-    ".pr-card h2{margin:0 0 .55rem;font-size:1rem;color:#1e3a8a}",
-    ".pr-card p{margin:.45rem 0 0;color:#475569;font-size:.92rem}",
-    ".pr-list{margin:0;padding-left:18px;display:grid;gap:6px}",
-    ".pr-list a{color:#1d4ed8;text-decoration:none}",
-    ".pr-list a:hover{text-decoration:underline}",
-    ".pr-inline{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}",
-    ".pr-pill{display:inline-block;border:1px solid #bfdbfe;border-radius:999px;padding:5px 10px;font-size:.82rem;color:#1e3a8a;text-decoration:none;background:#eff6ff}",
-    ".pr-pill:hover{background:#dbeafe}",
-    "</style>",
-  ].join("");
+  ].join(""), path.join(DIST_DIR, "assets"));
 }
 
 function linkedList(items, emptyText) {
@@ -160,7 +144,7 @@ function homeHtml(categories, venues, suppliers) {
 }
 
 function listPageHtml({ h1, intro, links, secondaryLinks, secondaryTitle }) {
-  return styleSeoLanding(appShell({
+  return appShell({
     h1,
     intro,
     bodyHtml: [
@@ -173,7 +157,7 @@ function listPageHtml({ h1, intro, links, secondaryLinks, secondaryTitle }) {
       "</article>",
       "</section>",
     ].join(""),
-  }), path.join(DIST_DIR, "assets"));
+  });
 }
 
 function detailPageHtml({ h1, intro, details, relatedLinks }) {

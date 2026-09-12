@@ -1,4 +1,4 @@
-/* Style-only adapter for the existing static SEO list markup. Uses the same
+/* Style-only adapter for the existing static SEO markup. Uses the same
    source tokens as React; leaves headings, copy and crawlable links intact. */
 .pr-wrap.public-seo-prerender {
   box-sizing: border-box;
@@ -92,5 +92,73 @@
   }
   .public-seo-prerender .pr-hero p {
     font-size: 16px;
+  }
+}
+/* Shared baseline for all static bodies, including home and profile fallbacks.
+   Static content stays visible without JavaScript; no separate legacy CSS. */
+.pr-wrap.public-seo-prerender {
+  margin: 0 auto;
+  font-family: Inter, system-ui, sans-serif;
+}
+.public-seo-prerender * {
+  box-sizing: border-box;
+}
+.public-seo-prerender h1,
+.public-seo-prerender h2 {
+  margin: 0;
+}
+.public-seo-prerender .pr-hero p {
+  margin: 16px 0 0;
+}
+.public-seo-prerender .pr-list {
+  margin: 0;
+  display: grid;
+}
+.public-seo-prerender .pr-list li {
+  padding-block: 12px;
+}
+.public-seo-prerender .pr-list li:has(a) {
+  padding-block: 0;
+}
+.public-seo-prerender .pr-list a {
+  text-decoration: none;
+}
+.public-seo-prerender a:hover {
+  text-decoration: underline;
+}
+.public-seo-prerender .pr-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.public-seo-prerender .pr-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 11px;
+  border: 1px solid var(--public-line);
+  background: var(--public-surface);
+  color: var(--public-ink);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.public-seo-prerender .pr-pill:first-child {
+  background: var(--public-action);
+  color: var(--public-surface);
+  border-color: transparent;
+}
+.public-seo-prerender .pr-pill:first-child:hover {
+  background: var(--public-action-hover);
+}
+.public-seo-prerender .pr-card h2 {
+  font-weight: 700;
+}
+@media (min-width: 901px) {
+  .public-seo-prerender .pr-grid:has(> article:nth-child(3)) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

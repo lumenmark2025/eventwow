@@ -1,0 +1,423 @@
+COMMAND test:final
+
+> eventwow-admin@0.0.0 test:final-sweep
+> node scripts/verify-public-seo-contracts.mjs && node scripts/verify-final-v2-sweep.mjs
+
+All four React metadata calls, slug helpers, pagination callback and read URL expressions identical as AST
+API/Supabase/routes/rewrites/dynamic sitemap/metadata helper unchanged
+All prerender functions except the shared style-only appShell identical as AST
+Static list text, H1/H2, intro, links and empty copy identical after removing CSS/class marker
+Static title/description/canonical/schema output identical; existing main() route/content generation and writeSitemap unchanged
+Static category without JavaScript: four widths, no overflow, crawlable links and keyboard focus; same static HTML passes axe in an enabled audit context
+Generated sitemap bytes/path identical for representative routes including deduplication
+Final sweep: 40 responsive/axe checks; content/meta/routes, FAQ keyboard, email handoff, global loading/error/reload, not-found/redirect, JS-disabled static home/profile checks passed.
+
+
+COMMAND test:workspace
+
+> eventwow-admin@0.0.0 test:workspace
+> node scripts/verify-workspace-v2.mjs
+
+Checking dashboard
+Checking enquiries
+Checking suppliers
+Checking venues
+Checking design-system
+dashboard: populated at 360/768/1024/1440, no overflow, shared geometry
+enquiries: populated at 360/768/1024/1440, no overflow, shared geometry
+suppliers: populated at 360/768/1024/1440, no overflow, shared geometry
+venues: populated at 360/768/1024/1440, no overflow, shared geometry
+design-system: populated at 360/768/1024/1440, no overflow, shared geometry
+Enquiries: search, status filter, keyboard detail, back and creation payload retained (fixture)
+Suppliers: local filtering, create dialog, unchanged creation payload, editor opens (fixture)
+Venues: filters, cancel/confirm draft deletion, create draft payload and editor route retained (fixture)
+Mobile drawer navigation, account menu, Ctrl K search, dialog focus trap/Escape/restore pass
+All four admin screens: loading state; errors do not masquerade as zero metrics
+All four admin screens: empty state; errors do not masquerade as zero metrics
+All four admin screens: error state; errors do not masquerade as zero metrics
+Dashboard: partial service failure preserves successful panels and unavailable metrics use —
+supplier: existing Admin guard outcome preserved; no Admin page module requested
+venue_owner: existing Admin guard outcome preserved; no Admin page module requested
+customer: existing Admin guard outcome preserved; no Admin page module requested
+none: existing Admin guard outcome preserved; no Admin page module requested
+Screenshots: /tmp/eventwow-workspace-v2
+
+
+COMMAND test:admin
+
+> eventwow-admin@0.0.0 test:admin
+> node scripts/verify-admin-v2.mjs
+
+Checking applications
+Checking claims
+Checking reviews
+Checking categories
+Checking ledger
+Checking performance
+Checking hero-images
+Checking applications: loading
+Checking claims: loading
+Checking reviews: loading
+Checking categories: loading
+Checking ledger: loading
+Checking performance: loading
+Checking hero-images: loading
+Checking applications: empty
+Checking claims: empty
+Checking reviews: empty
+Checking categories: empty
+Checking ledger: empty
+Checking performance: empty
+Checking hero-images: empty
+Checking applications: error
+Checking claims: error
+Checking reviews: error
+Checking categories: error
+Checking ledger: error
+Checking performance: error
+Checking hero-images: error
+applications: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+claims: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+reviews: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+categories: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+ledger: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+performance: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+hero-images: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+Supplier publish/reject with notes, venue claim approve/reject, review approve/reject: unchanged requests and disabled states
+category-create: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+category-edit: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+Category create/edit: validation, save payloads, busy toggle, save failure, Radix Escape and focus restoration
+ledger-detail: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+Ledger keyboard detail dialog and CSV export
+Hero image dry run: unchanged payload, running and completion feedback
+supplier-create: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+supplier-detail: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+supplier-credit-adjust: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+venue-detail: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+venue-ai-builder: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+venue-bulk-preview: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+Supplier create validation, AI builder disabled actions, venue CSV preview and dialog layouts
+enquiry-detail: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+enquiry-quote-draft: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+enquiry-create: 360/768/1024/1440px, no page overflow, axe WCAG A/AA checks passed
+Supplier/venue/enquiry detail and enquiry create forms; disabled credit confirmation; venue save request
+Moderation request failures surface an error and recover through Retry
+Supplier, enquiry and venue detail: loading/error/not-found feedback verified at mobile width; unavailable records do not expose Save or default metrics
+All seven supporting routes: loading state verified
+All seven supporting routes: empty state verified
+All seven supporting routes: error state verified
+
+
+COMMAND test:supplier
+
+> eventwow-admin@0.0.0 test:supplier
+> node scripts/verify-supplier-v2.mjs
+
+dashboard: 360/768/1024/1440; axe, overflow, populated layout
+enquiries: 360/768/1024/1440; axe, overflow, populated layout
+notifications: 360/768/1024/1440; axe, overflow, populated layout
+listing: 360/768/1024/1440; axe, overflow, populated layout
+Requests: search, status filtering, quoted/declined disables, details/Escape/focus return, decline payload, original create-quote navigation
+Notifications: mark all/single payloads, pending/zero-unread disables, original open destination
+Listing: labels, initial/save pending disabled states, local Cancel, unchanged postcode validation, failed save retains draft, exact save payload
+Listing media: focusable uploads, JPG/PNG/WEBP and 5MB validation, busy upload disables, hero/gallery uploads, reorder boundaries/order payload, delete payloads; services/categories and Cancel
+All four pages: loading/empty/error at 360/768/1024/1440, retry recovery; unavailable dashboard counts/scores never become false zeroes
+Credit bundles: unchanged payloads/prices, checkout failure/pending states; mobile Radix drawer/Escape/focus return, command search and account menu keyboard controls
+Role guards: signed out/Admin/Customer/Venue blocked from all four Supplier routes; incomplete Supplier still redirects to onboarding
+
+
+COMMAND test:supplier-workflows
+
+> eventwow-admin@0.0.0 test:supplier-workflows
+> node scripts/verify-supplier-workflows-v2.mjs
+
+quotes-list: 360/768/1024/1440px, document overflow and axe passed
+quote-detail: 360/768/1024/1440px, document overflow and axe passed
+bookings-list: 360/768/1024/1440px, document overflow and axe passed
+booking-detail: 360/768/1024/1440px, document overflow and axe passed
+booking-edit: 360/768/1024/1440px, document overflow and axe passed
+booking-calendar: 360/768/1024/1440px, document overflow and axe passed
+booking-week: 360/768/1024/1440px, document overflow and axe excluding verified pre-existing week-header/all-day ARIA structure defects passed
+messages-list: 360/768/1024/1440px, document overflow and axe passed
+message-thread: 360/768/1024/1440px, document overflow and axe passed
+quote-reaccept: 360/768/1024/1440px, document overflow and axe passed
+Quotes: filters, validation, add/reorder items, totals, exact save/send/public-link/close/reopen/thread payloads, failed save preserves draft, insufficient credits, close cancellation, accepted-edit reacceptance and original Messages URL
+booking-sources: 360/768/1024/1440px, document overflow and axe passed
+Bookings: origin/date/status contracts, default/custom sources, exact create/edit/share/revoke payloads, required-date validation, failed save retained form, cancelled transition, paid flags and busy controls
+Messages: URL-selected thread, empty/whitespace/pending disables, failed send retains composer, exact trimmed body/thread/client-ID payload, local success updates without refetch
+Quotes/Bookings/Messages: loading/empty/error at all four widths, retries; detail loading/error/missing and empty conversation history
+Keyboard: booking row, Radix edit dialog Tab containment/Escape/focus return, calendar navigation/event selection and persisted view; all three routes preserve signed-out/Admin/Customer/Venue guards
+
+
+COMMAND test:venue
+
+> eventwow-admin@0.0.0 test:venue
+> node scripts/verify-venue-v2.mjs
+
+overview: 360/768/1024/1440px, overflow and axe passed
+editor: 360/768/1024/1440px, overflow and axe passed
+pending-review: 360/768/1024/1440px, overflow and axe passed
+Overview search is local; edit keyboard link, exact save payload/null/numeric/facility conversion, pending review, disabled saving/upload controls, failed-save draft retention and Cancel navigation passed
+Media: keyboard file controls, exact preparation query and raw signed PUT payload/MIME, upload/save disables, 5MB validation, prep/missing-URL/PUT failures and post-upload reloads passed
+overview-empty: 360/768/1024/1440px, overflow and axe passed
+overview-error: 360/768/1024/1440px, overflow and axe passed
+overview-loading: 360/768/1024/1440px, overflow and axe passed
+editor-empty: 360/768/1024/1440px, overflow and axe passed
+editor-error: 360/768/1024/1440px, overflow and axe passed
+editor-loading: 360/768/1024/1440px, overflow and axe passed
+empty-profile: 360/768/1024/1440px, overflow and axe passed
+Both routes: loading/empty/error and retry at all widths; unowned ID exposes no form; empty profile/gallery, signed/public image URLs and broken-image fallback passed
+Keyboard drawer Tab/Escape/focus return and command search; signed-out/Admin/Supplier/Customer guard redirects without owner API requests; existing venue role alias passed
+
+
+COMMAND test:customer
+
+> eventwow-admin@0.0.0 test:customer
+> node scripts/verify-customer-v2.mjs
+
+dashboard: 360/768/1024/1440px, overflow and axe passed
+enquiries: 360/768/1024/1440px, overflow and axe passed
+detail: 360/768/1024/1440px, overflow and axe passed
+Dashboard/navigation uses original request routes; local search adds no fetch; quote accept/decline exact token payloads, no new bearer contract, refresh and global busy/terminal disabling passed
+reaccept: 360/768/1024/1440px, overflow and axe passed
+messages: 360/768/1024/1440px, overflow and axe passed
+Reacceptance, missing-token disabling and decision errors retain detail; messaging exact get-or-create/limit=50/trimmed-body contracts, min/server-max validation, busy controls, failed-send draft retention, local append, Radix Tab/Escape/focus restoration passed
+enquiries-empty: 360/768/1024/1440px, overflow and axe passed
+detail-empty: 360/768/1024/1440px, overflow and axe passed
+enquiries-loading: 360/768/1024/1440px, overflow and axe passed
+detail-loading: 360/768/1024/1440px, overflow and axe passed
+enquiries-error: 360/768/1024/1440px, overflow and axe passed
+detail-error: 360/768/1024/1440px, overflow and axe passed
+no-suppliers-quotes: 360/768/1024/1440px, overflow and axe passed
+messages-noQuote: 360/768/1024/1440px, overflow and axe passed
+messages-noThread: 360/768/1024/1440px, overflow and axe passed
+messages-failHistory: 360/768/1024/1440px, overflow and axe passed
+messages-emptyMessages: 360/768/1024/1440px, overflow and axe passed
+messages-loadingMessages: 360/768/1024/1440px, overflow and axe passed
+List/detail loading/empty/error/retry at all widths; missing/mismatched enquiry hides actions; targets failure retains loaded quotes; empty suppliers/quotes and message loading/empty/no-quote/no-thread/history-failure states passed
+Mobile navigation/command keyboard controls; signed-out/Admin/Supplier/Venue guards on all three routes without Customer API calls passed
+
+
+COMMAND test:public
+
+> eventwow-admin@0.0.0 test:public
+> node --test scripts/verify-public-requests.mjs && node scripts/verify-public-v2.mjs
+
+TAP version 13
+# Subtest: overlapping public reads share one request, but later visits fetch fresh data
+ok 1 - overlapping public reads share one request, but later visits fetch fresh data
+  ---
+  duration_ms: 22.671582
+  type: 'test'
+  ...
+# Subtest: failed or malformed public responses are errors and do not poison retries
+ok 2 - failed or malformed public responses are errors and do not poison retries
+  ---
+  duration_ms: 1.798199
+  type: 'test'
+  ...
+# Subtest: profile callers can distinguish unpublished/missing profiles from service failures
+ok 3 - profile callers can distinguish unpublished/missing profiles from service failures
+  ---
+  duration_ms: 0.757946
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 87.733893
+home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed
+suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed
+venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed
+home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed
+suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed
+venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed
+Search/category/location/sort/clear query contracts, profile URLs, absent ratings/response metrics, failed images/options recovery and Radix keyboard/focus/navigation passed
+Public access remains available signed out and under Admin/Supplier/Venue/Customer sessions; no workspace data fetched
+
+
+COMMAND test:public-profiles
+
+> eventwow-admin@0.0.0 test:public-profiles
+> node scripts/verify-public-profiles-v2.mjs
+
+supplier loading passed
+supplier minimal passed
+supplier error passed
+supplier not-found passed
+supplier empty passed
+supplier broken passed
+supplier single passed
+supplier invalid-gallery passed
+venue loading passed
+venue minimal passed
+venue error passed
+venue not-found passed
+venue empty passed
+venue broken passed
+venue single passed
+venue invalid-gallery passed
+supplier: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed
+supplier: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed
+venue: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed
+venue: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed
+Stale-slug/JSON-LD regression and public access for signed-out/Admin/Supplier/Venue/Customer sessions passed
+
+
+COMMAND test:public-seo
+
+> eventwow-admin@0.0.0 test:public-seo
+> node scripts/verify-public-seo-contracts.mjs && node scripts/verify-public-seo-v2.mjs
+
+All four React metadata calls, slug helpers, pagination callback and read URL expressions identical as AST
+API/Supabase/routes/rewrites/dynamic sitemap/metadata helper unchanged
+All prerender functions except the shared style-only appShell identical as AST
+Static list text, H1/H2, intro, links and empty copy identical after removing CSS/class marker
+Static title/description/canonical/schema output identical; existing main() route/content generation and writeSitemap unchanged
+Static category without JavaScript: four widths, no overflow, crawlable links and keyboard focus; same static HTML passes axe in an enabled audit context
+Generated sitemap bytes/path identical for representative routes including deduplication
+/categories loading passed
+/categories empty passed
+/categories error passed
+/categories missing-media passed
+/categories/catering loading passed
+/categories/catering empty passed
+/categories/catering error passed
+/categories/catering not-found passed
+/categories/catering missing-media passed
+/category/catering/manchester loading passed
+/category/catering/manchester empty passed
+/category/catering/manchester error passed
+/category/catering/manchester not-found passed
+/category/catering/manchester missing-media passed
+/catering-manchester loading passed
+/catering-manchester empty passed
+/catering-manchester error passed
+/catering-manchester not-found passed
+/catering-manchester missing-media passed
+/categories: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed
+/categories/catering: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed
+/category/catering: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed
+/category/catering/manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed
+/location/manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed
+/catering-manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed
+Pagination exact query/clamping/disabled states, category keyboard links, /browse redirect, search debounce/trim/clear and stale-flat-slug schema cleanup passed
+Public access for signed-out/Admin/Supplier/Venue/Customer sessions, no workspace data reads
+
+
+COMMAND test:public-journey
+
+> eventwow-admin@0.0.0 test:public-journey
+> node scripts/verify-public-journey-contracts.mjs && node scripts/verify-public-journey-v2.mjs
+
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/RequestPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierRequestQuotePage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/EnquiryQuotesPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/BookingAccessPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/PublicQuotePage.jsx
+PASS API, RLS, token, route and library source unchanged
+PASS public journey: 36 responsive/state/accessibility checks plus action payloads
+
+
+COMMAND test:auth
+
+> eventwow-admin@0.0.0 test:auth
+> node scripts/verify-auth-contracts.mjs && node scripts/verify-auth-v2.mjs
+
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/components/Login.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/AuthCallbackPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/ForgotPassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/ResetPassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/UpdatePassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierJoinPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierOnboardingPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierVerifyPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/VenueClaimRequestPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/VenueClaimVerifyPage.jsx
+PASS API, RLS, token, route and library source unchanged
+PASS auth: 80 responsive/accessibility snapshots; password/OTP/signup/recovery/verification/claim/return and logout-role-transition contracts
+
+
+COMMAND test:customer-supplier
+
+> eventwow-admin@0.0.0 test:customer-supplier
+> node --test scripts/verify-customer-supplier-workflow.mjs && node scripts/verify-workflow-browser.mjs
+
+TAP version 13
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# [email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+# supplier-get-public-link crashed: Error: Quote link has been revoked; it cannot be reused.
+#     at ensureQuotePublicLink (file:///home/mark/workspaces/eventwow-dev/api/_lib/quotePublicLinks.js:26:19)
+#     at async handler (file:///home/mark/workspaces/eventwow-dev/api/supplier-get-public-link.js:107:18)
+#     at async invoke (file:///home/mark/workspaces/eventwow-dev/scripts/fixtures/workflow-backend.mjs:342:3)
+#     at async TestContext.<anonymous> (file:///home/mark/workspaces/eventwow-dev/scripts/verify-customer-supplier-workflow.mjs:584:19)
+#     at async Test.run (node:internal/test_runner/test:1054:7)
+#     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+#   status: 409
+# }
+# Subtest: Customer detail excludes drafts AND their item/token/thread content
+ok 1 - Customer detail excludes drafts AND their item/token/thread content
+  ---
+  duration_ms: 53.316796
+  type: 'test'
+  ...
+# Subtest: Latest message windows preserve newest replies in chronological display order
+ok 2 - Latest message windows preserve newest replies in chronological display order
+  ---
+  duration_ms: 22.170853
+  type: 'test'
+  ...
+# Subtest: Connected enquiry → quote decisions → bookings → two-way persisted fixture messages
+ok 3 - Connected enquiry → quote decisions → bookings → two-way persisted fixture messages
+  ---
+  duration_ms: 122.224476
+  type: 'test'
+  ...
+# 353 real Supabase-client requests exercised against isolated state; no external network requests.
+# Subtest: Decision links prepare before sending, fail safely, and recover concurrent historical lookups
+ok 4 - Decision links prepare before sending, fail safely, and recover concurrent historical lookups
+  ---
+  duration_ms: 10.838866
+  type: 'test'
+  ...
+# Subtest: Customer message API rejects mismatched quote/enquiry ownership before reading or writing messages
+ok 5 - Customer message API rejects mismatched quote/enquiry ownership before reading or writing messages
+  ---
+  duration_ms: 5.347749
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 360.639114
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }
+Connected browser workflow passed (120 API calls; Supplier initial thread reads: 4).

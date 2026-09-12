@@ -1,3 +1,4 @@
+import { PublicInfoSection, PublicFAQ } from "./PublicInfoComponents";
 import AuthShell from "../auth/AuthShell";
 import Input from "../ui/Input";
 import {
@@ -202,6 +203,19 @@ export default function PublicDesignExample() {
             Example primary action
           </PublicButton>
         </AuthShell>
+        <div className="public-info">
+          <PublicInfoSection title="Informational page sections">
+            <p>Shared plain sections keep existing marketing copy readable.</p>
+          </PublicInfoSection>
+          <PublicFAQ
+            items={[
+              {
+                q: "Example question",
+                a: "Existing answer content appears here. Synthetic example only.",
+              },
+            ]}
+          />
+        </div>
         <PublicCallout />
       </div>
       <MarketingFooter />

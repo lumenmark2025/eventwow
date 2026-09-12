@@ -521,3 +521,9 @@ Use `PublicSeoComponents` for organic landing pages: SeoLandingHeader over Publi
 ### Auth, onboarding and claim pattern
 
 Reuse `components/auth/AuthShell` for focused public authentication, recovery, verification and claim screens. It uses the public semantic tokens, Inter, the shared PublicLogo and PageHeader, and existing Button/Input controls. Standard panels cap at 560px; existing wider signup/onboarding forms use the same panel at 960px. These content widths keep short credentials forms focused and existing two/three-column fields readable. Headings use 36px desktop/30px mobile with 16–17px help text, 50px fields and 48px actions. `auth.css` scopes error/success notices, labels and the existing three-step progress treatment. `/design-system` includes an embedded synthetic auth/progress example. Do not introduce auth/session logic into this shell or change existing redirect, validation, recovery or onboarding contracts as part of presentation work.
+
+### Informational pages and static fallbacks
+
+`PublicInfoSection` and `PublicFAQ` extend the existing public section/header pattern for unchanged informational copy. Use plain sections and responsive columns, existing `PublicPageHeader`, `PublicButton` and `PublicCallout`; FAQ disclosure uses native keyboard-accessible details/summary with Lucide controls. Examples live on `/design-system`. MarketingShell now always uses the shared public geometry; its legacy width switch is retired.
+
+Global route loading/errors reuse the focused AuthShell public panel and existing reload action. Static `appShell` uses the same public tokens and emitted Inter fonts through `styleSeoLanding`, including home, lists and profiles. Preserve all crawlable text and links without JavaScript. The static fallback is a content-first representation, not a second React application or invented photography feed.

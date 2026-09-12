@@ -17,7 +17,6 @@
 .public-v2 [disabled] { cursor:not-allowed; opacity:.55; }
 .public-container { width:min(var(--public-max),calc(100% - 64px)); margin-inline:auto; }
 .public-main { padding-block:32px 16px; }
-.public-legacy-main { max-width:1280px; padding-block:40px; }
 .public-header { position:sticky; top:0; z-index:40; background:var(--public-surface); border-bottom:1px solid var(--public-line); }
 .public-header-inner { height:78px; display:flex; align-items:center; gap:32px; }
 .public-v2 .public-logo { display:inline-flex; gap:8px; align-items:center; font-size:30px; font-weight:800; letter-spacing:-1.2px; flex-shrink:0; }

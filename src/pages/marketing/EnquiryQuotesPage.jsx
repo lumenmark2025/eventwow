@@ -671,7 +671,7 @@ export default function EnquiryQuotesPage() {
                       </div>
 
                       {isActive && messageOpen ? (
-                        <div className="rounded-xl border border-brand/30 bg-brand/5 px-3 py-2 journey-small journey-text">
+                        <div className="rounded-xl border journey-border journey-soft px-3 py-2 journey-small journey-text">
                           Messaging panel open for this quote.
                         </div>
                       ) : null}

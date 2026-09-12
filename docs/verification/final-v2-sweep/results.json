@@ -1,0 +1,206 @@
+{
+  "baseline": "fea139f4c131f21b8322ac90cc6867f949deeee2",
+  "passed": true,
+  "screens": [
+    {
+      "name": "how-it-works",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "how-it-works",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "how-it-works",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "how-it-works",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "pricing",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "pricing",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "pricing",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "pricing",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "contact",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "contact",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "contact",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "contact",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "route-loading",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "route-loading",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "route-loading",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "route-loading",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "route-error",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "route-error",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "route-error",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "route-error",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "not-found",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "not-found",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "not-found",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "not-found",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "static-home",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "static-home",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "static-home",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "static-home",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "static-home-empty",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "static-home-empty",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "static-home-empty",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "static-home-empty",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "static-detail",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "static-detail",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "static-detail",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "static-detail",
+      "width": 1440,
+      "passed": true
+    },
+    {
+      "name": "static-detail-empty",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "static-detail-empty",
+      "width": 768,
+      "passed": true
+    },
+    {
+      "name": "static-detail-empty",
+      "width": 1024,
+      "passed": true
+    },
+    {
+      "name": "static-detail-empty",
+      "width": 1440,
+      "passed": true
+    }
+  ]
+}

@@ -121,7 +121,7 @@ const oldFns = functions(oldSource(prerenderFile)),
   newSrc = readFileSync(prerenderFile, "utf8"),
   newFns = functions(newSrc);
 for (const name of Object.keys(oldFns))
-  if (name !== "listPageHtml")
+  if (name !== "appShell")
     assert.deepEqual(
       clean(newFns[name]),
       clean(oldFns[name]),
@@ -150,6 +150,8 @@ function staticContext(src) {
           "appShell",
           "linkedList",
           "listPageHtml",
+          "homeHtml",
+          "detailPageHtml",
           "writeSitemap",
         ].includes(fn.id.name),
       )
@@ -211,6 +213,48 @@ for (const variant of [
     withoutStyle(newContext.listPageHtml(variant)),
     withoutStyle(oldContext.listPageHtml(variant)),
   );
+// The shared shell now styles home and profile output too. These fixtures prove
+// presentation changes retain every byte of escaped content and destination.
+const staticVariants = [
+  [
+    "home",
+    newContext.homeHtml(
+      [{ slug: "catering", name: "Catering & events" }],
+      [{ slug: "hall", name: "Fixture hall" }],
+      [{ slug: "team", name: "Fixture team" }],
+    ),
+    oldContext.homeHtml(
+      [{ slug: "catering", name: "Catering & events" }],
+      [{ slug: "hall", name: "Fixture hall" }],
+      [{ slug: "team", name: "Fixture team" }],
+    ),
+  ],
+  [
+    "home-empty",
+    newContext.homeHtml([], [], []),
+    oldContext.homeHtml([], [], []),
+  ],
+  ...[true, false].map((populated) => {
+    const args = {
+      h1: "Fixture profile",
+      intro: content.intro,
+      details: populated ? ["Manchester", "Capacity: 120", null] : [],
+      relatedLinks: populated ? content.links : [],
+    };
+    return [
+      populated ? "detail" : "detail-empty",
+      newContext.detailPageHtml(args),
+      oldContext.detailPageHtml(args),
+    ];
+  }),
+];
+for (const [name, current, previous] of staticVariants) {
+  assert.equal(
+    withoutStyle(current),
+    withoutStyle(previous),
+    `${name}: static content/links unchanged`,
+  );
+}
 const template =
   '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Initial title</title></head><body></body></html>';
 const seo = {
@@ -231,6 +275,14 @@ const html = newContext
   .setSeoHead(template, seo)
   .replace("<body></body>", `<body>${after}</body>`);
 writeFileSync(`${output}/static-category.html`, html);
+for (const [name, body] of staticVariants) {
+  writeFileSync(
+    `${output}/static-${name}.html`,
+    newContext
+      .setSeoHead(template, seo)
+      .replace("<body></body>", `<body>${body}</body>`),
+  );
+}
 const browser = await chromium.launch();
 try {
   const context = await browser.newContext({ javaScriptEnabled: false });
@@ -313,7 +365,7 @@ const report = {
   checks: [
     "All four React metadata calls, slug helpers, pagination callback and read URL expressions identical as AST",
     "API/Supabase/routes/rewrites/dynamic sitemap/metadata helper unchanged",
-    "All prerender functions except style-wrapped listPageHtml identical as AST",
+    "All prerender functions except the shared style-only appShell identical as AST",
     "Static list text, H1/H2, intro, links and empty copy identical after removing CSS/class marker",
     "Static title/description/canonical/schema output identical; existing main() route/content generation and writeSitemap unchanged",
     "Static category without JavaScript: four widths, no overflow, crawlable links and keyboard focus; same static HTML passes axe in an enabled audit context",
