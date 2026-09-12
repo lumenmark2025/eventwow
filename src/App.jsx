@@ -1,3 +1,5 @@
+import AuthShell from "./components/auth/AuthShell";
+import Button from "./components/ui/Button";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { lazy, useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
@@ -67,26 +69,21 @@ const DesignSystemPage = lazy(() => import("./pages/DesignSystemPage"));
 
 function AccessDenied({ error, onSignOut }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <div className="w-full max-w-md rounded-2xl border bg-white p-6 space-y-2">
-        <h1 className="text-xl font-semibold">Access denied</h1>
-        {error ? (
-          <p className="text-sm text-red-600">{error}</p>
-        ) : (
-          <p className="text-sm text-gray-600">
-            Your user is not recognised as an admin, supplier, customer, or venue owner.
-          </p>
-        )}
-        <button onClick={onSignOut} className="border rounded-lg px-3 py-2 bg-white">
-          Sign out
-        </button>
-      </div>
-    </div>
+    <AuthShell title="Access denied">
+      {error ? (
+        <p role="alert" className="auth-error">{error}</p>
+      ) : (
+        <p className="auth-body">
+          Your user is not recognised as an admin, supplier, customer, or venue owner.
+        </p>
+      )}
+      <Button onClick={onSignOut} className="mt-4">Sign out</Button>
+    </AuthShell>
   );
 }
 
 function LoadingAccess() {
-  return <div className="min-h-screen flex items-center justify-center">Checking access...</div>;
+  return <AuthShell title="Checking access"><p role="status">Checking access...</p></AuthShell>;
 }
 
 function normalizeReturnTo(rawValue) {

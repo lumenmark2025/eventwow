@@ -1,3 +1,5 @@
+import AuthShell from "../auth/AuthShell";
+import Input from "../ui/Input";
 import {
   JourneySection,
   JourneyInput,
@@ -181,6 +183,25 @@ export default function PublicDesignExample() {
             <JourneyInput placeholder="Example message" />
           </JourneyModal>
         </section>
+        <AuthShell embedded title="Auth and onboarding panel">
+          <p className="auth-body mb-4">
+            Synthetic form example. Existing authentication handlers live in
+            their routes.
+          </p>
+          <label htmlFor="example-auth-email">Example email</label>
+          <Input id="example-auth-email" type="email" />
+          <ol
+            className="auth-progress"
+            aria-label="Example onboarding progress"
+          >
+            <li aria-current="step">Step 1</li>
+            <li>Step 2</li>
+            <li>Step 3</li>
+          </ol>
+          <PublicButton type="button" disabled>
+            Example primary action
+          </PublicButton>
+        </AuthShell>
         <PublicCallout />
       </div>
       <MarketingFooter />

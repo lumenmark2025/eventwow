@@ -1,0 +1,16 @@
+
+> eventwow-admin@0.0.0 test:auth
+> node scripts/verify-auth-contracts.mjs && node scripts/verify-auth-v2.mjs
+
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/components/Login.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/AuthCallbackPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/ForgotPassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/ResetPassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/UpdatePassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierJoinPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierOnboardingPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierVerifyPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/VenueClaimRequestPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/VenueClaimVerifyPage.jsx
+PASS API, RLS, token, route and library source unchanged
+PASS auth: 80 responsive/accessibility snapshots; password/OTP/signup/recovery/verification/claim/return and logout-role-transition contracts

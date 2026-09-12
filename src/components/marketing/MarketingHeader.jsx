@@ -1,7 +1,9 @@
+import { PublicLogo } from "./PublicLogo";
+export { PublicLogo } from "./PublicLogo";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Sparkles, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { PublicButton } from "./PublicComponents";
 
 const links = [
@@ -10,14 +12,6 @@ const links = [
   { to: "/how-it-works", label: "How it works" },
   { to: "/supplier/signup", label: "For suppliers" },
 ];
-export function PublicLogo() {
-  return (
-    <Link className="public-logo" to="/" aria-label="EventWow home">
-      <Sparkles aria-hidden="true" />
-      EventWow
-    </Link>
-  );
-}
 export default function MarketingHeader() {
   const [open, setOpen] = useState(false);
   return (

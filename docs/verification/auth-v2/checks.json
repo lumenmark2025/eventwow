@@ -1,0 +1,120 @@
+{
+  "baseline": "cacddc95c59d7ec6c7adec20c9d9e3f22240551a",
+  "branch": "ui-v2-design-system",
+  "vite": {
+    "passed": true,
+    "entryRawKB": 436.44,
+    "entryGzipKB": 128.11,
+    "baselineRawKB": 433.7,
+    "baselineGzipKB": 126.86,
+    "buildSummary": "\u2713 built in 4.51s"
+  },
+  "lint": {
+    "errors": 429,
+    "warnings": 12,
+    "newDiagnostics": [],
+    "exitCode": 1,
+    "reason": "Unchanged pre-existing repository backlog"
+  },
+  "browser": {
+    "responsiveAccessibilitySnapshots": 80,
+    "widths": [
+      360,
+      768,
+      1024,
+      1440
+    ],
+    "source": "Real React + installed Supabase client using synthetic local Auth/PostgREST/API transport",
+    "liveAuthVerified": false
+  },
+  "tests": {
+    "auth": {
+      "exitCode": 0,
+      "summary": [
+        "PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/VenueClaimVerifyPage.jsx",
+        "PASS API, RLS, token, route and library source unchanged",
+        "PASS auth: 80 responsive/accessibility snapshots; password/OTP/signup/recovery/verification/claim/return and logout-role-transition contracts"
+      ]
+    },
+    "workspace": {
+      "exitCode": 0,
+      "summary": [
+        "customer: existing Admin guard outcome preserved; no Admin page module requested",
+        "none: existing Admin guard outcome preserved; no Admin page module requested",
+        "Screenshots: /tmp/eventwow-workspace-v2"
+      ]
+    },
+    "admin": {
+      "exitCode": 0,
+      "summary": [
+        "All seven supporting routes: loading state verified",
+        "All seven supporting routes: empty state verified",
+        "All seven supporting routes: error state verified"
+      ]
+    },
+    "supplier": {
+      "exitCode": 0,
+      "summary": [
+        "All four pages: loading/empty/error at 360/768/1024/1440, retry recovery; unavailable dashboard counts/scores never become false zeroes",
+        "Credit bundles: unchanged payloads/prices, checkout failure/pending states; mobile Radix drawer/Escape/focus return, command search and account menu keyboard controls",
+        "Role guards: signed out/Admin/Customer/Venue blocked from all four Supplier routes; incomplete Supplier still redirects to onboarding"
+      ]
+    },
+    "supplier-workflows": {
+      "exitCode": 0,
+      "summary": [
+        "Messages: URL-selected thread, empty/whitespace/pending disables, failed send retains composer, exact trimmed body/thread/client-ID payload, local success updates without refetch",
+        "Quotes/Bookings/Messages: loading/empty/error at all four widths, retries; detail loading/error/missing and empty conversation history",
+        "Keyboard: booking row, Radix edit dialog Tab containment/Escape/focus return, calendar navigation/event selection and persisted view; all three routes preserve signed-out/Admin/Customer/Venue guards"
+      ]
+    },
+    "venue": {
+      "exitCode": 0,
+      "summary": [
+        "empty-profile: 360/768/1024/1440px, overflow and axe passed",
+        "Both routes: loading/empty/error and retry at all widths; unowned ID exposes no form; empty profile/gallery, signed/public image URLs and broken-image fallback passed",
+        "Keyboard drawer Tab/Escape/focus return and command search; signed-out/Admin/Supplier/Customer guard redirects without owner API requests; existing venue role alias passed"
+      ]
+    },
+    "customer": {
+      "exitCode": 0,
+      "summary": [
+        "messages-loadingMessages: 360/768/1024/1440px, overflow and axe passed",
+        "List/detail loading/empty/error/retry at all widths; missing/mismatched enquiry hides actions; targets failure retains loaded quotes; empty suppliers/quotes and message loading/empty/no-quote/no-thread/history-failure states passed",
+        "Mobile navigation/command keyboard controls; signed-out/Admin/Supplier/Venue guards on all three routes without Customer API calls passed"
+      ]
+    },
+    "customer-supplier": {
+      "exitCode": 0,
+      "summary": [
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "[email:skipped] { eventType: 'transactional', reason: 'RESEND_API_KEY missing' }",
+        "Connected browser workflow passed (120 API calls; Supplier initial thread reads: 4)."
+      ]
+    },
+    "public": {
+      "exitCode": 0,
+      "summary": [
+        "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "Search/category/location/sort/clear query contracts, profile URLs, absent ratings/response metrics, failed images/options recovery and Radix keyboard/focus/navigation passed",
+        "Public access remains available signed out and under Admin/Supplier/Venue/Customer sessions; no workspace data fetched"
+      ]
+    },
+    "public-journey": {
+      "exitCode": 0,
+      "summary": [
+        "PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/PublicQuotePage.jsx",
+        "PASS API, RLS, token, route and library source unchanged",
+        "PASS public journey: 36 responsive/state/accessibility checks plus action payloads"
+      ]
+    },
+    "public-seo": {
+      "exitCode": 0,
+      "summary": [
+        "/catering-manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+        "Pagination exact query/clamping/disabled states, category keyboard links, /browse redirect, search debounce/trim/clear and stale-flat-slug schema cleanup passed",
+        "Public access for signed-out/Admin/Supplier/Venue/Customer sessions, no workspace data reads"
+      ]
+    }
+  }
+}

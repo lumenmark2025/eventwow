@@ -38,7 +38,9 @@ export default function ResetPassword() {
         const { data, error: sessionErr } = await supabase.auth.getSession();
         if (sessionErr) throw sessionErr;
         if (!data?.session) {
-          throw new Error("Reset link is invalid or expired. Request a new reset email.");
+          throw new Error(
+            "Reset link is invalid or expired. Request a new reset email.",
+          );
         }
 
         if (!cancelled) setReady(true);
@@ -100,18 +102,28 @@ export default function ResetPassword() {
       subtitle="Use a strong password with at least 8 characters."
     >
       {loadingSession ? (
-        <p className="text-sm text-slate-600">Verifying reset link...</p>
+        <p role="status" className="auth-body auth-muted">
+          Verifying reset link...
+        </p>
       ) : !ready ? (
         <div className="space-y-3">
-          <p className="text-sm text-rose-600">{error || "Reset link is invalid or expired."}</p>
-          <Link to="/forgot-password" className="text-sm text-blue-700 underline underline-offset-2">
+          <p role="alert" className="auth-body auth-error">
+            {error || "Reset link is invalid or expired."}
+          </p>
+          <Link
+            to="/forgot-password"
+            className="auth-body auth-link underline underline-offset-2"
+          >
             Request a new reset link
           </Link>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700" htmlFor="new-password">
+            <label
+              className="auth-body font-medium auth-ink"
+              htmlFor="new-password"
+            >
               New password
             </label>
             <Input
@@ -126,7 +138,10 @@ export default function ResetPassword() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700" htmlFor="confirm-password">
+            <label
+              className="auth-body font-medium auth-ink"
+              htmlFor="confirm-password"
+            >
               Confirm password
             </label>
             <Input
@@ -140,10 +155,18 @@ export default function ResetPassword() {
             />
           </div>
 
-          <p className="text-xs text-slate-500">Minimum 8 characters.</p>
+          <p className="auth-small auth-muted">Minimum 8 characters.</p>
 
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-          {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
+          {error ? (
+            <p role="alert" className="auth-body auth-error">
+              {error}
+            </p>
+          ) : null}
+          {success ? (
+            <p role="status" className="auth-body auth-success">
+              {success}
+            </p>
+          ) : null}
 
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? "Updating..." : "Update password"}

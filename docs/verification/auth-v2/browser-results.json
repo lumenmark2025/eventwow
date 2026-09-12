@@ -1,0 +1,486 @@
+{
+  "results": [
+    {
+      "name": "login",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "forgot",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-invalid",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "callback-invalid",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "signup",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-verify",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-pending",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-1",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-2",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-3",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-pending",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-ready",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "login",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "forgot",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-invalid",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "callback-invalid",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "signup",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-verify",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-pending",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-1",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-2",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-3",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-pending",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-ready",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "login",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "forgot",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-invalid",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "callback-invalid",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "signup",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-verify",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-pending",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-1",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-2",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-3",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-pending",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-ready",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "login",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "forgot",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-invalid",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "callback-invalid",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "signup",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "supplier-verify",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-pending",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-1",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-2",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-3",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-pending",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "reset-ready",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "login-error",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "magic-sent",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "recovery-expired",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-expired",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-empty",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-error",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "access-denied",
+      "width": 360,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "login-error",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "magic-sent",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "recovery-expired",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-expired",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-empty",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-error",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "access-denied",
+      "width": 768,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "login-error",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "magic-sent",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "recovery-expired",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-expired",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-empty",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-error",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "access-denied",
+      "width": 1024,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "login-error",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "magic-sent",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "recovery-expired",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "claim-expired",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-empty",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "onboarding-error",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    },
+    {
+      "name": "access-denied",
+      "width": 1440,
+      "axe": "pass",
+      "overflow": false
+    }
+  ],
+  "auth": "Installed Supabase JS with isolated Auth/PostgREST transport; no live identity provider",
+  "passed": true
+}

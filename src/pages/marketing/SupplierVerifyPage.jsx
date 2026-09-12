@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import MarketingShell from "../../components/layout/MarketingShell";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
+import AuthShell from "../../components/auth/AuthShell";
 import Button from "../../components/ui/Button";
 import { supabase } from "../../lib/supabase";
 
@@ -53,10 +52,13 @@ async function resolveSupplierStartRouteForVerify() {
     const supplier = json?.supplier || null;
     if (!supplier?.id) return "/supplier/signup";
     if (supplier.is_published) return "/supplier/dashboard";
-    const onboarding = String(supplier.onboarding_status || "").trim().toLowerCase();
+    const onboarding = String(supplier.onboarding_status || "")
+      .trim()
+      .toLowerCase();
     if (!onboarding || onboarding === "approved") return "/supplier/dashboard";
     if (onboarding === "pending_review") return "/supplier/dashboard";
-    if (onboarding === "awaiting_email_verification") return "/supplier/dashboard";
+    if (onboarding === "awaiting_email_verification")
+      return "/supplier/dashboard";
     return "/suppliers/onboarding";
   } catch {
     return null;
@@ -99,7 +101,9 @@ export default function SupplierVerifyPage() {
       setVerified(isVerified);
       if (user?.email) setEmail(user.email);
       if (!isVerified) {
-        setError("Email is still unverified. Please click the verification link in your inbox.");
+        setError(
+          "Email is still unverified. Please click the verification link in your inbox.",
+        );
         return;
       }
       await createDraftFromStorageIfNeeded();
@@ -122,7 +126,9 @@ export default function SupplierVerifyPage() {
       const resp = await supabase.auth.resend({
         type: "signup",
         email: resendEmail,
-        options: { emailRedirectTo: `${window.location.origin}/supplier/dashboard` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/supplier/dashboard`,
+        },
       });
       if (resp.error) throw resp.error;
     } catch (err) {
@@ -138,32 +144,47 @@ export default function SupplierVerifyPage() {
   }
 
   return (
-    <MarketingShell>
-      <section className="mx-auto max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>Verify your email</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-slate-700">
-              Check your inbox{email ? ` at ${email}` : ""} and click the verification link before continuing onboarding.
-            </p>
+    <AuthShell title="Verify your email">
+      <p className="auth-body auth-ink">
+        Check your inbox{email ? ` at ${email}` : ""} and click the verification
+        link before continuing onboarding.
+      </p>
 
-            {verified ? <p className="text-sm text-emerald-700">Email verified. Redirecting to onboarding...</p> : null}
-            {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {verified ? (
+        <p role="status" className="auth-body auth-success">
+          Email verified. Redirecting to onboarding...
+        </p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="auth-body auth-error">
+          {error}
+        </p>
+      ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={checkVerified} disabled={busy}>I've verified my email</Button>
-              <Button type="button" variant="secondary" onClick={resendVerification} disabled={busy}>Resend verification email</Button>
-              <Button type="button" variant="ghost" onClick={logout} disabled={busy}>Logout</Button>
-            </div>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" onClick={checkVerified} disabled={busy}>
+          I've verified my email
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={resendVerification}
+          disabled={busy}
+        >
+          Resend verification email
+        </Button>
+        <Button type="button" variant="ghost" onClick={logout} disabled={busy}>
+          Logout
+        </Button>
+      </div>
 
-            <p className="text-xs text-slate-500">
-              Already verified and signed out? <Link to="/login?returnTo=%2Fsuppliers%2Fverify" className="underline">Sign in again</Link>.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-    </MarketingShell>
+      <p className="auth-small auth-muted">
+        Already verified and signed out?{" "}
+        <Link to="/login?returnTo=%2Fsuppliers%2Fverify" className="underline">
+          Sign in again
+        </Link>
+        .
+      </p>
+    </AuthShell>
   );
 }

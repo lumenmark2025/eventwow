@@ -19,7 +19,8 @@
     "test:public": "node --test scripts/verify-public-requests.mjs && node scripts/verify-public-v2.mjs",
     "test:public-profiles": "node scripts/verify-public-profiles-v2.mjs",
     "test:public-seo": "node scripts/verify-public-seo-contracts.mjs && node scripts/verify-public-seo-v2.mjs",
-    "test:public-journey": "node scripts/verify-public-journey-contracts.mjs && node scripts/verify-public-journey-v2.mjs"
+    "test:public-journey": "node scripts/verify-public-journey-contracts.mjs && node scripts/verify-public-journey-v2.mjs",
+    "test:auth": "node scripts/verify-auth-contracts.mjs && node scripts/verify-auth-v2.mjs"
   },
   "dependencies": {
     "-": "^0.0.1",

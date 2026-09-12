@@ -1,0 +1,11 @@
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/components/Login.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/AuthCallbackPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/ForgotPassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/ResetPassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/UpdatePassword.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierJoinPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierOnboardingPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/SupplierVerifyPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/VenueClaimRequestPage.jsx
+PASS unchanged handlers, hooks, payloads, options and action conditions: src/pages/marketing/VenueClaimVerifyPage.jsx
+PASS API, RLS, token, route and library source unchanged

@@ -1,39 +1,39 @@
 import { Link } from "react-router-dom";
-import eventwowLogo from "../../assets/brand/eventwow-logo.svg";
+import { PublicLogo } from "../marketing/PublicLogo";
+import PageHeader from "../layout/PageHeader";
+import "./auth.css";
 
-export default function AuthShell({ title, subtitle, children, footerLinkTo = "/", footerLinkLabel = "eventwow.co.uk" }) {
+export default function AuthShell({
+  title,
+  subtitle,
+  children,
+  footerLinkTo = "/",
+  footerLinkLabel = "eventwow.co.uk",
+  wide = false,
+  embedded = false,
+}) {
+  const Panel = embedded ? "section" : "main";
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
-      <div className="mx-auto w-full max-w-lg space-y-4">
-        <div className="flex justify-center">
-          <img
-            src={eventwowLogo}
-            alt="Eventwow"
-            width="190"
-            height="36"
-            className="h-9 w-auto"
-            loading="eager"
-            decoding="async"
-          />
+    <div
+      className={`public-v2 public-auth ${wide ? "public-auth-wide" : ""} ${embedded ? "public-auth-example" : ""}`}
+    >
+      <div className="public-auth-container">
+        <div className="public-auth-brand">
+          <PublicLogo />
         </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="mb-5 space-y-1">
-            <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-            {subtitle ? <p className="text-sm text-slate-600">{subtitle}</p> : null}
-          </div>
-          {children}
-        </div>
-
-        <p className="text-center text-xs text-slate-500">
+        <Panel className="public-auth-panel">
+          {embedded ? (
+            <h2 className="public-auth-example-title">{title}</h2>
+          ) : (
+            <PageHeader title={title} subtitle={subtitle} />
+          )}
+          <div className="auth-content space-y-4">{children}</div>
+        </Panel>
+        <p className="public-auth-help">
           Need help?{" "}
-          <a href="mailto:hello@eventwow.co.uk" className="underline underline-offset-2">
-            hello@eventwow.co.uk
-          </a>{" "}
-          |{" "}
-          <Link to={footerLinkTo} className="underline underline-offset-2">
-            {footerLinkLabel}
-          </Link>
+          <a href="mailto:hello@eventwow.co.uk">hello@eventwow.co.uk</a>{" "}
+          <span aria-hidden="true">·</span>{" "}
+          <Link to={footerLinkTo}>{footerLinkLabel}</Link>
         </p>
       </div>
     </div>

@@ -24,9 +24,16 @@ export default function Login() {
     setVerificationMsg("");
     setVerificationErr("");
     setNeedsVerification(false);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
-      if (String(error.message || "").toLowerCase().includes("email not confirmed")) {
+      if (
+        String(error.message || "")
+          .toLowerCase()
+          .includes("email not confirmed")
+      ) {
         setNeedsVerification(true);
         return;
       }
@@ -54,7 +61,9 @@ export default function Login() {
           status: error.status || null,
         });
       }
-      setVerificationErr(error.message || "Failed to resend verification email.");
+      setVerificationErr(
+        error.message || "Failed to resend verification email.",
+      );
     } else {
       if (import.meta.env.DEV) {
         console.debug("[login] resend verification success", {
@@ -97,7 +106,10 @@ export default function Login() {
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-700" htmlFor="login-email">
+          <label
+            className="auth-body font-medium auth-ink"
+            htmlFor="login-email"
+          >
             Email
           </label>
           <Input
@@ -109,7 +121,10 @@ export default function Login() {
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-700" htmlFor="login-password">
+          <label
+            className="auth-body font-medium auth-ink"
+            htmlFor="login-password"
+          >
             Password
           </label>
           <Input
@@ -121,30 +136,54 @@ export default function Login() {
           />
         </div>
         <div className="text-right">
-          <Link to="/forgot-password" className="text-xs text-blue-700 underline underline-offset-2">
+          <Link
+            to="/forgot-password"
+            className="auth-small auth-link underline underline-offset-2"
+          >
             Forgot password?
           </Link>
         </div>
-        {err && <div className="text-sm text-rose-600">{err}</div>}
-        {ok && <div className="text-sm text-emerald-700">{ok}</div>}
+        {err && (
+          <div role="alert" className="auth-body auth-error">
+            {err}
+          </div>
+        )}
+        {ok && (
+          <div role="status" className="auth-body auth-success">
+            {ok}
+          </div>
+        )}
         {needsVerification ? (
-          <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="auth-notice space-y-3">
             <div>
-              <p className="text-sm font-semibold text-amber-900">Please verify your email</p>
-              <p className="mt-1 text-sm text-amber-800">
-                We&apos;ve sent a verification email to {email || "your email address"}.
-                Please check your inbox and spam folder before logging in.
+              <p className="auth-body font-semibold auth-ink">
+                Please verify your email
+              </p>
+              <p className="mt-1 auth-body auth-ink">
+                We&apos;ve sent a verification email to{" "}
+                {email || "your email address"}. Please check your inbox and
+                spam folder before logging in.
               </p>
             </div>
-            {verificationMsg ? <p className="text-sm text-emerald-700">{verificationMsg}</p> : null}
-            {verificationErr ? <p className="text-sm text-rose-600">{verificationErr}</p> : null}
+            {verificationMsg ? (
+              <p role="status" className="auth-body auth-success">
+                {verificationMsg}
+              </p>
+            ) : null}
+            {verificationErr ? (
+              <p role="alert" className="auth-body auth-error">
+                {verificationErr}
+              </p>
+            ) : null}
             <Button
               type="button"
               variant="secondary"
               onClick={resendVerificationEmail}
               disabled={resendingVerification}
             >
-              {resendingVerification ? "Sending..." : "Resend verification email"}
+              {resendingVerification
+                ? "Sending..."
+                : "Resend verification email"}
             </Button>
           </div>
         ) : null}

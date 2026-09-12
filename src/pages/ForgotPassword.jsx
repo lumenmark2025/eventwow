@@ -25,9 +25,12 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       // Supabase Dashboard -> Authentication -> URL Configuration must include /reset-password for prod + localhost.
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: getResetPasswordUrl(),
-      });
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: getResetPasswordUrl(),
+        },
+      );
       if (resetErr) throw resetErr;
       setSuccess("Check your email for a password reset link.");
     } catch (err) {
@@ -44,7 +47,10 @@ export default function ForgotPassword() {
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-700" htmlFor="reset-email">
+          <label
+            className="auth-body font-medium auth-ink"
+            htmlFor="reset-email"
+          >
             Email
           </label>
           <Input
@@ -58,16 +64,24 @@ export default function ForgotPassword() {
           />
         </div>
 
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-        {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
+        {error ? (
+          <p role="alert" className="auth-body auth-error">
+            {error}
+          </p>
+        ) : null}
+        {success ? (
+          <p role="status" className="auth-body auth-success">
+            {success}
+          </p>
+        ) : null}
 
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Sending..." : "Send reset link"}
         </Button>
 
-        <p className="text-sm text-slate-600">
+        <p className="auth-body auth-muted">
           Back to{" "}
-          <Link to="/login" className="text-blue-700 underline underline-offset-2">
+          <Link to="/login" className="auth-link underline underline-offset-2">
             login
           </Link>
           .

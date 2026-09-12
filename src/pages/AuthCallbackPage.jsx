@@ -11,7 +11,10 @@ function normalizeRequestedPath(raw) {
   if (value.startsWith("/") && !value.startsWith("//")) return value;
   try {
     const parsed = new URL(value);
-    if (typeof window !== "undefined" && parsed.origin === window.location.origin) {
+    if (
+      typeof window !== "undefined" &&
+      parsed.origin === window.location.origin
+    ) {
       return `${parsed.pathname}${parsed.search}${parsed.hash}`;
     }
   } catch {
@@ -36,19 +39,27 @@ export default function AuthCallbackPage() {
           normalizeRequestedPath(url.searchParams.get("redirect_to"));
         const code = url.searchParams.get("code");
         if (code) {
-          const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+          const { error: exchangeErr } =
+            await supabase.auth.exchangeCodeForSession(code);
           if (exchangeErr) throw exchangeErr;
         }
 
-        const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionErr } =
+          await supabase.auth.getSession();
         if (sessionErr) throw sessionErr;
 
         const user = sessionData?.session?.user || null;
         if (!user) {
-          throw new Error("This sign-in link is invalid or expired. Request a new link.");
+          throw new Error(
+            "This sign-in link is invalid or expired. Request a new link.",
+          );
         }
 
-        const destination = await resolvePostAuthRoute(supabase, user, requestedReturnTo);
+        const destination = await resolvePostAuthRoute(
+          supabase,
+          user,
+          requestedReturnTo,
+        );
         if (!cancelled) navigate(destination, { replace: true });
       } catch (err) {
         if (!cancelled) {
@@ -65,10 +76,15 @@ export default function AuthCallbackPage() {
   }, [navigate]);
 
   return (
-    <AuthShell title="Signing you in" subtitle="We’re securely completing your Eventwow sign-in.">
+    <AuthShell
+      title="Signing you in"
+      subtitle="We’re securely completing your Eventwow sign-in."
+    >
       {error ? (
         <div className="space-y-4">
-          <p className="text-sm text-rose-600">{error}</p>
+          <p role="alert" className="auth-body auth-error">
+            {error}
+          </p>
           <div className="flex flex-wrap gap-2">
             <Button as={Link} to="/login">
               Go to login
@@ -79,9 +95,10 @@ export default function AuthCallbackPage() {
           </div>
         </div>
       ) : (
-        <p className="text-sm text-slate-600">{loading ? "Please wait..." : "Redirecting..."}</p>
+        <p role="status" className="auth-body auth-muted">
+          {loading ? "Please wait..." : "Redirecting..."}
+        </p>
       )}
     </AuthShell>
   );
 }
-

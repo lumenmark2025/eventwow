@@ -1,3 +1,4 @@
+import { assertAppContract } from "./fixtures/assert-app-contract.mjs";
 /* global process, console */
 // Compare presentation-only changes with the last reviewed profile migration.
 import assert from "node:assert/strict";
@@ -98,7 +99,7 @@ assert.equal(
       "--",
       "api/",
       "supabase/",
-      "src/App.jsx",
+
       "src/lib/marketingMeta.js",
       "src/utils/slugify.js",
       "vercel.json",
@@ -324,3 +325,5 @@ writeFileSync(
   JSON.stringify(report, null, 2) + "\n",
 );
 console.log(report.checks.join("\n"));
+
+assertAppContract(baseline);
