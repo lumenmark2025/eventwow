@@ -1,0 +1,248 @@
+{
+  "source": "Read-only connected EventWow Postgres; Preview environment binding unconfirmed",
+  "statsReset": "2026-01-15T08:23:27.501746Z",
+  "note": "Historical normalized PostgREST statements with calls >= 3, matching relevant table names; top 15 ordered by mean execution time. Names classify query text, not API endpoints. SQL text and parameters omitted.",
+  "statements": [
+    {
+      "queryid": "-5959340636530636264",
+      "calls": 10,
+      "mean_ms": "26.293",
+      "max_ms": "45.860",
+      "total_ms": "262.933",
+      "rows": 10,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 1662,
+      "referenced_names": [
+        "venues"
+      ]
+    },
+    {
+      "queryid": "1759084616268319030",
+      "calls": 655,
+      "mean_ms": "25.818",
+      "max_ms": "94.276",
+      "total_ms": "16910.624",
+      "rows": 655,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 270613,
+      "referenced_names": [
+        "venues"
+      ]
+    },
+    {
+      "queryid": "7750214836024413766",
+      "calls": 4,
+      "mean_ms": "25.665",
+      "max_ms": "49.772",
+      "total_ms": "102.661",
+      "rows": 4,
+      "shared_blks_read": 1,
+      "shared_blks_hit": 302,
+      "referenced_names": [
+        "suppliers"
+      ]
+    },
+    {
+      "queryid": "-403939658747492678",
+      "calls": 5,
+      "mean_ms": "23.121",
+      "max_ms": "34.537",
+      "total_ms": "115.604",
+      "rows": 5,
+      "shared_blks_read": 2,
+      "shared_blks_hit": 851,
+      "referenced_names": [
+        "suppliers"
+      ]
+    },
+    {
+      "queryid": "892875003038205920",
+      "calls": 7,
+      "mean_ms": "22.887",
+      "max_ms": "97.877",
+      "total_ms": "160.207",
+      "rows": 7,
+      "shared_blks_read": 4,
+      "shared_blks_hit": 839,
+      "referenced_names": [
+        "suppliers"
+      ]
+    },
+    {
+      "queryid": "-1331207219139855749",
+      "calls": 11,
+      "mean_ms": "17.413",
+      "max_ms": "60.604",
+      "total_ms": "191.538",
+      "rows": 11,
+      "shared_blks_read": 7,
+      "shared_blks_hit": 6249,
+      "referenced_names": [
+        "venues"
+      ]
+    },
+    {
+      "queryid": "2090150354784681743",
+      "calls": 8,
+      "mean_ms": "14.723",
+      "max_ms": "36.183",
+      "total_ms": "117.781",
+      "rows": 8,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 3154,
+      "referenced_names": [
+        "messages"
+      ]
+    },
+    {
+      "queryid": "-668998984311708524",
+      "calls": 11,
+      "mean_ms": "13.726",
+      "max_ms": "128.164",
+      "total_ms": "150.986",
+      "rows": 11,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 2908,
+      "referenced_names": [
+        "suppliers"
+      ]
+    },
+    {
+      "queryid": "-8135681432962442876",
+      "calls": 26,
+      "mean_ms": "12.003",
+      "max_ms": "23.457",
+      "total_ms": "312.069",
+      "rows": 26,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 3345,
+      "referenced_names": [
+        "suppliers"
+      ]
+    },
+    {
+      "queryid": "4638319300827939508",
+      "calls": 13,
+      "mean_ms": "10.617",
+      "max_ms": "47.279",
+      "total_ms": "138.018",
+      "rows": 13,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 2147,
+      "referenced_names": [
+        "suppliers"
+      ]
+    },
+    {
+      "queryid": "-4872292377544042591",
+      "calls": 9,
+      "mean_ms": "9.661",
+      "max_ms": "33.117",
+      "total_ms": "86.947",
+      "rows": 9,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 709,
+      "referenced_names": [
+        "venues"
+      ]
+    },
+    {
+      "queryid": "4251677007086236406",
+      "calls": 6,
+      "mean_ms": "9.352",
+      "max_ms": "45.788",
+      "total_ms": "56.113",
+      "rows": 6,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 343,
+      "referenced_names": [
+        "suppliers"
+      ]
+    },
+    {
+      "queryid": "6551749731778335340",
+      "calls": 10,
+      "mean_ms": "9.213",
+      "max_ms": "21.500",
+      "total_ms": "92.131",
+      "rows": 10,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 300,
+      "referenced_names": [
+        "suppliers",
+        "enquiry_suppliers"
+      ]
+    },
+    {
+      "queryid": "-2992604725716431046",
+      "calls": 7,
+      "mean_ms": "8.557",
+      "max_ms": "14.192",
+      "total_ms": "59.902",
+      "rows": 7,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 264,
+      "referenced_names": [
+        "suppliers",
+        "enquiry_suppliers"
+      ]
+    },
+    {
+      "queryid": "9042489484225564971",
+      "calls": 3,
+      "mean_ms": "7.933",
+      "max_ms": "18.396",
+      "total_ms": "23.800",
+      "rows": 3,
+      "shared_blks_read": 0,
+      "shared_blks_hit": 306,
+      "referenced_names": [
+        "suppliers"
+      ]
+    }
+  ],
+  "plans": [
+    {
+      "shape": "Published venue first candidate query, existing selected columns/order, LIMIT 600",
+      "returnedRows": 89,
+      "planningMs": 10.941,
+      "executionMs": 0.467,
+      "sharedHit": 50,
+      "sharedRead": 0,
+      "scan": "Sequential scan and in-memory quicksort (146 kB)"
+    },
+    {
+      "shape": "Published supplier first candidate query, existing selected columns/order, LIMIT 500",
+      "returnedRows": 5,
+      "samples": [
+        {
+          "planningMs": 22.001,
+          "executionMs": 7.595
+        },
+        {
+          "planningMs": 1.244,
+          "executionMs": 0.178
+        }
+      ],
+      "sharedHit": 10,
+      "sharedRead": 0,
+      "scan": "Bitmap index scan using suppliers_is_published_idx; in-memory quicksort (34 kB)"
+    }
+  ],
+  "storage": [
+    {
+      "bucket": "venue-images",
+      "objects": 112,
+      "largestBytes": 3413944,
+      "meanBytes": 630047,
+      "over1MB": 28
+    },
+    {
+      "bucket": "venue-hero-images",
+      "objects": 10,
+      "largestBytes": 272526,
+      "meanBytes": 247026,
+      "over1MB": 0
+    }
+  ]
+}

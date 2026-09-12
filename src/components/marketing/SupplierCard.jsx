@@ -31,7 +31,15 @@ export default function SupplierCard({
     <article
       className={`public-card public-supplier-card ${layout === "list" ? "public-supplier-row" : ""}`}
     >
-      <ListingImage src={supplier.heroImageUrl} name={supplier.name} />
+      <ListingImage
+        src={supplier.heroImageUrl}
+        name={supplier.name}
+        sizes={
+          layout === "list"
+            ? "(max-width: 767px) calc(100vw - 32px), 185px"
+            : undefined
+        }
+      />
       <div className="public-supplier-main">
         <h3>
           <Link to={`/suppliers/${supplier.slug}`}>{supplier.name}</Link>

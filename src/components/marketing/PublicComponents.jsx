@@ -13,7 +13,7 @@ import Button from "../ui/Button";
 import Input from "../ui/Input";
 import EmptyState from "../ui/EmptyState";
 import PageHeader from "../layout/PageHeader";
-import WorkspaceImage from "../workspace/WorkspaceImage";
+import PublicImage from "./PublicImage";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
 import {
   formatVenueGuestCapacity,
@@ -175,12 +175,18 @@ export function PublicResultsState({
     );
   return children;
 }
-export function ListingImage({ src, name, className = "" }) {
+export function ListingImage({
+  src,
+  name,
+  className = "",
+  sizes = "(max-width: 767px) calc(100vw - 32px), (max-width: 1199px) 50vw, 400px",
+}) {
   return (
-    <WorkspaceImage
+    <PublicImage
       src={toPublicImageUrl(src)}
       alt={name}
       className={`public-listing-image ${className}`}
+      sizes={sizes}
     />
   );
 }

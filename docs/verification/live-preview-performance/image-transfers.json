@@ -1,0 +1,76 @@
+{
+  "source": "Public storage image linked as hero to a published venue; object identifier omitted",
+  "note": "Direct storage GETs from this runner; not Preview browser LCP or verified CDN cold/warm samples",
+  "samples": [
+    {
+      "http_code": 200,
+      "content_type": "image/jpeg",
+      "size_download": 3413944,
+      "time_starttransfer": 0.819084,
+      "time_total": 1.230699,
+      "variant": "original"
+    },
+    {
+      "http_code": 200,
+      "content_type": "image/webp",
+      "size_download": 37518,
+      "time_starttransfer": 0.555336,
+      "time_total": 0.556195,
+      "variant": "width640"
+    },
+    {
+      "http_code": 200,
+      "content_type": "image/jpeg",
+      "size_download": 3413944,
+      "time_starttransfer": 0.197589,
+      "time_total": 0.355148,
+      "variant": "original",
+      "repeat": 1
+    },
+    {
+      "http_code": 200,
+      "content_type": "image/jpeg",
+      "size_download": 3413944,
+      "time_starttransfer": 0.077455,
+      "time_total": 0.228289,
+      "variant": "original",
+      "repeat": 2
+    },
+    {
+      "http_code": 200,
+      "content_type": "image/webp",
+      "size_download": 37518,
+      "time_starttransfer": 0.081135,
+      "time_total": 0.081522,
+      "variant": "width640",
+      "repeat": 1
+    },
+    {
+      "http_code": 200,
+      "content_type": "image/webp",
+      "size_download": 37518,
+      "time_starttransfer": 0.082861,
+      "time_total": 0.083299,
+      "variant": "width640",
+      "repeat": 2
+    },
+    {
+      "http_code": 200,
+      "content_type": "image/webp",
+      "size_download": 160990,
+      "time_starttransfer": 0.91811,
+      "time_total": 1.03453,
+      "variant": "width1600",
+      "repeat": 1
+    },
+    {
+      "http_code": 200,
+      "content_type": "image/webp",
+      "size_download": 160990,
+      "time_starttransfer": 0.12725,
+      "time_total": 0.14491,
+      "variant": "width1600",
+      "repeat": 2
+    }
+  ]
+}

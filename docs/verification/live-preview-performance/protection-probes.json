@@ -1,0 +1,414 @@
+{
+  "measuredAt": "2026-09-12T19:19:23.224Z",
+  "deployment": "https://eventwow-4465a6fw5-reward-digital.vercel.app",
+  "mode": "protection-probe",
+  "note": "First/repeat are observation order, not verified serverless cold/warm state. No response bodies or credentials are recorded.",
+  "results": [
+    {
+      "route": "/",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 105,
+          "totalMs": 114,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 696,
+          "totalMs": 698,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 175,
+          "totalMs": 177,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/suppliers",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 137,
+          "totalMs": 139,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 20,
+          "totalMs": 22,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 146,
+          "totalMs": 148,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/venues",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 127,
+          "totalMs": 128,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 29,
+          "totalMs": 30,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 22,
+          "totalMs": 25,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/supplier/dashboard",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 30,
+          "totalMs": 32,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 27,
+          "totalMs": 28,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 24,
+          "totalMs": 25,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/supplier/enquiries",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 19,
+          "totalMs": 20,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 19,
+          "totalMs": 20,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 19,
+          "totalMs": 20,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/supplier/quotes",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 16,
+          "totalMs": 17,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 15,
+          "totalMs": 15,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 19,
+          "totalMs": 19,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/supplier/bookings",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 16,
+          "totalMs": 17,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 20,
+          "totalMs": 21,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 20,
+          "totalMs": 21,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/admin",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 22,
+          "totalMs": 22,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 128,
+          "totalMs": 129,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 24,
+          "totalMs": 25,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/admin/suppliers",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 20,
+          "totalMs": 21,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 17,
+          "totalMs": 18,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 17,
+          "totalMs": 18,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/admin/enquiries",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 23,
+          "totalMs": 24,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 23,
+          "totalMs": 24,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 17,
+          "totalMs": 17,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/customer",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 30,
+          "totalMs": 30,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 16,
+          "totalMs": 17,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 16,
+          "totalMs": 17,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/api/public-suppliers",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 17,
+          "totalMs": 18,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 15,
+          "totalMs": 16,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 19,
+          "totalMs": 20,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/api/public-venues",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 17,
+          "totalMs": 17,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 19,
+          "totalMs": 20,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 25,
+          "totalMs": 26,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    },
+    {
+      "route": "/api/public/categories",
+      "samples": [
+        {
+          "status": 302,
+          "ttfbMs": 16,
+          "totalMs": 16,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 17,
+          "totalMs": 17,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        },
+        {
+          "status": 302,
+          "ttfbMs": 35,
+          "totalMs": 36,
+          "bytes": 15,
+          "protectedRedirect": true,
+          "cache": null
+        }
+      ]
+    }
+  ]
+}

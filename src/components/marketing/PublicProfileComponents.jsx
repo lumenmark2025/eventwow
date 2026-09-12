@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { PublicButton, PublicPageHeader } from "./PublicComponents";
-import WorkspaceImage from "../workspace/WorkspaceImage";
+import PublicImage from "./PublicImage";
 import { toPublicImageUrl } from "../../lib/publicImageUrl";
 import "./profiles.css";
 
@@ -58,7 +58,7 @@ export function PublicProfileHero({
 }
 
 // Only a cover and two previews are mounted on the page. Additional gallery
-// originals are requested on selection, not eagerly loaded as hidden slides.
+// images are requested on selection, not eagerly loaded as hidden slides.
 export function MediaGallery({ name, hero, gallery = [] }) {
   const photos = useMemo(() => {
     const items = [{ url: hero, alt: `${name} — cover photo` }, ...gallery];
@@ -84,7 +84,7 @@ export function MediaGallery({ name, hero, gallery = [] }) {
   if (!photos.length)
     return (
       <div className="public-profile-no-photos">
-        <WorkspaceImage alt={name} />
+        <PublicImage alt={name} />
         <p>Photos have not been added to this profile yet.</p>
       </div>
     );
@@ -105,8 +105,15 @@ export function MediaGallery({ name, hero, gallery = [] }) {
               }}
               aria-label={`Open photo ${index + 1} of ${photos.length}: ${photo.alt}`}
             >
-              <WorkspaceImage
+              <PublicImage
                 src={photo.url}
+                sizes={
+                  index === 0
+                    ? photos.length === 1
+                      ? "(max-width: 1439px) 100vw, 1320px"
+                      : "(max-width: 767px) 100vw, (max-width: 1023px) 70vw, 850px"
+                    : "(max-width: 767px) 50vw, 400px"
+                }
                 alt={photo.alt}
                 loading={index === 0 ? "eager" : "lazy"}
                 fetchPriority={index === 0 ? "high" : undefined}
@@ -153,8 +160,9 @@ export function MediaGallery({ name, hero, gallery = [] }) {
                 </PublicButton>
               </Dialog.Close>
             </div>
-            <WorkspaceImage
+            <PublicImage
               src={current.url}
+              sizes="(max-width: 1279px) 90vw, 1200px"
               alt={current.alt}
               loading="eager"
               className="public-gallery-full"
