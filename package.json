@@ -16,7 +16,8 @@
     "test:customer": "node scripts/verify-customer-v2.mjs",
     "test:customer-supplier": "node --test scripts/verify-customer-supplier-workflow.mjs && node scripts/verify-workflow-browser.mjs",
     "test:quote-rls": "node scripts/verify-quote-rls.mjs",
-    "test:public": "node --test scripts/verify-public-requests.mjs && node scripts/verify-public-v2.mjs"
+    "test:public": "node --test scripts/verify-public-requests.mjs && node scripts/verify-public-v2.mjs",
+    "test:public-profiles": "node scripts/verify-public-profiles-v2.mjs"
   },
   "dependencies": {
     "-": "^0.0.1",

@@ -1,0 +1,12 @@
+{
+  "startingCommit": "2603f124622515a8fe1682342545144628a5e9ea",
+  "passed": true,
+  "checks": [
+    "Supplier/Venue useMarketingMeta/useStructuredData arguments and JSON-LD useMemo implementations identical as parsed AST",
+    "No API, Supabase, App routes/guards, SEO helper or prerender source changes"
+  ],
+  "paths": [
+    "src/pages/marketing/SupplierProfilePage.jsx",
+    "src/pages/marketing/VenueProfilePage.jsx"
+  ]
+}

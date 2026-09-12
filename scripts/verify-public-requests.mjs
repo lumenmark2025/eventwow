@@ -48,3 +48,15 @@ test("failed or malformed public responses are errors and do not poison retries"
     globalThis.fetch = original;
   }
 });
+
+test("profile callers can distinguish unpublished/missing profiles from service failures", async () => {
+  const original = globalThis.fetch;
+  try {
+    for (const status of [404, 503]) {
+      globalThis.fetch = async () => new Response(JSON.stringify({ error: "Profile unavailable" }), { status });
+      await assert.rejects(publicGet("/api/public-venue?slug=missing"), error => error.status === status && error.message === "Profile unavailable");
+    }
+  } finally {
+    globalThis.fetch = original;
+  }
+});

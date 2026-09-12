@@ -1,0 +1,93 @@
+{
+  "vite": {
+    "passed": true,
+    "seconds": 5.73,
+    "entryKb": 433.65,
+    "gzipKb": 126.81
+  },
+  "existingSuites": {
+    "public": {
+      "passed": true,
+      "output": [
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 89.14629",
+        "home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "Search/category/location/sort/clear query contracts, profile URLs, absent ratings/response metrics, failed images/options recovery and Radix keyboard/focus/navigation passed",
+        "Public access remains available signed out and under Admin/Supplier/Venue/Customer sessions; no workspace data fetched"
+      ]
+    },
+    "workspace": {
+      "passed": true,
+      "output": [
+        "Suppliers: local filtering, create dialog, unchanged creation payload, editor opens (fixture)",
+        "Venues: filters, cancel/confirm draft deletion, create draft payload and editor route retained (fixture)",
+        "Mobile drawer navigation, account menu, Ctrl K search, dialog focus trap/Escape/restore pass",
+        "All four admin screens: loading state; errors do not masquerade as zero metrics",
+        "All four admin screens: empty state; errors do not masquerade as zero metrics",
+        "All four admin screens: error state; errors do not masquerade as zero metrics",
+        "Dashboard: partial service failure preserves successful panels and unavailable metrics use \u2014",
+        "supplier: existing Admin guard outcome preserved; no Admin page module requested",
+        "venue_owner: existing Admin guard outcome preserved; no Admin page module requested",
+        "customer: existing Admin guard outcome preserved; no Admin page module requested",
+        "none: existing Admin guard outcome preserved; no Admin page module requested",
+        "Screenshots: /tmp/eventwow-workspace-v2"
+      ]
+    },
+    "venue": {
+      "passed": true,
+      "output": [
+        "pending-review: 360/768/1024/1440px, overflow and axe passed",
+        "Overview search is local; edit keyboard link, exact save payload/null/numeric/facility conversion, pending review, disabled saving/upload controls, failed-save draft retention and Cancel navigation passed",
+        "Media: keyboard file controls, exact preparation query and raw signed PUT payload/MIME, upload/save disables, 5MB validation, prep/missing-URL/PUT failures and post-upload reloads passed",
+        "overview-empty: 360/768/1024/1440px, overflow and axe passed",
+        "overview-error: 360/768/1024/1440px, overflow and axe passed",
+        "overview-loading: 360/768/1024/1440px, overflow and axe passed",
+        "editor-empty: 360/768/1024/1440px, overflow and axe passed",
+        "editor-error: 360/768/1024/1440px, overflow and axe passed",
+        "editor-loading: 360/768/1024/1440px, overflow and axe passed",
+        "empty-profile: 360/768/1024/1440px, overflow and axe passed",
+        "Both routes: loading/empty/error and retry at all widths; unowned ID exposes no form; empty profile/gallery, signed/public image URLs and broken-image fallback passed",
+        "Keyboard drawer Tab/Escape/focus return and command search; signed-out/Admin/Supplier/Customer guard redirects without owner API requests; existing venue role alias passed"
+      ]
+    },
+    "supplier": {
+      "passed": true,
+      "output": [
+        "",
+        "dashboard: 360/768/1024/1440; axe, overflow, populated layout",
+        "enquiries: 360/768/1024/1440; axe, overflow, populated layout",
+        "notifications: 360/768/1024/1440; axe, overflow, populated layout",
+        "listing: 360/768/1024/1440; axe, overflow, populated layout",
+        "Requests: search, status filtering, quoted/declined disables, details/Escape/focus return, decline payload, original create-quote navigation",
+        "Notifications: mark all/single payloads, pending/zero-unread disables, original open destination",
+        "Listing: labels, initial/save pending disabled states, local Cancel, unchanged postcode validation, failed save retains draft, exact save payload",
+        "Listing media: focusable uploads, JPG/PNG/WEBP and 5MB validation, busy upload disables, hero/gallery uploads, reorder boundaries/order payload, delete payloads; services/categories and Cancel",
+        "All four pages: loading/empty/error at 360/768/1024/1440, retry recovery; unavailable dashboard counts/scores never become false zeroes",
+        "Credit bundles: unchanged payloads/prices, checkout failure/pending states; mobile Radix drawer/Escape/focus return, command search and account menu keyboard controls",
+        "Role guards: signed out/Admin/Customer/Venue blocked from all four Supplier routes; incomplete Supplier still redirects to onboarding"
+      ]
+    }
+  },
+  "lint": {
+    "errors": 429,
+    "warnings": 12,
+    "newDiagnostics": 0
+  },
+  "profiles": {
+    "passed": true,
+    "results": [
+      "supplier: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed",
+      "supplier: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed",
+      "venue: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed",
+      "venue: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed",
+      "Stale-slug/JSON-LD regression and public access for signed-out/Admin/Supplier/Venue/Customer sessions passed"
+    ]
+  }
+}

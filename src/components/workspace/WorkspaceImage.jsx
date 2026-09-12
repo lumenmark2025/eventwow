@@ -2,18 +2,26 @@ import { useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 // Preserve space for real listing imagery, with a readable missing/failed state.
-export default function WorkspaceImage({ src, alt, className = "" }) {
+export default function WorkspaceImage({
+  src,
+  alt,
+  className = "",
+  loading = "lazy",
+  fetchPriority,
+}) {
   return (
     <ImageContent
       key={src || "empty"}
       src={src}
       alt={alt}
       className={className}
+      loading={loading}
+      fetchPriority={fetchPriority}
     />
   );
 }
 
-function ImageContent({ src, alt, className }) {
+function ImageContent({ src, alt, className, loading, fetchPriority }) {
   const [failed, setFailed] = useState(false);
   return (
     <div className={`ew-workspace-image ${className}`}>
@@ -21,7 +29,8 @@ function ImageContent({ src, alt, className }) {
         <img
           src={src}
           alt={alt}
-          loading="lazy"
+          loading={loading}
+          fetchPriority={fetchPriority}
           decoding="async"
           onError={() => setFailed(true)}
         />

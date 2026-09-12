@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "results": [
+    "supplier: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed",
+    "supplier: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed",
+    "venue: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed",
+    "venue: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed",
+    "Stale-slug/JSON-LD regression and public access for signed-out/Admin/Supplier/Venue/Customer sessions passed"
+  ]
+}

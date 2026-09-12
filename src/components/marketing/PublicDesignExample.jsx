@@ -1,6 +1,14 @@
 import { useState } from "react";
 import MarketingHeader from "./MarketingHeader";
 import MarketingFooter from "./MarketingFooter";
+import {
+  ProfileSection,
+  MediaGallery,
+  ProfileLayout,
+  FeatureList,
+  ReviewList,
+  StickyEnquiryCard,
+} from "./PublicProfileComponents";
 import SupplierCard from "./SupplierCard";
 import {
   PublicSectionHeader,
@@ -73,6 +81,44 @@ export default function PublicDesignExample() {
         />
         <div className="public-section">
           <PublicResultsState empty kind="example results" />
+        </div>
+        <div className="public-section public-profile">
+          <PublicSectionHeader
+            title="Public profile pattern"
+            description="Synthetic profile: shared photo gallery, plain sections and enquiry panel."
+          />
+          <MediaGallery
+            name="Example profile"
+            hero="/images/event-atmosphere-640.webp"
+            gallery={[
+              {
+                url: "/images/event-atmosphere.webp",
+                caption: "Example event photograph",
+              },
+            ]}
+          />
+          <ProfileLayout
+            enquiry={
+              <StickyEnquiryCard
+                title="Example enquiry"
+                description="Existing enquiry destination."
+                to="/design-system"
+                label="Example action"
+              />
+            }
+          >
+            <ProfileSection title="About the profile">
+              <p className="public-profile-prose">
+                Profile content uses existing published listing fields.
+              </p>
+            </ProfileSection>
+            <ProfileSection title="Example features">
+              <FeatureList items={["Example service", "Example facility"]} />
+            </ProfileSection>
+            <ProfileSection title="Example reviews">
+              <ReviewList reviews={[]} />
+            </ProfileSection>
+          </ProfileLayout>
         </div>
         <PublicCallout />
       </div>
