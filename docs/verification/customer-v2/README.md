@@ -64,3 +64,7 @@ Optional `WORKSPACE_TEST_URL` overrides the local URL; `CUSTOMER_SCREENSHOTS` ov
 All six browser suites passed. Vite compilation passed in 6.53 seconds; the full build still fails at the pre-existing SEO prerender requirement for Supabase URL/service-role credentials. Lint is **429 errors / 12 warnings**, versus **430 / 12** at the start; removing Customer's redundant navigation effect removes one existing error. All migrated Customer files and the new runner are clean. No unrelated lint backlog was changed.
 
 Live authentication/ownership enforcement, token validity and quote races, booking creation, notifications and message persistence require configured staging verification. The tests prove frontend requests/states, not live backend correctness. Supplier calendar week-view ARIA exceptions remain in that prior regression suite; Customer checks use no accessibility exceptions.
+
+## Subsequent workflow investigation
+
+See [Customer-to-Supplier verification](../customer-supplier-workflow/README.md) for connected real-handler/browser tests and two API fixes. Customer detail now excludes drafts, but live RLS still permits owned draft rows through direct Data API access; no policy change was made. Supplier history now returns the latest 500 messages. The send/link handoff, live integration and history/refresh limitations remain documented blockers or follow-up work there.

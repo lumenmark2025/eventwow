@@ -13,7 +13,8 @@
     "test:supplier": "node scripts/verify-supplier-v2.mjs",
     "test:supplier-workflows": "node scripts/verify-supplier-workflows-v2.mjs",
     "test:venue": "node scripts/verify-venue-v2.mjs",
-    "test:customer": "node scripts/verify-customer-v2.mjs"
+    "test:customer": "node scripts/verify-customer-v2.mjs",
+    "test:customer-supplier": "node --test scripts/verify-customer-supplier-workflow.mjs && node scripts/verify-workflow-browser.mjs"
   },
   "dependencies": {
     "-": "^0.0.1",

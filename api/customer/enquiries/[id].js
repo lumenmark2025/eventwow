@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { resolveAuthMe } from "../../_lib/authMe.js";
 
+// Match the existing public comparison and customer messaging visibility rules.
+const ALLOWED_QUOTE_STATUSES = ["sent", "accepted", "declined", "closed"];
+
 function toNumber(value) {
   const n = Number(value || 0);
   return Number.isFinite(n) ? n : 0;
@@ -41,6 +44,7 @@ export default async function handler(req, res) {
         .from("quotes")
         .select("id,supplier_id,status,total_amount,currency_code,quote_text,sent_at,accepted_at,declined_at,created_at")
         .eq("enquiry_id", enquiryId)
+        .in("status", ALLOWED_QUOTE_STATUSES)
         .order("created_at", { ascending: false }),
     ]);
     if (inviteResp.error) return res.status(500).json({ ok: false, error: "Failed to load invites", details: inviteResp.error.message });

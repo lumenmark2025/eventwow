@@ -304,3 +304,15 @@ See [Customer verification](verification/customer-v2/README.md) for screenshots,
 Live auth/ownership, token-based quote acceptance/decline, booking creation, notification delivery and messaging persistence remain unverified. The all-status quote response and lack of older-message/realtime/inbox functionality are existing gaps, not new capabilities introduced here.
 
 Recommended next step: verify the complete Customer-to-Supplier enquiry, quote/re-acceptance, booking and conversation flows in staging with real role accounts. Resolve the documented backend contract/exposure issues separately, then migrate public request and quote presentation using the established design system. No merge to `main` is part of this work.
+
+## Customer-to-Supplier verification — 12 September 2026
+
+Continued from `74c8887` with no redesign. [Connected workflow evidence](verification/customer-supplier-workflow/README.md) now covers actual React pages and actual API handlers sharing isolated stored enquiry/quote/message/booking data. The six existing browser suites also pass. Live integration sign-off remains blocked by missing designated staging accounts/application credentials.
+
+Two narrow API fixes: Customer enquiry detail now applies the existing sent/accepted/declined/closed visibility rule before loading quote relations; Supplier thread reads now select the latest 500 messages and return them chronologically. Draft-content and 505-message regressions reproduce the old defects and pass with the fixes. No frontend, auth, route, credit/quote/booking/message mutation, schema or policy changed.
+
+**Draft exposure is only mitigated at the endpoint.** Read-only live metadata shows `quotes_select_customer_owned` permits owned quotes without a status predicate, leaving direct authenticated Data API draft exposure. Correcting that requires a policy migration, so work on that remediation stopped under the user's no-schema instruction. This remains a production blocker. At inspection there were no linked drafts or threads over 50; that does not remove the latent defects.
+
+The connected run also reproduces the missing decision token immediately after sending: the existing Supplier reopen/copy-link path creates it later. Notification inbox counts clear but the topbar remains stale until reload/navigation; Supplier message opening issues duplicate reads and incoming replies need reopening/refresh. These pre-existing behaviors and remaining history/cursor, transactional side-effect and staging risks are documented in the evidence. No new features or speculative synchronization refactor was added.
+
+Vite compilation passes; full build retains the existing SEO credential failure. Lint remains 429 errors / 12 warnings without new diagnostics. Next: separately review/authorize the RLS and send/link corrections, then verify live role accounts, email delivery, credits, booking recovery and message persistence in staging before production sign-off.

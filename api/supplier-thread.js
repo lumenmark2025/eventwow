@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       .from("messages")
       .select("id,sender_type,body,created_at")
       .eq("thread_id", thread.id)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(500);
 
     if (msgErr) {
@@ -98,7 +98,8 @@ export default async function handler(req, res) {
           customerEmail: thread.quotes?.enquiries?.customer_email || thread.quotes?.enquiries?.customers?.email || null,
         },
       },
-      messages: (messages || []).map(toMessageDto),
+      // Select the newest window, then retain chronological display order.
+      messages: [...(messages || [])].reverse().map(toMessageDto),
     });
   } catch (err) {
     console.error("supplier-thread crashed:", err);

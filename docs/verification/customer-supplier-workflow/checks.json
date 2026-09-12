@@ -1,0 +1,48 @@
+{
+  "startingCommit": "74c8887af0e1682ac7d7b467fe2f5db908a2de03",
+  "branch": "ui-v2-design-system",
+  "browserSuites": {
+    "test:customer": "passed",
+    "test:supplier": "passed",
+    "test:supplier-workflows": "passed",
+    "test:venue": "passed",
+    "test:workspace": "passed",
+    "test:admin": "passed",
+    "test:customer-supplier": "passed"
+  },
+  "handlerTests": {
+    "passed": 3,
+    "failed": 0,
+    "realClientRequestsInConnectedCase": 348,
+    "storage": "simulated PostgREST/Auth and credit RPC; no PostgreSQL/RLS emulation"
+  },
+  "viteBuild": "passed (4.51s)",
+  "fullBuild": "Existing SEO missing Supabase credentials",
+  "lint": {
+    "errors": 429,
+    "warnings": 12,
+    "newDiagnostics": 0
+  },
+  "liveReadOnly": {
+    "projectName": "eventwow",
+    "developmentBranches": 0,
+    "quoteStatuses": {
+      "sent": 1
+    },
+    "customerLinkedDrafts": 0,
+    "threadsOver50": 0,
+    "threadsOver500": 0,
+    "creditRpcPresent": true,
+    "uniqueBookingQuoteIndex": true,
+    "quotesRlsEnabled": true,
+    "authenticatedQuotesSelectGranted": true,
+    "customerOwnedQuotePolicyHasStatusFilter": false
+  },
+  "liveAuthAndWrites": "Not verified: no designated staging application/accounts/credentials",
+  "schemaOrPolicyChanges": false,
+  "knownBlockers": [
+    "Direct Customer Data API draft exposure remains; policy migration required and not attempted",
+    "Send does not create Customer decision token before notifications",
+    "Live authentication, credit concurrency, side-effect recovery and persistence need staging verification"
+  ]
+}
