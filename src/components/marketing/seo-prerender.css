@@ -1,0 +1,96 @@
+/* Style-only adapter for the existing static SEO list markup. Uses the same
+   source tokens as React; leaves headings, copy and crawlable links intact. */
+.pr-wrap.public-seo-prerender {
+  box-sizing: border-box;
+  max-width: var(--public-max);
+  padding: 32px;
+  color: var(--public-ink);
+  background: var(--public-canvas);
+}
+.public-seo-prerender .pr-hero {
+  padding: 32px;
+  background: var(--public-blue-soft);
+  border: 1px solid var(--public-line);
+  border-radius: var(--public-radius-lg);
+}
+.public-seo-prerender .pr-hero h1 {
+  color: var(--public-ink);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+.public-seo-prerender .pr-hero p {
+  color: var(--public-text);
+  font-size: 18px;
+  line-height: 1.65;
+  max-width: 960px;
+}
+.public-seo-prerender .pr-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 32px;
+  margin-top: 32px;
+  align-items: start;
+}
+.public-seo-prerender .pr-card {
+  padding: 24px;
+  border: 1px solid var(--public-line);
+  border-radius: var(--public-radius);
+  background: var(--public-surface);
+}
+.public-seo-prerender .pr-card h2 {
+  color: var(--public-ink);
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+.public-seo-prerender .pr-card p {
+  color: var(--public-text);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.public-seo-prerender .pr-card:last-child {
+  background: var(--public-orange-soft);
+}
+.public-seo-prerender .pr-list {
+  list-style: none;
+  padding: 0;
+  gap: 0;
+}
+.public-seo-prerender .pr-list li {
+  border-top: 1px solid var(--public-line);
+}
+.public-seo-prerender .pr-list a {
+  display: block;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 12px 0;
+  color: var(--public-link);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.public-seo-prerender a:focus-visible {
+  outline: 3px solid var(--public-link);
+  outline-offset: 3px;
+}
+@media (max-width: 900px) {
+  .public-seo-prerender .pr-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .pr-wrap.public-seo-prerender {
+    padding: 24px 16px;
+  }
+  .public-seo-prerender .pr-hero {
+    padding: 24px 20px;
+  }
+  .public-seo-prerender .pr-hero h1 {
+    font-size: 30px;
+  }
+  .public-seo-prerender .pr-hero p {
+    font-size: 16px;
+  }
+}

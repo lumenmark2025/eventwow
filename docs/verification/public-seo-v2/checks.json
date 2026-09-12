@@ -1,0 +1,89 @@
+{
+  "startingCommit": "176b9814e8fdbeda903f294d650c83a18066deb5",
+  "vite": {
+    "passed": true,
+    "seconds": 4.98,
+    "entryKb": 433.8,
+    "gzipKb": 126.87,
+    "previousEntryKb": 433.65,
+    "previousGzipKb": 126.81
+  },
+  "lint": {
+    "errors": 429,
+    "warnings": 12,
+    "newDiagnostics": 0
+  },
+  "existingSuites": {
+    "public": {
+      "passed": true,
+      "output": [
+        "# todo 0",
+        "# duration_ms 124.637268",
+        "home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "home: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "suppliers: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "venues: populated/loading/empty/error/missing media at 360/768/1024/1440; axe/overflow, retry, canonical, route isolation, duplicate-read checks passed",
+        "Search/category/location/sort/clear query contracts, profile URLs, absent ratings/response metrics, failed images/options recovery and Radix keyboard/focus/navigation passed",
+        "Public access remains available signed out and under Admin/Supplier/Venue/Customer sessions; no workspace data fetched"
+      ]
+    },
+    "profiles": {
+      "passed": true,
+      "output": [
+        "venue not-found passed",
+        "venue empty passed",
+        "venue broken passed",
+        "venue single passed",
+        "venue invalid-gallery passed",
+        "supplier: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed",
+        "supplier: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed",
+        "venue: four widths, axe, gallery keyboard/focus/wrap, metadata, unchanged CTA/related links and one profile GET passed",
+        "venue: loading, incomplete/no-photo/no-review/no-package, 503/retry, 404, empty DTO, broken/single/invalid gallery at all widths passed",
+        "Stale-slug/JSON-LD regression and public access for signed-out/Admin/Supplier/Venue/Customer sessions passed"
+      ]
+    },
+    "workspace": {
+      "passed": true,
+      "output": [
+        "Mobile drawer navigation, account menu, Ctrl K search, dialog focus trap/Escape/restore pass",
+        "All four admin screens: loading state; errors do not masquerade as zero metrics",
+        "All four admin screens: empty state; errors do not masquerade as zero metrics",
+        "All four admin screens: error state; errors do not masquerade as zero metrics",
+        "Dashboard: partial service failure preserves successful panels and unavailable metrics use \u2014",
+        "supplier: existing Admin guard outcome preserved; no Admin page module requested",
+        "venue_owner: existing Admin guard outcome preserved; no Admin page module requested",
+        "customer: existing Admin guard outcome preserved; no Admin page module requested",
+        "none: existing Admin guard outcome preserved; no Admin page module requested",
+        "Screenshots: /tmp/eventwow-workspace-v2"
+      ]
+    }
+  },
+  "seo": {
+    "passed": true,
+    "results": [
+      "/categories: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+      "/categories/catering: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+      "/category/catering: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+      "/category/catering/manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+      "/location/manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+      "/catering-manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+      "Pagination exact query/clamping/disabled states, category keyboard links, /browse redirect, search debounce/trim/clear and stale-flat-slug schema cleanup passed",
+      "Public access for signed-out/Admin/Supplier/Venue/Customer sessions, no workspace data reads"
+    ]
+  },
+  "contracts": {
+    "passed": true,
+    "baseline": "176b9814e8fdbeda903f294d650c83a18066deb5",
+    "checks": [
+      "All four React metadata calls, slug helpers, pagination callback and read URL expressions identical as AST",
+      "API/Supabase/routes/rewrites/dynamic sitemap/metadata helper unchanged",
+      "All prerender functions except style-wrapped listPageHtml identical as AST",
+      "Static list text, H1/H2, intro, links and empty copy identical after removing CSS/class marker",
+      "Static title/description/canonical/schema output identical; existing main() route/content generation and writeSitemap unchanged",
+      "Static category without JavaScript: four widths, no overflow, crawlable links and keyboard focus; same static HTML passes axe in an enabled audit context",
+      "Generated sitemap bytes/path identical for representative routes including deduplication"
+    ]
+  }
+}

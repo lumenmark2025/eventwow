@@ -1,0 +1,27 @@
+/* Shared public tokens for React and build-time SEO presentation. */
+.public-v2 {
+  --public-ink: #102344;
+  --public-text: #536273;
+  --public-muted: #647184;
+  --public-line: #e8edf3;
+  --public-canvas: #fbfcfe;
+  --public-surface: #fff;
+  --public-coral: #ff5b2d;
+  --public-action: #c94016;
+  --public-action-hover: #ae3410;
+  --public-orange-soft: #fff2ec;
+  --public-blue-soft: #edf4ff;
+  --public-mint-soft: #e9f8f2;
+  --public-purple-soft: #f1edff;
+  --public-link: #235daf;
+  --public-success: #237457;
+  --public-danger: #b42318;
+  --public-radius: 14px;
+  --public-radius-lg: 18px;
+  --public-shadow: 0 2px 10px rgba(20, 44, 75, 0.055);
+  --public-max: 1420px;
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--public-ink);
+  font-size: 16px;
+  line-height: 1.5;
+}

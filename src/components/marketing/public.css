@@ -1,3 +1,4 @@
+@import "./public-tokens.css";
 @import "@fontsource/inter/latin-400.css";
 @import "@fontsource/inter/latin-500.css";
 @import "@fontsource/inter/latin-600.css";
@@ -7,18 +8,7 @@
 /* Public reference, consolidated from its final XXL scale pass. Scoped so
    marketplace tokens never change workspace geometry or existing role screens.
    Reference dimensions/radii are intentional; action/muted colours meet AA. */
-.public-v2 {
-  --public-ink:#102344; --public-text:#536273; --public-muted:#647184;
-  --public-line:#e8edf3; --public-canvas:#fbfcfe; --public-surface:#fff;
-  --public-coral:#ff5b2d; --public-action:#c94016; --public-action-hover:#ae3410;
-  --public-orange-soft:#fff2ec; --public-blue-soft:#edf4ff;
-  --public-mint-soft:#e9f8f2; --public-purple-soft:#f1edff;
-  --public-link:#235daf; --public-success:#237457; --public-danger:#b42318;
-  --public-radius:14px; --public-radius-lg:18px;
-  --public-shadow:0 2px 10px rgba(20,44,75,.055);
-  --public-max:1420px;
-  font-family:Inter,system-ui,sans-serif; color:var(--public-ink); font-size:16px; line-height:1.5;
-}
+
 .public-shell { min-height:100vh; background:var(--public-canvas); }
 .public-v2 * { box-sizing:border-box; }
 .public-v2 a { color:inherit; text-decoration:none; }

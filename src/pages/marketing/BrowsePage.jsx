@@ -1,19 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
-import Skeleton from "../../components/ui/Skeleton";
-import SupplierCard from "../../components/marketing/SupplierCard";
+import {
+  PublicButton,
+  PublicSearch,
+} from "../../components/marketing/PublicComponents";
+import {
+  SeoLandingHeader,
+  SeoCategoryCard,
+  SeoResults,
+  SeoSupplierResults,
+} from "../../components/marketing/PublicSeoComponents";
+import { publicGet } from "../../lib/publicRequest";
 import { useMarketingMeta } from "../../lib/marketingMeta";
 
 export default function BrowsePage() {
+  const [categoryAttempt, setCategoryAttempt] = useState(0);
+  const [searchAttempt, setSearchAttempt] = useState(0);
   const [q, setQ] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchRows, setSearchRows] = useState([]);
-  const [searchPagination, setSearchPagination] = useState({ page: 1, pageSize: 12, total: 0 });
+  const [searchPagination, setSearchPagination] = useState({
+    page: 1,
+    pageSize: 12,
+    total: 0,
+  });
 
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState("");
@@ -21,7 +33,8 @@ export default function BrowsePage() {
 
   useMarketingMeta({
     title: "Browse event categories | Eventwow",
-    description: "Explore event service categories and discover trusted suppliers across the UK.",
+    description:
+      "Explore event service categories and discover trusted suppliers across the UK.",
     path: "/categories",
   });
 
@@ -33,9 +46,7 @@ export default function BrowsePage() {
       setCategoriesLoading(true);
       setCategoriesError("");
       try {
-        const resp = await fetch("/api/public/categories");
-        const json = await resp.json().catch(() => []);
-        if (!resp.ok) throw new Error("Failed to load categories");
+        const json = await publicGet("/api/public/categories");
         if (!mounted) return;
         setCategories(Array.isArray(json) ? json : []);
       } catch (err) {
@@ -49,7 +60,7 @@ export default function BrowsePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [categoryAttempt]);
 
   useEffect(() => {
     let mounted = true;
@@ -68,9 +79,9 @@ export default function BrowsePage() {
         params.set("q", trimmedQuery);
         params.set("page", "1");
         params.set("pageSize", "12");
-        const resp = await fetch(`/api/public/suppliers/search?${params.toString()}`);
-        const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to search suppliers");
+        const json = await publicGet(
+          `/api/public/suppliers/search?${params.toString()}`,
+        );
         if (!mounted) return;
         setSearchRows(Array.isArray(json?.suppliers) ? json.suppliers : []);
         setSearchPagination({
@@ -92,87 +103,72 @@ export default function BrowsePage() {
       mounted = false;
       window.clearTimeout(timer);
     };
-  }, [trimmedQuery]);
+  }, [trimmedQuery, searchAttempt]);
 
   return (
-    <MarketingShell>
-      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,#2563eb_0%,#1d4ed8_45%,#60a5fa_100%)] p-8 text-white shadow-lg sm:p-10">
-        <h1 className="text-4xl font-semibold tracking-tight">Browse event categories</h1>
-        <p className="mt-3 text-base text-white/90">Search trusted suppliers or jump into a category.</p>
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <Input
+    <MarketingShell landing>
+      <div className="public-seo">
+        <SeoLandingHeader
+          title="Browse event categories"
+          subtitle="Search trusted suppliers or jump into a category."
+        >
+          <PublicSearch
+            label="Search suppliers, category, location"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setSearchLoading(!!e.target.value.trim());
+            }}
             placeholder="Search suppliers, category, location..."
-            className="sm:max-w-md"
           />
-          <Button variant="secondary" disabled title="Coming soon">Filters (coming soon)</Button>
-          <Button as={Link} to="/request">Post a request</Button>
-        </div>
-
-        <div className="mt-4">
-          {trimmedQuery ? (
-            <p className="text-sm text-slate-600">
-              {searchPagination.total} result{searchPagination.total === 1 ? "" : "s"} for "{trimmedQuery}"
-            </p>
-          ) : null}
-          {searchError ? <p className="mt-2 text-sm text-rose-600">{searchError}</p> : null}
-        </div>
-      </section>
-
-      <section className="mt-6">
-        {searchLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={`search-sk-${i}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="mt-3 h-5 w-2/3" />
-                <Skeleton className="mt-2 h-4 w-1/2" />
-                <Skeleton className="mt-3 h-12 w-full" />
-              </div>
-            ))}
+          <div className="public-seo-actions">
+            <PublicButton variant="secondary" disabled title="Coming soon">
+              Filters (coming soon)
+            </PublicButton>
+            <PublicButton as={Link} to="/request">
+              Post a request
+            </PublicButton>
           </div>
-        ) : trimmedQuery && searchRows.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {searchRows.map((supplier) => (
-              <SupplierCard key={supplier.id} supplier={supplier} />
-            ))}
-          </div>
-        ) : trimmedQuery ? (
-          <Card>
-            <CardContent className="p-4 text-sm text-slate-600">No suppliers found. Try a different search.</CardContent>
-          </Card>
-        ) : null}
-      </section>
-
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {categoriesLoading ? (
-          Array.from({ length: 8 }).map((_, i) => (
-            <div key={`cat-sk-${i}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Skeleton className="h-5 w-2/3" />
-              <Skeleton className="mt-3 h-10 w-full" />
-              <Skeleton className="mt-3 h-10 w-full" />
-            </div>
-          ))
-        ) : (
-          categories.map((cat) => (
-            <Card key={cat.slug} className="rounded-2xl border-blue-100 shadow-sm">
-              <img
-                src={cat.hero_image_url || "/assets/placeholders/category-default.svg"}
-                alt={`${cat.display_name} suppliers`}
-                className="h-28 w-full rounded-t-2xl object-cover"
-                loading="lazy"
-              />
-              <CardHeader><CardTitle className="text-lg">{cat.display_name}</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-slate-600">{cat.short_description || "Find vetted suppliers and compare structured quotes."}</p>
-                <Button as={Link} to={`/categories/${encodeURIComponent(cat.slug)}`} variant="secondary" className="w-full">View category</Button>
-              </CardContent>
-            </Card>
-          ))
+        </SeoLandingHeader>
+        {trimmedQuery && (
+          <section
+            className="public-seo-search-results"
+            aria-label="Supplier search results"
+          >
+            {!searchLoading && !searchError && (
+              <p className="public-seo-count">
+                {searchPagination.total} result
+                {searchPagination.total === 1 ? "" : "s"} for "{trimmedQuery}"
+              </p>
+            )}
+            <SeoResults
+              loading={searchLoading}
+              error={searchError}
+              onRetry={() => setSearchAttempt((n) => n + 1)}
+              empty={!searchRows.length}
+              emptyTitle="No suppliers found. Try a different search."
+            >
+              <SeoSupplierResults rows={searchRows} />
+            </SeoResults>
+          </section>
         )}
-      </section>
-      {categoriesError ? <p className="mt-3 text-sm text-rose-600">{categoriesError}</p> : null}
+        <section aria-label="Event categories">
+          <SeoResults
+            kind="categories"
+            loading={categoriesLoading}
+            error={categoriesError}
+            onRetry={() => setCategoryAttempt((n) => n + 1)}
+            empty={!categories.length}
+            emptyTitle="No categories available yet."
+          >
+            <div className="public-seo-categories">
+              {categories.map((cat) => (
+                <SeoCategoryCard key={cat.slug} category={cat} />
+              ))}
+            </div>
+          </SeoResults>
+        </section>
+      </div>
     </MarketingShell>
   );
 }

@@ -9,6 +9,7 @@ import {
   ReviewList,
   StickyEnquiryCard,
 } from "./PublicProfileComponents";
+import { SeoCategoryCard, SeoPagination } from "./PublicSeoComponents";
 import SupplierCard from "./SupplierCard";
 import {
   PublicSectionHeader,
@@ -120,6 +121,31 @@ export default function PublicDesignExample() {
             </ProfileSection>
           </ProfileLayout>
         </div>
+        <section
+          className="public-seo public-section"
+          aria-label="SEO landing examples"
+        >
+          <PublicSectionHeader
+            title="Category and SEO landing patterns"
+            description="Synthetic examples. Existing heading, intro, category descriptions and result links remain visible."
+          />
+          <div className="public-seo-categories">
+            <SeoCategoryCard
+              category={{
+                slug: "design-example",
+                display_name: "Example category",
+                short_description:
+                  "Existing category copy is displayed in full.",
+              }}
+            />
+          </div>
+          <SeoPagination
+            page={1}
+            safePage={1}
+            totalPages={1}
+            onPage={() => {}}
+          />
+        </section>
         <PublicCallout />
       </div>
       <MarketingFooter />

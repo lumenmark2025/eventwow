@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import MarketingShell from "../../components/layout/MarketingShell";
-import PageHeader from "../../components/layout/PageHeader";
-import { Card, CardContent } from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import EmptyState from "../../components/ui/EmptyState";
-import Skeleton from "../../components/ui/Skeleton";
-import SupplierCard from "../../components/marketing/SupplierCard";
+import { PublicButton } from "../../components/marketing/PublicComponents";
+import {
+  SeoLandingHeader,
+  SeoResults,
+  SeoSupplierResults,
+} from "../../components/marketing/PublicSeoComponents";
+import { publicGet } from "../../lib/publicRequest";
 import { useMarketingMeta } from "../../lib/marketingMeta";
 
 function titleFromSlug(value) {
@@ -25,21 +26,35 @@ function titleFromSlug(value) {
     .join(" ");
 }
 
-export default function CategoryLocationLandingPage() {
+export default function CategoryLocationLandingPageRoute() {
+  const { pathname } = useLocation();
+  return <CategoryLocationLandingPage key={pathname} />;
+}
+
+function CategoryLocationLandingPage() {
   const { categorySlug, locationSlug } = useParams();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [rows, setRows] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [resolvedCategory, setResolvedCategory] = useState("");
   const [resolvedLocation, setResolvedLocation] = useState("");
 
-  const categoryName = useMemo(() => titleFromSlug(categorySlug || ""), [categorySlug]);
-  const locationName = useMemo(() => titleFromSlug(locationSlug || ""), [locationSlug]);
+  const categoryName = useMemo(
+    () => titleFromSlug(categorySlug || ""),
+    [categorySlug],
+  );
+  const locationName = useMemo(
+    () => titleFromSlug(locationSlug || ""),
+    [locationSlug],
+  );
 
   const pageTitle = useMemo(() => {
-    if (categoryName && locationName) return `${categoryName} in ${locationName}`;
+    if (categoryName && locationName)
+      return `${categoryName} in ${locationName}`;
     if (categoryName) return `${categoryName}`;
     if (locationName) return `Suppliers in ${locationName}`;
     return "Suppliers";
@@ -70,14 +85,15 @@ export default function CategoryLocationLandingPage() {
     (async () => {
       setLoading(true);
       setError("");
+      setNotFound(false);
       try {
         const params = new URLSearchParams();
         if (categorySlug) params.set("categorySlug", categorySlug);
         if (locationSlug) params.set("locationSlug", locationSlug);
         params.set("limit", "48");
-        const resp = await fetch(`/api/public-suppliers-by-category-location?${params.toString()}`);
-        const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.details || json?.error || "Failed to load suppliers");
+        const json = await publicGet(
+          `/api/public-suppliers-by-category-location?${params.toString()}`,
+        );
         if (!mounted) return;
         setRows(Array.isArray(json?.rows) ? json.rows : []);
         setTotalCount(Number(json?.totalCount || 0));
@@ -87,6 +103,7 @@ export default function CategoryLocationLandingPage() {
         if (mounted) {
           setRows([]);
           setTotalCount(0);
+          setNotFound(err?.status === 404);
           setError(err?.message || "Failed to load suppliers");
         }
       } finally {
@@ -96,73 +113,72 @@ export default function CategoryLocationLandingPage() {
     return () => {
       mounted = false;
     };
-  }, [categorySlug, locationSlug, categoryName, locationName]);
+  }, [categorySlug, locationSlug, categoryName, locationName, attempt]);
 
   const finalCategory = resolvedCategory || categoryName;
   const finalLocation = resolvedLocation || locationName;
 
   return (
-    <MarketingShell>
-      <PageHeader
-        title={finalCategory && finalLocation ? `${finalCategory} in ${finalLocation}` : pageTitle}
-        subtitle={finalCategory && finalLocation ? `Find local ${finalCategory.toLowerCase()} suppliers near you and request quotes.` : "Find trusted suppliers and request quotes fast."}
-      />
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-        <Link to="/suppliers" className="text-blue-700 hover:underline">All suppliers</Link>
-        {categorySlug ? (
-          <>
-            <span className="text-slate-300">/</span>
-            <Link to={`/category/${encodeURIComponent(categorySlug)}`} className="text-blue-700 hover:underline">
-              {finalCategory || "Category"}
-            </Link>
-          </>
-        ) : null}
-      </div>
-
-      <div className="mt-2 flex items-center justify-between">
-        <p className="text-sm text-slate-600">{totalCount} suppliers</p>
-      </div>
-
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
-
-      <section className="mt-4">
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={`seo-supplier-sk-${i}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="mt-3 h-5 w-2/3" />
-                <Skeleton className="mt-2 h-4 w-1/2" />
-                <Skeleton className="mt-3 h-12 w-full" />
-              </div>
-            ))}
-          </div>
-        ) : rows.length === 0 ? (
-          <Card>
-            <CardContent className="space-y-4 p-6">
-              <EmptyState
-                title={`We couldn't find any suppliers for ${finalCategory || "this category"}${finalLocation ? ` in ${finalLocation}` : ""} yet.`}
-                description="Try browsing broader categories or nearby locations."
-              />
-              <div className="flex flex-wrap gap-2">
-                {categorySlug ? (
-                  <Button as={Link} to={`/category/${encodeURIComponent(categorySlug)}`}>
-                    Browse all {finalCategory || "suppliers"}
-                  </Button>
-                ) : null}
-                <Button as={Link} to="/suppliers" variant="secondary">Browse all suppliers</Button>
-                <Button as={Link} to="/contact" variant="secondary">Are you a supplier? Join Eventwow</Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {rows.map((supplier) => (
-              <SupplierCard key={supplier.id} supplier={supplier} />
-            ))}
-          </div>
+    <MarketingShell landing>
+      <div className="public-seo">
+        <SeoLandingHeader
+          title={
+            finalCategory && finalLocation
+              ? `${finalCategory} in ${finalLocation}`
+              : pageTitle
+          }
+          subtitle={
+            finalCategory && finalLocation
+              ? `Find local ${finalCategory.toLowerCase()} suppliers near you and request quotes.`
+              : "Find trusted suppliers and request quotes fast."
+          }
+        />
+        <nav className="public-breadcrumbs" aria-label="Breadcrumb">
+          <Link to="/suppliers">All suppliers</Link>
+          {categorySlug && (
+            <>
+              <span aria-hidden="true">/</span>
+              <Link to={`/category/${encodeURIComponent(categorySlug)}`}>
+                {finalCategory || "Category"}
+              </Link>
+            </>
+          )}
+        </nav>
+        {!loading && !error && (
+          <p className="public-seo-count">{totalCount} suppliers</p>
         )}
-      </section>
+        <section aria-label="Local suppliers">
+          <SeoResults
+            loading={loading}
+            error={error}
+            notFound={notFound}
+            onRetry={() => setAttempt((n) => n + 1)}
+            empty={!rows.length}
+            emptyTitle={`We couldn't find any suppliers for ${finalCategory || "this category"}${finalLocation ? ` in ${finalLocation}` : ""} yet.`}
+            emptyDescription="Try browsing broader categories or nearby locations."
+            emptyActions={
+              <>
+                {categorySlug && (
+                  <PublicButton
+                    as={Link}
+                    to={`/category/${encodeURIComponent(categorySlug)}`}
+                  >
+                    Browse all {finalCategory || "suppliers"}
+                  </PublicButton>
+                )}
+                <PublicButton as={Link} to="/suppliers" variant="secondary">
+                  Browse all suppliers
+                </PublicButton>
+                <PublicButton as={Link} to="/contact" variant="secondary">
+                  Are you a supplier? Join Eventwow
+                </PublicButton>
+              </>
+            }
+          >
+            <SeoSupplierResults rows={rows} />
+          </SeoResults>
+        </section>
+      </div>
     </MarketingShell>
   );
 }

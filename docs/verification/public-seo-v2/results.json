@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "results": [
+    "/categories: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+    "/categories/catering: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+    "/category/catering: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+    "/category/catering/manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+    "/location/manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+    "/catering-manchester: heading/intro/content, title/description/canonical/social metadata/schema, one GET and four-width axe/overflow passed",
+    "Pagination exact query/clamping/disabled states, category keyboard links, /browse redirect, search debounce/trim/clear and stale-flat-slug schema cleanup passed",
+    "Public access for signed-out/Admin/Supplier/Venue/Customer sessions, no workspace data reads"
+  ]
+}

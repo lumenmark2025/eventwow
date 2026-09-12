@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { styleSeoLanding } from "./_lib/public-seo-presentation.mjs";
 import { createClient } from "@supabase/supabase-js";
 
 const DIST_DIR = path.resolve(process.cwd(), "dist");
@@ -159,7 +160,7 @@ function homeHtml(categories, venues, suppliers) {
 }
 
 function listPageHtml({ h1, intro, links, secondaryLinks, secondaryTitle }) {
-  return appShell({
+  return styleSeoLanding(appShell({
     h1,
     intro,
     bodyHtml: [
@@ -172,7 +173,7 @@ function listPageHtml({ h1, intro, links, secondaryLinks, secondaryTitle }) {
       "</article>",
       "</section>",
     ].join(""),
-  });
+  }), path.join(DIST_DIR, "assets"));
 }
 
 function detailPageHtml({ h1, intro, details, relatedLinks }) {

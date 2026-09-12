@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "baseline": "176b9814e8fdbeda903f294d650c83a18066deb5",
+  "checks": [
+    "All four React metadata calls, slug helpers, pagination callback and read URL expressions identical as AST",
+    "API/Supabase/routes/rewrites/dynamic sitemap/metadata helper unchanged",
+    "All prerender functions except style-wrapped listPageHtml identical as AST",
+    "Static list text, H1/H2, intro, links and empty copy identical after removing CSS/class marker",
+    "Static title/description/canonical/schema output identical; existing main() route/content generation and writeSitemap unchanged",
+    "Static category without JavaScript: four widths, no overflow, crawlable links and keyboard focus; same static HTML passes axe in an enabled audit context",
+    "Generated sitemap bytes/path identical for representative routes including deduplication"
+  ]
+}
