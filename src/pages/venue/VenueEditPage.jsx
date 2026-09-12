@@ -2,11 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import PageHeader from "../../components/layout/PageHeader";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import Skeleton from "../../components/ui/Skeleton";
+import {
+  Badge,
+  Button,
+  Input,
+  Textarea,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+  Feedback,
+  FormField,
+  FormActions,
+  EmptyState,
+} from "../../components/workspace/AdminPrimitives";
+import WorkspaceImage from "../../components/workspace/WorkspaceImage";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -19,12 +30,14 @@ async function apiFetch(path, options = {}) {
   };
   const resp = await fetch(path, { ...options, headers });
   const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(json?.details || json?.error || "Request failed");
+  if (!resp.ok)
+    throw new Error(json?.details || json?.error || "Request failed");
   return json;
 }
 
 function toStatusLabel(venue) {
-  if (venue?.requires_review) return { label: "Pending Review", variant: "warning" };
+  if (venue?.requires_review)
+    return { label: "Pending Review", variant: "warning" };
   if (venue?.is_published) return { label: "Published", variant: "success" };
   return { label: "Draft", variant: "neutral" };
 }
@@ -55,7 +68,8 @@ export default function VenueEditPage() {
     try {
       const json = await apiFetch("/api/venue/my-venues");
       const rows = Array.isArray(json?.rows) ? json.rows : [];
-      const found = rows.find((row) => String(row.id) === String(venueId)) || null;
+      const found =
+        rows.find((row) => String(row.id) === String(venueId)) || null;
       if (!found) {
         setVenue(null);
         setError("Venue not found or not owned by your account.");
@@ -67,7 +81,9 @@ export default function VenueEditPage() {
         description: found.description || "",
         guestMin: found.guest_min ?? "",
         guestMax: found.guest_max ?? "",
-        facilitiesText: Array.isArray(found.facilities) ? found.facilities.join(", ") : "",
+        facilitiesText: Array.isArray(found.facilities)
+          ? found.facilities.join(", ")
+          : "",
       });
     } catch (err) {
       setVenue(null);
@@ -107,7 +123,11 @@ export default function VenueEditPage() {
       });
 
       if (json?.venue) {
-        setVenue((prev) => ({ ...(prev || {}), ...json.venue, status: json.venue.requires_review ? "pending_review" : prev?.status }));
+        setVenue((prev) => ({
+          ...(prev || {}),
+          ...json.venue,
+          status: json.venue.requires_review ? "pending_review" : prev?.status,
+        }));
       }
       setSuccess("Changes submitted for review.");
       await loadVenue();
@@ -129,7 +149,7 @@ export default function VenueEditPage() {
     setSuccess("");
     try {
       const prep = await apiFetch(
-        `/api/venue/upload-image?venueId=${encodeURIComponent(venueId)}&fileName=${encodeURIComponent(file.name)}&type=${encodeURIComponent(type)}`
+        `/api/venue/upload-image?venueId=${encodeURIComponent(venueId)}&fileName=${encodeURIComponent(file.name)}&type=${encodeURIComponent(type)}`,
       );
 
       const uploadUrl = prep?.uploadUrl || prep?.signedUrl;
@@ -142,7 +162,9 @@ export default function VenueEditPage() {
       });
       if (!putResp.ok) {
         const details = await putResp.text().catch(() => "");
-        throw new Error(`Image upload failed (${putResp.status}). ${details}`.trim());
+        throw new Error(
+          `Image upload failed (${putResp.status}). ${details}`.trim(),
+        );
       }
 
       setSuccess("Image uploaded and queued for review.");
@@ -156,21 +178,22 @@ export default function VenueEditPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-56" />
-        <Skeleton className="h-80 w-full" />
+      <div className="space-y-6">
+        <PageHeader title="Edit venue" subtitle="Loading your venue details." />
+        <Skeleton className="h-64" />
       </div>
     );
   }
 
   if (!venue) {
     return (
-      <Card>
-        <CardContent className="space-y-3 p-6">
-          <p className="text-sm text-rose-600">{error || "Venue not found."}</p>
-          <Button as={Link} to="/venue" variant="secondary">Back to my venues</Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <PageHeader title="Edit venue" subtitle="Manage your venue listing." />
+        <Feedback onRetry={loadVenue}>{error || "Venue not found."}</Feedback>
+        <Button as={Link} to="/venue" variant="secondary">
+          Back to my venues
+        </Button>
+      </div>
     );
   }
 
@@ -178,128 +201,173 @@ export default function VenueEditPage() {
     <div className="space-y-6">
       <PageHeader
         title={`Edit ${venue.name || "venue"}`}
-        subtitle="Owner changes are submitted for admin review before publication updates."
+        subtitle="Update your listing details and submit them for review."
         actions={[
-          { key: "back", label: "Back", variant: "secondary", onClick: () => navigate("/venue") },
-          { key: "save", label: saving ? "Submitting..." : "Submit for review", onClick: saveVenue, disabled: saving || !!uploading },
+          {
+            key: "back",
+            label: "Back to my venues",
+            variant: "secondary",
+            onClick: () => navigate("/venue"),
+          },
+          {
+            key: "save",
+            label: saving ? "Submitting..." : "Submit for review",
+            onClick: saveVenue,
+            disabled: saving || !!uploading,
+          },
         ]}
       />
-
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
-      {success ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</div> : null}
+      {error && <Feedback>{error}</Feedback>}
+      {success && <Feedback tone="success">{success}</Feedback>}
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Venue status
+          <CardTitle>Listing status</CardTitle>
+        </CardHeader>
+        <CardContent className="grid items-start gap-6 md:grid-cols-2">
+          <WorkspaceImage
+            src={venue.hero_image?.signed_url || venue.hero_image?.public_url}
+            alt={`${venue.name || "Venue"} hero`}
+          />
+          <div className="space-y-3">
             <Badge variant={status.variant}>{status.label}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-slate-600">
-            {venue.requires_review
-              ? "Your latest changes are pending admin review."
-              : "Make changes and submit when ready. Publication visibility is controlled by admins."}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Venue details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input
-              type="number"
-              value={form.guestMin}
-              onChange={(e) => setForm((prev) => ({ ...prev, guestMin: e.target.value }))}
-              placeholder="Guest minimum"
-            />
-            <Input
-              type="number"
-              value={form.guestMax}
-              onChange={(e) => setForm((prev) => ({ ...prev, guestMax: e.target.value }))}
-              placeholder="Guest maximum"
-            />
+            {venue.location_label && <p>{venue.location_label}</p>}
+            <p className="ew-form-help">
+              {venue.requires_review
+                ? "Your latest changes are pending admin review."
+                : "Make changes and submit when ready. Publication visibility is controlled by admins."}
+            </p>
           </div>
-          <Input
-            value={form.facilitiesText}
-            onChange={(e) => setForm((prev) => ({ ...prev, facilitiesText: e.target.value }))}
-            placeholder="Facilities (comma-separated)"
-          />
-          <textarea
-            value={form.shortDescription}
-            onChange={(e) => setForm((prev) => ({ ...prev, shortDescription: e.target.value }))}
-            className="min-h-[90px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-            placeholder="Short description"
-          />
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-            className="min-h-[180px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25"
-            placeholder="Description"
-          />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Images</CardTitle>
+          <CardTitle>About your venue</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-              Upload hero image
-              <input
+          <FormField
+            label="Short description"
+            help="A brief introduction to your venue."
+          >
+            <Textarea
+              rows={3}
+              value={form.shortDescription}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  shortDescription: e.target.value,
+                }))
+              }
+            />
+          </FormField>
+          <FormField
+            label="Description"
+            help="Describe the spaces and events your venue can accommodate."
+          >
+            <Textarea
+              rows={6}
+              value={form.description}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, description: e.target.value }))
+              }
+            />
+          </FormField>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Capacity and facilities</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Guest minimum">
+              <Input
+                type="number"
+                value={form.guestMin}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, guestMin: e.target.value }))
+                }
+              />
+            </FormField>
+            <FormField label="Guest maximum">
+              <Input
+                type="number"
+                value={form.guestMax}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, guestMax: e.target.value }))
+                }
+              />
+            </FormField>
+          </div>
+          <FormField label="Facilities" help="Separate facilities with commas.">
+            <Input
+              value={form.facilitiesText}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, facilitiesText: e.target.value }))
+              }
+            />
+          </FormField>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Venue images</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="ew-form-help">
+            Upload JPEG, PNG or WebP images up to 5MB. Uploading reloads your
+            venue details; submit any text changes first.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Upload hero image">
+              <Input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                className="hidden"
+                disabled={saving || !!uploading}
                 onChange={(e) => uploadImage(e.target.files?.[0], "hero")}
               />
-            </label>
-            <label className="inline-flex cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-              Upload gallery image
-              <input
+            </FormField>
+            <FormField label="Upload gallery image">
+              <Input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                className="hidden"
+                disabled={saving || !!uploading}
                 onChange={(e) => uploadImage(e.target.files?.[0], "gallery")}
               />
-            </label>
-            {uploading ? <Badge variant="neutral">Uploading...</Badge> : null}
+            </FormField>
           </div>
-
-          {venue.hero_image?.signed_url || venue.hero_image?.public_url ? (
-            <div className="overflow-hidden rounded-2xl border border-slate-200">
-              <img
-                src={venue.hero_image?.signed_url || venue.hero_image?.public_url}
-                alt="Venue hero"
-                className="h-48 w-full object-cover"
-                loading="lazy"
-              />
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-              No hero image uploaded yet.
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {(venue.gallery || []).map((img) => (
-              <div key={img.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                <img
+          {uploading && <p role="status">Uploading {uploading} image...</p>}
+          {(venue.gallery || []).length ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {venue.gallery.map((img) => (
+                <WorkspaceImage
+                  key={img.id}
                   src={img.signed_url || img.public_url}
                   alt={img.caption || venue.name || "Gallery image"}
-                  className="h-24 w-full object-cover"
-                  loading="lazy"
                 />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No gallery images"
+              description="Add images to show the spaces and atmosphere of your venue."
+            />
+          )}
         </CardContent>
       </Card>
+      <FormActions>
+        <Button
+          variant="secondary"
+          onClick={() => navigate("/venue")}
+          disabled={saving || !!uploading}
+        >
+          Cancel
+        </Button>
+        <Button onClick={saveVenue} disabled={saving || !!uploading}>
+          {saving ? "Submitting..." : "Submit for review"}
+        </Button>
+      </FormActions>
     </div>
   );
 }
-

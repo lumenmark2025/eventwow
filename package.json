@@ -11,7 +11,8 @@
     "test:workspace": "node scripts/verify-workspace-v2.mjs",
     "test:admin": "node scripts/verify-admin-v2.mjs",
     "test:supplier": "node scripts/verify-supplier-v2.mjs",
-    "test:supplier-workflows": "node scripts/verify-supplier-workflows-v2.mjs"
+    "test:supplier-workflows": "node scripts/verify-supplier-workflows-v2.mjs",
+    "test:venue": "node scripts/verify-venue-v2.mjs"
   },
   "dependencies": {
     "-": "^0.0.1",

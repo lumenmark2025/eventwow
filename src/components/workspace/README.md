@@ -46,3 +46,14 @@ Supplier Quotes uses the shared FilterBar/DataTable through `QuoteList`; search 
 `BookingsCalendar` retains react-big-calendar's views, dates, selection and range callbacks. Its shared Button toolbar is portalled above the horizontal scroll region so navigation remains visible on narrow screens. The centralized 640px minimum grid width and 680px calendar height preserve usable event/time cells; these are deliberate structural exceptions. The region is keyboard focusable, explains horizontal scrolling and offers the existing list alternative. The calendar and its stylesheet are lazy-loaded when requested, including the optional design-system specimen. Known pre-existing week-view ARIA structure issues are documented in the verification evidence.
 
 `npm run test:supplier-workflows` checks Quotes, Bookings/calendar and Messages with isolated fixtures, including all four viewport widths, states, keyboard controls, guards and mutation payloads. See `docs/verification/supplier-workflows-v2/README.md`.
+
+
+## Venue-owner workspace
+
+`/venue` and `/venue/:venueId/edit` use the same WorkspaceShell and form adapters. Navigation contains only the existing My venues destination; no unsupported enquiry, booking, message or notification routes are invented. Overview search filters loaded venue names/locations without additional requests. The editor preserves its existing load/save/upload handlers and review statuses.
+
+`WorkspaceImage` is a shared, presentation-only listing image frame demonstrated on `/design-system`. It reserves a 16:9 aspect ratio, keeps lazy loading/async decoding, and renders labelled missing/failed-image states with a Lucide icon. A changed source resets the failure state. It does not upload, sign or fetch listing records.
+
+Venue forms use labelled descriptions, capacity, facilities and file controls, with shared feedback and Submit/Cancel actions. File controls are disabled during saves/uploads; all backend contracts remain with the existing handlers. The empty overview's Browse venues link is rendered explicitly, since EmptyState accepts actionLabel/onAction rather than an action element.
+
+Run `npm run test:venue` using the fixture setup documented in `docs/verification/venue-v2/README.md`.

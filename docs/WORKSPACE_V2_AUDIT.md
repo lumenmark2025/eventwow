@@ -216,3 +216,46 @@ See [Supplier workflow completion evidence](verification/supplier-workflows-v2/R
 Recommended next step: audit Venue-owner routes and data contracts, then migrate its dashboard, enquiries and listing/profile presentation using these same shell, list, form and feedback patterns. Preserve Venue guards, ownership/claim behaviour, media saves and backend contracts; keep the public venue marketplace separate.
 
 No merge to `main`, deployment or live backend write was performed.
+
+## Venue-owner audit before UI changes — 12 September 2026
+
+Starting from clean `ui-v2-design-system` commit `46d0e5a`. Admin and Supplier migration work is already committed. Read the design system, migration guide, canonical HTML and prior verification evidence before editing Venue UI.
+
+### Existing routes and contracts
+
+- `/venue`: owned-venue overview, with real hero images, location, descriptions and draft/pending-review/published statuses. One authenticated `GET /api/venue/my-venues` loads existing rows. No analytics endpoint or owner operational metrics exist.
+- `/venue/:venueId/edit`: loads the same owned-venue collection and selects the requested ID. Fields are shortDescription, description, guestMin, guestMax and comma-separated facilities. `POST /api/venue/update` retains `{ venueId, description, shortDescription, guestMin, guestMax, facilities }`, including numeric/null conversion and facility splitting. The server validates counts, normalizes/truncates copy, updates fields and marks requires_review. The client reloads the owned-venue collection after success.
+- Hero/gallery upload: authenticated `GET /api/venue/upload-image?venueId=…&fileName=…&type=hero|gallery`, followed by a raw file `PUT` to the returned uploadUrl/signedUrl with the existing MIME header, then collection reload. Existing client limit is 5MB; file chooser accepts JPEG/PNG/WebP. No owner gallery reorder/delete/caption editor is wired to these screens.
+- `/venue/*` redirects to `/venue`. Route-level lazy imports and Venue guards are already present. Server owner access is checked against user_profiles/user_roles and venue_owners_link; these contracts remain untouched.
+- Public claim request `/venues/:slug/claim` posts requester_name, requester_email, role_at_venue and message to `/api/public/venues/:slug/claim-request`. `/claim/venue?token=…` reads `/api/public/venue-claim/verify`. Admin `/admin/venue-claims` reviews requests. These are existing public/Admin flows, not owner workspace pages, and remain visually unchanged. The owner empty state preserves the browse-to-claim entry point.
+- Alternate `/api/venue/me/venues`, `/api/venue/venues/:id` and image endpoints exist but are not used by the current owner screens and have different DTO/update/storage semantics. Do not switch endpoints during this presentation task.
+
+### Missing/incomplete functionality and risks
+
+There are no owner enquiry, booking, message or notification routes/clients, no owner claim inbox and no owner creation/publication controls. Name/location editing and gallery removal/reordering are not exposed in the current editor. Do not add navigation for these absent capabilities.
+
+Current uploads register metadata (and delete the previous hero metadata) before the file PUT succeeds; a failed upload can therefore leave a broken reference. The active upload endpoint does not set requires_review despite the existing UI's review wording, and it can enforce private storage while alternate endpoints expect public storage. Updates write current venue fields while marking review, rather than maintaining a separate draft. These backend behaviours require a separate functional review; this migration preserves them and does not claim to verify publication isolation.
+
+Save and upload reloads reset the editor form from server data, including any unsaved copy. This is existing behaviour. Claim verification accepts pending, unexpired tokens only; it is not an owner claim-status history UI.
+
+### Performance findings
+
+Venue routes/layout are already lazy; there are no heavy owner dependencies to split. The layout stores a constant dashboard tab through a pathname effect, creating unnecessary state/effect work. Replace this with a stable shared navigation link. Image elements already use lazy loading; retain it and reserve aspect-ratio geometry.
+
+The owned-venue API signs every hero/gallery image sequentially. The editor requests all owned venues and images, then selects one. Both costs are real, but changing endpoint contracts, signing strategy or introducing cross-page caching is outside this presentation task. Preserve post-mutation reloads and current Supabase calls. The overview currently shows an empty state as well as its fetch error; fix this presentation ambiguity without changing the request.
+
+### Venue migration delivered
+
+- `/venue` and `/venue/:venueId/edit`, including profile/media/review status and all supporting states, now use the same WorkspaceShell, Inter/navy/orange palette, PageHeader, forms, feedback and status patterns as Admin/Supplier. No legacy owner-workspace route bodies remain.
+- My venues uses a stable Lucide navigation link. Real listing images remain prominent in responsive two-column cards, with plain location text and genuine statuses. Search filters existing rows without fetching. No owner metrics or absent operational pages were invented.
+- The editor uses About, Capacity/facilities and Media sections, visible labels/help, keyboard file controls and Submit/Cancel hierarchy. File controls now disable during saves/uploads. All six existing named API/status/load/save/upload helpers compare identically as parsed JavaScript. Existing API calls, payloads, role guards and routes are unchanged.
+- Added shared WorkspaceImage and its `/design-system` example: stable 16:9 geometry, lazy loading/async decoding, missing/failed-image states. No production dependency was added.
+- The empty overview's intended Browse venues link now renders explicitly; the legacy EmptyState component ignored the supplied action element. Fetch errors no longer also show a successful empty state, and explicit Retry reuses the same load request.
+
+Performance changes are limited to removing the constant navigation state/effect, memoized local search, and stable image geometry. Existing lazy route boundaries remain; browser checks confirm no Admin/Supplier/calendar modules while browsing Venue. The owned-venue collection/signing costs described above remain unchanged. Build artifact measurements and verification details are in [Venue evidence](verification/venue-v2/README.md); no real-user latency claim is made.
+
+Venue, Workspace, Admin and both Supplier browser suites passed, with Venue layouts/states/axe at 360/768/1024/1440px, keyboard/guard checks, exact save/upload payloads and source comparison. Vite compilation passes; the existing SEO prerender credential requirement still prevents the full build. Lint is **430 errors / 12 warnings** (one fewer error from removing Venue's redundant tab effect); migrated/new files are clean.
+
+Public claim request/verification screens remain legacy and outside the owner shell. No missing enquiries, booking, messaging, notification, claim-history or media-management capabilities were invented. Live ownership/auth/storage, claim emails/provisioning and publication isolation remain unverified; the upload/review/storage risks above require staging review before claiming those integrations are correct.
+
+Recommended Customer migration: audit its existing routes and enquiry/quote/message contracts, then migrate the dashboard and enquiry list/detail using the same shared shell, forms, tables and feedback. Follow with quote comparison/acceptance and conversations, retaining their actions, payloads and permissions. Keep public quote and marketplace pages outside that workspace scope.

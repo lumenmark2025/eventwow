@@ -1,0 +1,16 @@
+[
+  "overview: 360/768/1024/1440px, overflow and axe passed",
+  "editor: 360/768/1024/1440px, overflow and axe passed",
+  "pending-review: 360/768/1024/1440px, overflow and axe passed",
+  "Overview search is local; edit keyboard link, exact save payload/null/numeric/facility conversion, pending review, disabled saving/upload controls, failed-save draft retention and Cancel navigation passed",
+  "Media: keyboard file controls, exact preparation query and raw signed PUT payload/MIME, upload/save disables, 5MB validation, prep/missing-URL/PUT failures and post-upload reloads passed",
+  "overview-empty: 360/768/1024/1440px, overflow and axe passed",
+  "overview-error: 360/768/1024/1440px, overflow and axe passed",
+  "overview-loading: 360/768/1024/1440px, overflow and axe passed",
+  "editor-empty: 360/768/1024/1440px, overflow and axe passed",
+  "editor-error: 360/768/1024/1440px, overflow and axe passed",
+  "editor-loading: 360/768/1024/1440px, overflow and axe passed",
+  "empty-profile: 360/768/1024/1440px, overflow and axe passed",
+  "Both routes: loading/empty/error and retry at all widths; unowned ID exposes no form; empty profile/gallery, signed/public image URLs and broken-image fallback passed",
+  "Keyboard drawer Tab/Escape/focus return and command search; signed-out/Admin/Supplier/Customer guard redirects without owner API requests; existing venue role alias passed"
+]

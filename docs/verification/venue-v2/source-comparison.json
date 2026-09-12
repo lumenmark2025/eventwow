@@ -1,0 +1,64 @@
+[
+  {
+    "file": "src/pages/venue/DashboardPage.jsx",
+    "functions": [
+      {
+        "name": "apiFetch",
+        "unchanged": true
+      }
+    ],
+    "lintBefore": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "lintAfter": {
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  {
+    "file": "src/pages/venue/VenueEditPage.jsx",
+    "functions": [
+      {
+        "name": "apiFetch",
+        "unchanged": true
+      },
+      {
+        "name": "toStatusLabel",
+        "unchanged": true
+      },
+      {
+        "name": "loadVenue",
+        "unchanged": true
+      },
+      {
+        "name": "saveVenue",
+        "unchanged": true
+      },
+      {
+        "name": "uploadImage",
+        "unchanged": true
+      }
+    ],
+    "lintBefore": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "lintAfter": {
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  {
+    "file": "src/venue/layout/VenueLayout.jsx",
+    "functions": [],
+    "lintBefore": {
+      "errors": 1,
+      "warnings": 0
+    },
+    "lintAfter": {
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+]

@@ -1177,3 +1177,8 @@
 .ew-message-own .ew-message-meta, .ew-thread-choice[aria-current="true"] .ew-form-help { color: var(--ew-blue-text); }
 .ew-calendar .rbc-toolbar { padding: 0; margin: 0; }
 .ew-calendar .rbc-toolbar [data-ui="button"] { transition: none; font-size: 14px; }
+
+/* Shared listing imagery: stable landscape geometry for owner portfolio and media sections. */
+.ew-workspace-image { aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--ew-control-radius); background: var(--ew-bg); }
+.ew-workspace-image img { width: 100%; height: 100%; object-fit: cover; }
+.ew-workspace-image-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--ew-muted); font-size: 12px; }

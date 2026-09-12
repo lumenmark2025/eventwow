@@ -1,3 +1,4 @@
+import WorkspaceImage from "../components/workspace/WorkspaceImage";
 import {
   ConversationThread,
   MessageComposer,
@@ -103,6 +104,16 @@ export default function DesignSystemPage() {
             <Button variant="secondary">Cancel</Button>
             <Button disabled>Save example</Button>
           </div>
+        </FormSection>
+        <FormSection
+          title="Listing imagery"
+          description="Real listing images use a stable landscape frame; missing images have an explicit state."
+        >
+          <FormSectionBody>
+            <div className="max-w-md">
+              <WorkspaceImage alt="Listing image example" />
+            </div>
+          </FormSectionBody>
         </FormSection>
         <FormSection
           title="Calendar pattern"

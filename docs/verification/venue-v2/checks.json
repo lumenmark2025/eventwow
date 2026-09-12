@@ -1,0 +1,29 @@
+{
+  "startingCommit": "46d0e5a",
+  "branch": "ui-v2-design-system",
+  "viteBuild": "passed (5.27s)",
+  "fullBuild": "Existing SEO prerender missing Supabase URL/service-role credentials",
+  "lint": {
+    "errors": 430,
+    "warnings": 12,
+    "startingErrors": 431,
+    "startingWarnings": 12,
+    "newDiagnostics": 0
+  },
+  "browserSuites": {
+    "test:venue": "passed",
+    "test:workspace": "passed",
+    "test:admin": "passed",
+    "test:supplier": "passed",
+    "test:supplier-workflows": "passed"
+  },
+  "artifactsKB": {
+    "entry": 450.61,
+    "entryGzip": 131.57,
+    "venueEditor": 6.89,
+    "venueEditorGzip": 2.57,
+    "workspaceImage": 0.65,
+    "workspaceImageGzip": 0.39
+  },
+  "liveIntegrations": "Not exercised; every backend request intercepted"
+}
